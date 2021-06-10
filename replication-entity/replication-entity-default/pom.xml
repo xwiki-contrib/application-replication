@@ -28,7 +28,7 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>replication-entity-api</artifactId>
+  <artifactId>replication-entity-default</artifactId>
   <name>Replication Entity Default</name>
   <packaging>jar</packaging>
   <description>The default implementation of the entity replication API</description>
