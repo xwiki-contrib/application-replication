@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
+import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
 
 /**
  * @version $Id$
