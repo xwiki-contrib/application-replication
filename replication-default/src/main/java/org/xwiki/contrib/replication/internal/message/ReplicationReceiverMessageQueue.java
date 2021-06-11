@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal;
+package org.xwiki.contrib.replication.internal.message;
 
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
@@ -36,7 +36,6 @@ import org.xwiki.component.phase.InitializationException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.internal.store.ReplicationReceiverMessageStore;
 
 /**
  * Maintain a queue of replication data to give to the various receivers.

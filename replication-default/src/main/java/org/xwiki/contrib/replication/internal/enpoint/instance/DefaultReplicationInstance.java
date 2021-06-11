@@ -17,28 +17,48 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication;
+package org.xwiki.contrib.replication.internal.enpoint.instance;
 
-import org.xwiki.component.annotation.Role;
+import org.xwiki.contrib.replication.ReplicationInstance;
 
 /**
  * @version $Id$
  */
-@Role
-public interface ReplicationInstance
+public class DefaultReplicationInstance implements ReplicationInstance
 {
-    /**
-     * @return the unique instance unique id
-     */
-    String getId();
+    private final String id;
+
+    private final String name;
+
+    private final String uri;
 
     /**
-     * @return the display name of the instance
+     * @param id the unique instance unique id
+     * @param name the display name of the instance
+     * @param uri the base URI of the instance (generally of the form https://www.xwiki.org/xwiki/)
      */
-    String getName();
+    public DefaultReplicationInstance(String id, String name, String uri)
+    {
+        this.id = id;
+        this.name = name;
+        this.uri = uri;
+    }
 
-    /**
-     * @return the base URI of the instance (generally of the form https://www.xwiki.org/xwiki/)
-     */
-    String getURI();
+    @Override
+    public String getId()
+    {
+        return this.id;
+    }
+
+    @Override
+    public String getName()
+    {
+        return this.name;
+    }
+
+    @Override
+    public String getURI()
+    {
+        return this.uri;
+    }
 }

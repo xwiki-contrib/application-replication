@@ -17,7 +17,10 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication;
+package org.xwiki.contrib.replication.internal.enpoint;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.xwiki.component.annotation.Role;
 
@@ -25,20 +28,16 @@ import org.xwiki.component.annotation.Role;
  * @version $Id$
  */
 @Role
-public interface ReplicationInstance
+public interface ReplicationEndpoint
 {
     /**
-     * @return the unique instance unique id
+     * Handle the request and return a {@link HttpServletResponse}.
+     * 
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param reference the reference generated from the request
+     * @throws Exception when failing to handle the request
      */
-    String getId();
-
-    /**
-     * @return the display name of the instance
-     */
-    String getName();
-
-    /**
-     * @return the base URI of the instance (generally of the form https://www.xwiki.org/xwiki/)
-     */
-    String getURI();
+    void handle(HttpServletRequest request, HttpServletResponse response, ReplicationResourceReference reference)
+        throws Exception;
 }

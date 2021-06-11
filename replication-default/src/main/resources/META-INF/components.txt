@@ -2,7 +2,9 @@ org.xwiki.contrib.replication.internal.DefaultReplicationInstanceManager
 org.xwiki.contrib.replication.internal.DefaultReplicationSender
 org.xwiki.contrib.replication.internal.ReplicationClient
 org.xwiki.contrib.replication.internal.ReplicationReceiverMessageQueue
-org.xwiki.contrib.replication.internal.ReplicationResourceReferenceHandler
-org.xwiki.contrib.replication.internal.ReplicationResourceReferenceResolver
+org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferenceHandler
+org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferenceResolver
+org.xwiki.contrib.replication.internal.enpoint.message.HttpServletRequestReplicationReceiverMessage
+org.xwiki.contrib.replication.internal.enpoint.message.ReplicationMessageEndpoint
 org.xwiki.contrib.replication.internal.store.ReplicationReceiverMessageStore
 org.xwiki.contrib.replication.internal.store.ReplicationSenderMessageStore

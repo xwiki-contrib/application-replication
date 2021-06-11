@@ -17,23 +17,64 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal;
+package org.xwiki.contrib.replication.internal.instance;
+
+import java.util.List;
 
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.ReplicationSenderMessage;
 
 /**
  * @version $Id$
  */
-@Component(roles = ReplicationClient.class)
+@Component(roles = ReplicationInstanceStore.class)
 @Singleton
-public class ReplicationClient
+public class ReplicationInstanceStore
 {
-    public void send(ReplicationSenderMessage message, ReplicationInstance target) throws ReplicationException
+    public List<ReplicationInstance> loadInstances() throws ReplicationException
+    {
+
+    }
+
+    public void saveInstance(ReplicationInstance instance) throws ReplicationException
+    {
+
+    }
+
+    public void deleteInstance(ReplicationInstance instance) throws ReplicationException
+    {
+
+    }
+
+    public List<ReplicationInstance> loadRequestingInstances() throws ReplicationException
+    {
+
+    }
+
+    public void saveRequestingInstance(ReplicationInstance instance) throws ReplicationException
+    {
+
+    }
+
+    public void deleteRequestingInstance(ReplicationInstance instance) throws ReplicationException
+    {
+
+    }
+
+    public List<String> loadRequestedInstances() throws ReplicationException
+    {
+
+    }
+
+    public void saveRequestedInstance(String instanceURL) throws ReplicationException
+    {
+
+    }
+
+    public void deleteRequestedInstance(String instanceURL) throws ReplicationException
     {
 
     }

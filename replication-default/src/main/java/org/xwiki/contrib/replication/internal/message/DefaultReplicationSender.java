@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal;
+package org.xwiki.contrib.replication.internal.message;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -42,8 +42,8 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.internal.store.ReplicationSenderMessageStore;
-import org.xwiki.contrib.replication.internal.store.ReplicationSenderMessageStore.FileReplicationSenderMessage;
+import org.xwiki.contrib.replication.internal.ReplicationClient;
+import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageStore.FileReplicationSenderMessage;
 
 /**
  * @version $Id$
@@ -196,19 +196,19 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
         }
     }
 
-    private void syncSend(ReplicationSenderMessage data, ReplicationInstance target)
+    private void syncSend(ReplicationSenderMessage message, ReplicationInstance target)
     {
         // Send the data to the instance
         try {
-            this.client.send(data, target);
+            this.client.send(message, target);
 
             // Remove this target (and data if it's the last target) from disk
-            this.store.removeTarget(data, target);
+            this.store.removeTarget(message, target);
         } catch (ReplicationException e) {
             this.logger.error("Failed to send data. Reinjecting it in the queue.", e);
 
             // Put back the data in the queue
-            this.sendingQueue.add(new QueueEntry(data, target));
+            this.sendingQueue.add(new QueueEntry(message, target));
         }
     }
 

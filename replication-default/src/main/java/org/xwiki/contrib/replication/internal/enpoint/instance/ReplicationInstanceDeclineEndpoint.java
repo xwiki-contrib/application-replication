@@ -17,24 +17,34 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal;
+package org.xwiki.contrib.replication.internal.enpoint.instance;
 
-import javax.inject.Singleton;
+import javax.inject.Named;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoint;
+import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
 
 /**
  * @version $Id$
  */
-@Component(roles = ReplicationClient.class)
-@Singleton
-public class ReplicationClient
+@Named("instance/decline")
+public class ReplicationInstanceDeclineEndpoint extends AbstractReplicationEndpoint
 {
-    public void send(ReplicationSenderMessage message, ReplicationInstance target) throws ReplicationException
-    {
+    private static final String PARAMETER_URI = "uri";
 
+    // TODO: add support for public/private key
+    private static final String PARAMETER_KEY = "key";
+
+    @Override
+    public void handle(HttpServletRequest request, HttpServletResponse response, ReplicationResourceReference reference)
+        throws Exception
+    {
+        String uri = reference.getParameterValue(PARAMETER_URI);
+
+        // TODO: Validate the key
+
+        this.instances.cancelRequestedInstance(uri);
     }
 }

@@ -17,15 +17,15 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal;
+package org.xwiki.contrib.replication.internal.enpoint;
 
-import java.util.List;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.Map;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.resource.CreateResourceReferenceException;
 import org.xwiki.resource.ResourceReference;
@@ -35,44 +35,36 @@ import org.xwiki.url.ExtendedURL;
 import org.xwiki.url.internal.AbstractResourceReferenceResolver;
 
 /**
- * Transform Async renderer URL into a typed Resource Reference. The URL format handled is
- * {@code http://server/context/asyncrenderer/}.
+ * Transform Replication URL into a typed Resource Reference. The URL format handled is
+ * {@code http://server/context/replication/endpoint}.
  * 
  * @version $Id: 54dbba541e75c72917c30d7e49f6cdf2553781bc $
- * @since 10.10RC1
  */
 @Component
 @Named(ReplicationResourceReferenceHandler.HINT)
 @Singleton
 public class ReplicationResourceReferenceResolver extends AbstractResourceReferenceResolver
 {
-    /**
-     * The name of the parameter containing the source instance id.
-     */
-    public static final String PARAMETER_SOURCE = "source";
-
-    /**
-     * The name of the parameter containing the type of data.
-     */
-    public static final String PARAMETER_TYPE = "type";
-
     @Override
     public ResourceReference resolve(ExtendedURL representation, ResourceType resourceType,
         Map<String, Object> parameters) throws CreateResourceReferenceException, UnsupportedResourceReferenceException
     {
-        String dataType = getParameter(representation, PARAMETER_TYPE);
-        String sourceId = getParameter(representation, PARAMETER_SOURCE);
-
-        return new ReplicationResourceReference(resourceType, dataType, sourceId);
-    }
-
-    private String getParameter(ExtendedURL representation, String key)
-    {
-        List<String> parameters = representation.getParameters().get(key);
-        if (CollectionUtils.isNotEmpty(parameters)) {
-            return parameters.get(0);
+        StringBuilder pathBuilder = new StringBuilder();
+        try {
+            for (String pathSegment : representation.getSegments()) {
+                if (pathBuilder.length() > 0) {
+                    pathBuilder.append('/');
+                }
+                pathBuilder.append(URLEncoder.encode(pathSegment, "UTF8"));
+            }
+        } catch (UnsupportedEncodingException e) {
+            // Should never happen
         }
 
-        return null;
+        ReplicationResourceReference reference = new ReplicationResourceReference(pathBuilder.toString());
+
+        copyParameters(representation, reference);
+
+        return reference;
     }
 }

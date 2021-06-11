@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal;
+package org.xwiki.contrib.replication.internal.enpoint;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,24 +27,23 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.container.Container;
 import org.xwiki.container.Request;
 import org.xwiki.container.servlet.ServletRequest;
-import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.ReplicationInstanceManager;
-import org.xwiki.contrib.replication.ReplicationReceiver;
+import org.xwiki.container.servlet.ServletResponse;
 import org.xwiki.resource.AbstractResourceReferenceHandler;
+import org.xwiki.resource.NotFoundResourceHandlerException;
 import org.xwiki.resource.ResourceReference;
 import org.xwiki.resource.ResourceReferenceHandlerChain;
 import org.xwiki.resource.ResourceReferenceHandlerException;
 import org.xwiki.resource.ResourceType;
 
 /**
- * Async renderer resource handler.
+ * Replication resource handler.
  *
  * @version $Id: ba87ff284f14dfb454fc7623fa7f95ad8c54c370 $
- * @since 10.10RC1
  */
 @Component
 @Named(ReplicationResourceReferenceHandler.HINT)
@@ -67,12 +66,6 @@ public class ReplicationResourceReferenceHandler extends AbstractResourceReferen
     @Inject
     private Container container;
 
-    @Inject
-    private ReplicationInstanceManager instances;
-
-    @Inject
-    private ReplicationReceiverMessageQueue queue;
-
     @Override
     public List<ResourceType> getSupportedResourceReferences()
     {
@@ -85,23 +78,21 @@ public class ReplicationResourceReferenceHandler extends AbstractResourceReferen
     {
         ReplicationResourceReference reference = (ReplicationResourceReference) resourceReference;
 
-        // Make sure the source instance is accepted
-        validateInstance(reference.getSource());
-
-        // Make sure the data type is supported
-        String dataType = reference.getDataType();
-        if (this.componentManager.hasComponent(ReplicationReceiver.class, dataType)) {
-            throw new ResourceReferenceHandlerException("Unsupported replication data type [" + dataType + "]");
+        ReplicationEndpoint enpoint;
+        try {
+            enpoint = this.componentManager.getInstance(ReplicationEndpoint.class, reference.getPath());
+        } catch (ComponentLookupException e) {
+            throw new NotFoundResourceHandlerException(resourceReference, e);
         }
 
-        // Add the data to the queue
         Request request = this.container.getRequest();
         if (request instanceof ServletRequest) {
             ServletRequest servletRequest = (ServletRequest) request;
+            ServletResponse servletRespone = (ServletResponse) this.container.getResponse();
 
             try {
-                this.queue
-                    .add(new HttpServletRequestReplicationReceiverMessage(servletRequest.getHttpServletRequest()));
+                enpoint.handle(servletRequest.getHttpServletRequest(), servletRespone.getHttpServletResponse(),
+                    reference);
             } catch (Exception e) {
                 throw new ResourceReferenceHandlerException("Could not handle the replication data", e);
             }
@@ -112,13 +103,4 @@ public class ReplicationResourceReferenceHandler extends AbstractResourceReferen
         chain.handleNext(reference);
     }
 
-    void validateInstance(String instanceId) throws ResourceReferenceHandlerException
-    {
-        ReplicationInstance instance = this.instances.getInstance(instanceId);
-
-        if (instance == null) {
-            throw new ResourceReferenceHandlerException(
-                "The intance with id [" + instanceId + "] is not authorized to send replication data");
-        }
-    }
 }

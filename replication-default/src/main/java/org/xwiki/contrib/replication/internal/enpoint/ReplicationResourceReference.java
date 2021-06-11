@@ -17,50 +17,52 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal;
+package org.xwiki.contrib.replication.internal.enpoint;
 
 import org.xwiki.resource.AbstractResourceReference;
 import org.xwiki.resource.ResourceType;
+import org.xwiki.text.XWikiToStringBuilder;
 
 /**
- * The reference of an replication message.
- * 
- * @version $Id: a1c421eb909c6540119e266dd77ec1fc2f50f62c $
+ * Dummy type for Replication entry point.
+ *
+ * @version $Id: 97638fe25bc709cd9296ea452b5d13077aab014b $
  */
 public class ReplicationResourceReference extends AbstractResourceReference
 {
-    private final String dataType;
+    /**
+     * Represents a Replication Resource Type.
+     */
+    public static final ResourceType TYPE = new ResourceType(ReplicationResourceReferenceHandler.HINT);
 
-    private final String source;
+    private String path;
 
     /**
-     * Default constructor.
-     * 
-     * @param type see {@link #getType()}
-     * @param dataType the type of data received
-     * @param source the source which sent the data
+     * @param path the path after the main endpoint
      */
-    public ReplicationResourceReference(ResourceType type, String dataType, String source)
+    public ReplicationResourceReference(String path)
     {
-        setType(type);
+        setType(TYPE);
 
-        this.dataType = dataType;
-        this.source = source;
+        this.path = path;
     }
 
     /**
-     * @return the dataType
+     * @return the path starting with the endpoint
      */
-    public String getDataType()
+    public String getPath()
     {
-        return this.dataType;
+        return this.path;
     }
 
-    /**
-     * @return the source
-     */
-    public String getSource()
+    @Override
+    public String toString()
     {
-        return this.source;
+        XWikiToStringBuilder builder = new XWikiToStringBuilder(this);
+
+        builder.appendSuper(super.toString());
+        builder.append("path", getPath());
+
+        return builder.toString();
     }
 }

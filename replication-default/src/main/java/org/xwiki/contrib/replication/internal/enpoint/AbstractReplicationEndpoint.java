@@ -17,12 +17,31 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
+package org.xwiki.contrib.replication.internal.enpoint;
 
-// It's assumed that Jenkins has been configured to implicitly load the vars/xwikiModule.groovy library which exposes
-// the "xwikiModule" global function/DSL.
-// Note that the version used is the one defined in Jenkins but it can be overridden as follows:
-// @Library("XWiki@<branch, tag, sha1>") _
-// See https://github.com/jenkinsci/workflow-cps-global-lib-plugin for details.
+import javax.inject.Inject;
 
-xwikiModule {
+import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
+import org.xwiki.resource.ResourceReferenceHandlerException;
+
+/**
+ * @version $Id$
+ */
+public abstract class AbstractReplicationEndpoint implements ReplicationEndpoint
+{
+    @Inject
+    protected ReplicationInstanceManager instances;
+
+    protected ReplicationInstance validateInstance(String instanceId) throws ResourceReferenceHandlerException
+    {
+        ReplicationInstance instance = this.instances.getInstance(instanceId);
+
+        if (instance == null) {
+            throw new ResourceReferenceHandlerException(
+                "The instance with id [" + instanceId + "] is not authorized to send replication data");
+        }
+
+        return instance;
+    }
 }

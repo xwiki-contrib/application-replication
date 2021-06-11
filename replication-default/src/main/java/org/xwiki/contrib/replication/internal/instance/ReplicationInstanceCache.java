@@ -17,24 +17,52 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal;
+package org.xwiki.contrib.replication.internal.instance;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.ReplicationSenderMessage;
 
 /**
  * @version $Id$
  */
-@Component(roles = ReplicationClient.class)
+@Component(roles = ReplicationInstanceCache.class)
 @Singleton
-public class ReplicationClient
+public class ReplicationInstanceCache
 {
-    public void send(ReplicationSenderMessage message, ReplicationInstance target) throws ReplicationException
-    {
+    private final Map<String, ReplicationInstance> instances = new ConcurrentHashMap<>();
 
+    private final Set<String> requestedInstances = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    private final Map<String, ReplicationInstance> requestingInstances = new ConcurrentHashMap<>();
+
+    /**
+     * @return the instances
+     */
+    public Map<String, ReplicationInstance> getInstances()
+    {
+        return this.instances;
+    }
+
+    /**
+     * @return the instances which requested a link
+     */
+    public Map<String, ReplicationInstance> getRequestingInstances()
+    {
+        return this.requestingInstances;
+    }
+
+    /**
+     * @return the instances which did not accepted the link yet
+     */
+    public Set<String> getRequestedInstances()
+    {
+        return this.requestedInstances;
     }
 }
