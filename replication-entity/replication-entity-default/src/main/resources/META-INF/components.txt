@@ -1,0 +1,3 @@
+org.xwiki.contrib.replication.internal.DocumentReplicationListener
+org.xwiki.contrib.replication.internal.DocumentReplicationReceiver
+org.xwiki.contrib.replication.internal.DocumentReplicationSenderMessage
