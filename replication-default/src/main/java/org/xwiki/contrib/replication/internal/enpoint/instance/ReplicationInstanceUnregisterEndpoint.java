@@ -30,45 +30,31 @@ import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferen
 /**
  * @version $Id$
  */
-@Named("instance/unregister")
+@Named(ReplicationInstanceUnregisterEndpoint.PATH)
 public class ReplicationInstanceUnregisterEndpoint extends AbstractReplicationEndpoint
 {
-    private static final String PARAMETER_ID = "id";
-
-    private static final String PARAMETER_NAME = "name";
-
-    private static final String PARAMETER_URI = "uri";
-
-    // TODO: add support for public/private key
-    private static final String PARAMETER_KEY = "key";
+    /**
+     * The path to use to access this endpoint.
+     */
+    public static final String PATH = "instance/unregister";
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, ReplicationResourceReference reference)
         throws Exception
     {
-        String id = reference.getParameterValue(PARAMETER_ID);
-        String name = reference.getParameterValue(PARAMETER_NAME);
         String uri = reference.getParameterValue(PARAMETER_URI);
 
-        ReplicationInstance instance = this.instances.getInstance(id);
+        ReplicationInstance instance = this.instances.getInstance(uri);
 
-        if (instance != null) {
-            // TODO: validate key
-            this.instances.removeInstance(instance);
-
-            return;
+        if (instance == null) {
+            // Unknown instance
+            response.sendError(404, "Unknown instance");
         }
 
-        instance = this.instances.getRequestingInstance(id);
+        // TODO: validate key
 
-        if (instance != null) {
-            // TODO: validate key
-            this.instances.removeRequestingInstance(instance);
+        this.instances.removeInstance(uri);
 
-            return;
-        }
-
-        // Unknown instance
-        response.sendError(404, "Unknown instance");
+        return;
     }
 }

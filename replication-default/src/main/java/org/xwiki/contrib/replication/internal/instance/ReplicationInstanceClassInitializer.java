@@ -23,6 +23,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.model.reference.LocalDocumentReference;
 
 import com.xpn.xwiki.doc.AbstractMandatoryClassInitializer;
@@ -53,11 +54,6 @@ public class ReplicationInstanceClassInitializer extends AbstractMandatoryClassI
         new LocalDocumentReference(CLASS_NAME, ReplicationInstanceStore.REPLICATION_HOME);
 
     /**
-     * The name of the property containing the Replication Instance identifier.
-     */
-    public static final String FIELD_ID = "id";
-
-    /**
      * The name of the property containing the Replication Instance URI.
      */
     public static final String FIELD_URI = "uri";
@@ -72,15 +68,6 @@ public class ReplicationInstanceClassInitializer extends AbstractMandatoryClassI
      */
     public static final String FIELD_STATUS = "status";
 
-    public enum ReplicationInstanceStatus
-    {
-        REGISTERED,
-
-        REQUESTED,
-
-        REQUESTING
-    }
-
     /**
      * Default constructor.
      */
@@ -92,8 +79,10 @@ public class ReplicationInstanceClassInitializer extends AbstractMandatoryClassI
     @Override
     protected void createClass(BaseClass xclass)
     {
-        xclass.addTextField(FIELD_ID, "Identifier", 30);
         xclass.addTextField(FIELD_URI, "URI", 30);
         xclass.addTextField(FIELD_NAME, "Name", 30);
+
+        xclass.addStaticListField(FIELD_STATUS, "Status",
+            Status.REGISTERED.name() + '|' + Status.REQUESTED.name() + '|' + Status.REQUESTING.name());
     }
 }

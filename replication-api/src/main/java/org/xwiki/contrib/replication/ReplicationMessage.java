@@ -39,7 +39,7 @@ public interface ReplicationMessage
     Date getDate();
 
     /**
-     * @return the instance from which the message is coming from
+     * @return the instance from which the message is coming
      */
     ReplicationInstance getSource();
 

@@ -28,9 +28,27 @@ import org.xwiki.component.annotation.Role;
 public interface ReplicationInstance
 {
     /**
-     * @return the unique instance unique id
+     * The status of the instance.
+     * 
+     * @version $Id$
      */
-    String getId();
+    enum Status
+    {
+        /**
+         * This instance is registered on both ends.
+         */
+        REGISTERED,
+
+        /**
+         * The instance requested a link but we did not answered yet.
+         */
+        REQUESTING,
+
+        /**
+         * The instance was requested but did not confirm yet.
+         */
+        REQUESTED
+    }
 
     /**
      * @return the display name of the instance
@@ -41,4 +59,9 @@ public interface ReplicationInstance
      * @return the base URI of the instance (generally of the form https://www.xwiki.org/xwiki/)
      */
     String getURI();
+
+    /**
+     * @return the status of this instance
+     */
+    Status getStatus();
 }

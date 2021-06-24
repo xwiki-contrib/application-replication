@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.internal.instance;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.slf4j.Logger;
@@ -48,10 +49,10 @@ public class ReplicationInstanceListener extends AbstractEventListener
     private ReplicationInstanceCache cache;
 
     @Inject
-    private ReplicationInstanceStore store;
+    private Provider<ReplicationInstanceStore> store;
 
     @Inject
-    private ReplicationInstanceManager instances;
+    private Provider<ReplicationInstanceManager> instances;
 
     @Inject
     private Logger logger;
@@ -70,14 +71,14 @@ public class ReplicationInstanceListener extends AbstractEventListener
         if (event instanceof ApplicationReadyEvent) {
             reload();
         } else {
-
+            // TODO
         }
     }
 
     private void reload()
     {
         try {
-            this.instances.reload();
+            this.instances.get().reload();
         } catch (ReplicationException e) {
             this.logger.error("Failed to reload stored instances", e);
         }

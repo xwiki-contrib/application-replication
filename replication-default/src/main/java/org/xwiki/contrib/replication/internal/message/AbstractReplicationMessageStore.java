@@ -154,8 +154,8 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
             this.type = (String) metadata.getProperty(PROPERTY_TYPE);
 
-            String sourceId = (String) metadata.getProperty(PROPERTY_SOURCE);
-            this.source = instances.getInstance(sourceId);
+            String sourceURI = (String) metadata.getProperty(PROPERTY_SOURCE);
+            this.source = instances.getInstance(sourceURI);
 
             String dateString = (String) metadata.getProperty(PROPERTY_DATE);
             this.date = new Date(Long.parseLong(dateString));
@@ -247,7 +247,6 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
     /**
      * @param message the message to store
-     * @return the new instance to manipulate the stored message
      * @throws ReplicationException when failing to store the message
      */
     protected void storeMessage(M message) throws ReplicationException
@@ -274,7 +273,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
                 FileBasedConfigurationBuilder<PropertiesConfiguration> metadata =
                     new Configurations().propertiesBuilder(getMetadataFile(messageFolder));
                 metadata.getConfiguration().setProperty(PROPERTY_TYPE, message.getType());
-                metadata.getConfiguration().setProperty(PROPERTY_SOURCE, message.getSource().getId());
+                metadata.getConfiguration().setProperty(PROPERTY_SOURCE, message.getSource().getURI());
                 metadata.getConfiguration().setProperty(PROPERTY_DATE, String.valueOf(message.getDate().getTime()));
                 metadata.save();
             } catch (ConfigurationException e) {

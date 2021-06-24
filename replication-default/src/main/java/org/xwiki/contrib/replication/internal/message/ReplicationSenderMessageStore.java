@@ -132,7 +132,7 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
             for (LineIterator it = IOUtils.lineIterator(stream, StandardCharsets.UTF_8); it.hasNext();) {
                 String line = it.next();
                 if (StringUtils.isNotBlank(line)) {
-                    targets.add(instances.getInstance(line));
+                    targets.add(this.instances.getInstance(line));
                 }
             }
         }
@@ -187,7 +187,7 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
     {
         try (FileOutputStream stream = new FileOutputStream(targetsFile)) {
             for (ReplicationInstance target : targets) {
-                stream.write(target.getId().getBytes(StandardCharsets.UTF_8));
+                stream.write(target.getURI().getBytes(StandardCharsets.UTF_8));
             }
         }
     }

@@ -38,11 +38,18 @@ public interface ReplicationInstanceManager
     ReplicationInstance getInstance(String id);
 
     /**
-     * @param instance the instance to remove from the registered list
+     * @param instance the instance to add
+     * @return <tt>true</tt> if an instance was added as a result of this call
+     * @throws ReplicationException
+     */
+    boolean addInstance(ReplicationInstance instance) throws ReplicationException;
+
+    /**
+     * @param uri the uri of the instance to remove
      * @return <tt>true</tt> if an instance was removed as a result of this call
      * @throws ReplicationException
      */
-    boolean removeInstance(ReplicationInstance instance) throws ReplicationException;
+    boolean removeInstance(String uri) throws ReplicationException;
 
     /**
      * @param instanceURL the base URL of the instance
@@ -53,7 +60,7 @@ public interface ReplicationInstanceManager
     /**
      * @return all requested instances which have not validated the link yet
      */
-    Collection<String> getRequestedInstances();
+    Collection<ReplicationInstance> getRequestedInstances();
 
     /**
      * @param uri the base URI of the instance to remove from the list of instance which did not yet accepted the link
@@ -75,37 +82,25 @@ public interface ReplicationInstanceManager
     Collection<ReplicationInstance> getRequestingInstances();
 
     /**
-     * @param id the identifier of the instance
-     * @return the requesting instance
-     */
-    ReplicationInstance getRequestingInstance(String id);
-
-    /**
-     * @param instance the instance to add in the pending list of instances to validate
+     * @param uri the uri of the instance to accept
+     * @return <tt>true</tt> if an instance was created/modified as a result of this call
      * @throws ReplicationException
      */
-    void addRequestingInstance(ReplicationInstance instance) throws ReplicationException;
+    boolean acceptRequestingInstance(String uri) throws ReplicationException;
 
     /**
-     * @param instance the requesting instance to accept and move to main instances
-     * @return <tt>true</tt> if an instance was added as a result of this call
-     * @throws ReplicationException
-     */
-    boolean acceptRequestingInstance(ReplicationInstance instance) throws ReplicationException;
-
-    /**
-     * @param instance the instance to remove from the registered list
+     * @param uri the uri of the instance to decline
      * @return <tt>true</tt> if an instance was removed as a result of this call
      * @throws ReplicationException
      */
-    boolean declineRequestingInstance(ReplicationInstance instance) throws ReplicationException;
+    boolean declineRequestingInstance(String uri) throws ReplicationException;
 
     /**
-     * @param instance the requesting instance to remove
+     * @param uri the uri of the instance to remove
      * @return <tt>true</tt> if an instance was removed as a result of this call
      * @throws ReplicationException
      */
-    boolean removeRequestingInstance(ReplicationInstance instance) throws ReplicationException;
+    boolean removeRequestingInstance(String uri) throws ReplicationException;
 
     /**
      * Reload all the instances from the store.

@@ -30,6 +30,17 @@ import org.xwiki.resource.ResourceReferenceHandlerException;
  */
 public abstract class AbstractReplicationEndpoint implements ReplicationEndpoint
 {
+    /**
+     * The name of the parameter containing the URI of the instance which sent the request.
+     */
+    public static final String PARAMETER_URI = "uri";
+
+    /**
+     * The name of the parameter containing the key of the instance which sent the request.
+     */
+    // TODO: add support for public/private key
+    public static final String PARAMETER_KEY = "key";
+
     @Inject
     protected ReplicationInstanceManager instances;
 

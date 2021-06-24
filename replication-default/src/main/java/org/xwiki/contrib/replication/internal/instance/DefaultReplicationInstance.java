@@ -26,28 +26,21 @@ import org.xwiki.contrib.replication.ReplicationInstance;
  */
 public class DefaultReplicationInstance implements ReplicationInstance
 {
-    private final String id;
-
     private final String name;
 
     private final String uri;
 
+    private Status status;
+
     /**
-     * @param id the unique instance unique id
      * @param name the display name of the instance
      * @param uri the base URI of the instance (generally of the form https://www.xwiki.org/xwiki/)
+     * @param status the status of the instance
      */
-    public DefaultReplicationInstance(String id, String name, String uri)
+    public DefaultReplicationInstance(String name, String uri, Status status)
     {
-        this.id = id;
         this.name = name;
         this.uri = uri;
-    }
-
-    @Override
-    public String getId()
-    {
-        return this.id;
     }
 
     @Override
@@ -60,5 +53,19 @@ public class DefaultReplicationInstance implements ReplicationInstance
     public String getURI()
     {
         return this.uri;
+    }
+
+    @Override
+    public Status getStatus()
+    {
+        return this.status;
+    }
+
+    /**
+     * @param status the status to set
+     */
+    public void setStatus(Status status)
+    {
+        this.status = status;
     }
 }

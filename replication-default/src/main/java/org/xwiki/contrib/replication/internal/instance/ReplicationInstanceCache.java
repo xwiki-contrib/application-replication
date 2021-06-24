@@ -19,9 +19,7 @@
  */
 package org.xwiki.contrib.replication.internal.instance;
 
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Singleton;
@@ -38,31 +36,11 @@ public class ReplicationInstanceCache
 {
     private final Map<String, ReplicationInstance> instances = new ConcurrentHashMap<>();
 
-    private final Set<String> requestedInstances = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
-    private final Map<String, ReplicationInstance> requestingInstances = new ConcurrentHashMap<>();
-
     /**
      * @return the instances
      */
     public Map<String, ReplicationInstance> getInstances()
     {
         return this.instances;
-    }
-
-    /**
-     * @return the instances which requested a link
-     */
-    public Map<String, ReplicationInstance> getRequestingInstances()
-    {
-        return this.requestingInstances;
-    }
-
-    /**
-     * @return the instances which did not accepted the link yet
-     */
-    public Set<String> getRequestedInstances()
-    {
-        return this.requestedInstances;
     }
 }

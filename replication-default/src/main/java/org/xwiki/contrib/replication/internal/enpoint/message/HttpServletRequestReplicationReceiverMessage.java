@@ -79,6 +79,24 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
     private HttpServletRequest request;
 
     /**
+     * @param date the date to convert to {@link String}
+     * @return the {@link String} version of the date in the context of a message request
+     */
+    public static String fromDate(Date date)
+    {
+        return date != null ? String.valueOf(date.getTime()) : null;
+    }
+
+    /**
+     * @param date the String to convert to {@link Date}
+     * @return the {@link Date} version of the date in the context of a message request
+     */
+    public static Date toDate(String date)
+    {
+        return date != null ? new Date(Long.valueOf(date)) : null;
+    }
+
+    /**
      * @param instance the last instance which sent the message
      * @param request the request to read
      */
@@ -99,7 +117,7 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
     {
         String dateString = this.request.getParameter(PARAMETER_DATE);
 
-        return new Date(Long.valueOf(dateString));
+        return toDate(dateString);
     }
 
     @Override

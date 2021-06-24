@@ -20,6 +20,7 @@
 package org.xwiki.contrib.replication.internal.enpoint.message;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Provider;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,9 +36,18 @@ import org.xwiki.resource.ResourceReferenceHandlerException;
 /**
  * @version $Id$
  */
+@Named(ReplicationMessageEndpoint.PATH)
 public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
 {
-    private static final String PARAMETER_INSTANCE = "instance";
+    /**
+     * The path to use to access this endpoint.
+     */
+    public static final String PATH = "message";
+
+    /**
+     * The name of the parameter containing the identifier of the last instance which sent the message.
+     */
+    public static final String PARAMETER_INSTANCE = "instance";
 
     @Inject
     private ComponentManager componentManager;

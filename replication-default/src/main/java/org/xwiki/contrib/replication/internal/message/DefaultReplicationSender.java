@@ -109,6 +109,7 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
         this.sendThread = new Thread(this::send);
         this.sendThread.setName("Replication sending");
         this.sendThread.setPriority(Thread.NORM_PRIORITY - 2);
+        // That thread can be stopped any time without really loosing anything
         this.sendThread.setDaemon(true);
         this.sendThread.start();
 
@@ -137,11 +138,11 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
             } catch (InterruptedException e) {
                 this.logger.warn("The replication storing thread has been interrupted");
 
-                // Mark the thread as interrupted
+                // Mark back the thread as interrupted
                 this.storeThread.interrupt();
 
-                // Stop the loop
-                break;
+                // Stop thread
+                return;
             }
         }
     }
@@ -200,21 +201,31 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
     {
         // Send the data to the instance
         try {
-            this.client.send(message, target);
-
-            // Remove this target (and data if it's the last target) from disk
-            this.store.removeTarget(message, target);
-        } catch (ReplicationException e) {
+            this.client.sendMessage(message, target);
+        } catch (Exception e) {
             this.logger.error("Failed to send data. Reinjecting it in the queue.", e);
 
             // Put back the data in the queue
             this.sendingQueue.add(new QueueEntry(message, target));
+
+            return;
+        }
+
+        // Remove this target (and data if it's the last target) from disk
+        // TODO: put the remove in an async queue
+        try {
+            this.store.removeTarget(message, target);
+        } catch (ReplicationException e) {
+            this.logger.error("Failed to remove sent message with id [{}] for target instance [{}]", message.getId(),
+                target.getURI(), e);
         }
     }
 
     @Override
     public void dispose() throws ComponentLifecycleException
     {
+        this.disposed = true;
+
         disposeSerialize();
     }
 
