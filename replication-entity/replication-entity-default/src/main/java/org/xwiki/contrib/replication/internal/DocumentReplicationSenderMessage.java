@@ -136,7 +136,7 @@ public class DocumentReplicationSenderMessage implements ReplicationSenderMessag
 
         XWikiDocument document;
         try {
-            document = xcontext.getWiki().getDocument(documentReference, xcontext);
+            document = xcontext.getWiki().getDocument(this.documentReference, xcontext);
         } catch (XWikiException e) {
             throw new IOException("Failed to get document to write", e);
         }

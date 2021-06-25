@@ -71,7 +71,7 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
 
         // Make sure the data type is supported
         String dataType = reference.getParameterValue(HttpServletRequestReplicationReceiverMessage.PARAMETER_TYPE);
-        if (this.componentManager.hasComponent(ReplicationReceiver.class, dataType)) {
+        if (!this.componentManager.hasComponent(ReplicationReceiver.class, dataType)) {
             throw new ResourceReferenceHandlerException("Unsupported replication data type [" + dataType + "]");
         }
 

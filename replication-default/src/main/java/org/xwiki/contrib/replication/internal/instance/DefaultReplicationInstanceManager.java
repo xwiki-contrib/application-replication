@@ -63,7 +63,17 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public ReplicationInstance getInstance(String uri)
     {
-        return this.cache.getInstances().get(uri);
+        ReplicationInstance instance = this.cache.getInstances().get(uri);
+
+        try {
+            if (instance == null && this.client.getCurrentInstance().getURI().equals(uri)) {
+                instance = this.client.getCurrentInstance();
+            }
+        } catch (ReplicationException e) {
+            this.logger.error("Failed to get the current instance", e);
+        }
+
+        return instance;
     }
 
     @Override

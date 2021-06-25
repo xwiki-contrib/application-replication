@@ -34,6 +34,9 @@ import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.component.phase.Disposable;
 import org.xwiki.component.phase.Initializable;
 import org.xwiki.component.phase.InitializationException;
+import org.xwiki.context.ExecutionContext;
+import org.xwiki.context.ExecutionContextException;
+import org.xwiki.context.ExecutionContextManager;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
@@ -58,6 +61,9 @@ public class ReplicationReceiverMessageQueue implements Initializable, Disposabl
 
     @Inject
     private ComponentManager componentManager;
+
+    @Inject
+    private ExecutionContextManager executionContextManager;
 
     @Inject
     private Logger logger;
@@ -91,6 +97,8 @@ public class ReplicationReceiverMessageQueue implements Initializable, Disposabl
                 data = this.queue.take();
 
                 handle(data);
+            } catch (ExecutionContextException e) {
+                this.logger.error("Failed to initialize an ExecutionContext", e);
             } catch (InterruptedException e) {
                 this.logger.warn("The replication sending thread has been interrupted");
 
@@ -105,14 +113,22 @@ public class ReplicationReceiverMessageQueue implements Initializable, Disposabl
         }
     }
 
-    private void handle(ReplicationReceiverMessage message) throws ComponentLookupException, ReplicationException
+    private void handle(ReplicationReceiverMessage message)
+        throws ComponentLookupException, ReplicationException, ExecutionContextException
     {
         // Find a the receiving corresponding to the type
         ReplicationReceiver replicationReceiver =
             this.componentManager.getInstance(ReplicationReceiver.class, message.getType());
 
-        // Execute the receiver
-        replicationReceiver.receive(message);
+        // Make sure an ExecutionContext is available
+        this.executionContextManager.pushContext(new ExecutionContext(), false);
+
+        try {
+            // Execute the receiver
+            replicationReceiver.receive(message);
+        } finally {
+            this.executionContextManager.popContext();
+        }
 
         // Delete it from disk
         this.store.delete(message);
@@ -124,14 +140,14 @@ public class ReplicationReceiverMessageQueue implements Initializable, Disposabl
     public void add(ReplicationReceiverMessage message) throws ReplicationException
     {
         // Serialize the data
-        ReplicationReceiverMessage storedData;
+        ReplicationReceiverMessage storedMessage;
         try {
-            storedData = this.store.store(message);
+            storedMessage = this.store.store(message);
         } catch (Exception e) {
             throw new ReplicationException("Failed to store received message with id [" + message.getId() + "]", e);
         }
 
         // Add the data to the queue
-        this.queue.add(storedData);
+        this.queue.add(storedMessage);
     }
 }

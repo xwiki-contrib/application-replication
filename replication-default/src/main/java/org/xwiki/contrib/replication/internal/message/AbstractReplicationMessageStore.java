@@ -35,6 +35,7 @@ import javax.inject.Inject;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -42,7 +43,10 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationMessage;
+import org.xwiki.contrib.replication.internal.ReplicationClient;
 import org.xwiki.environment.Environment;
+
+import com.xpn.xwiki.util.Util;
 
 /**
  * @param <M>
@@ -58,6 +62,8 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
     private static final String FILE_DATA = "data";
 
+    private static final String PROPERTY_ID = "id";
+
     private static final String PROPERTY_TYPE = "type";
 
     private static final String PROPERTY_SOURCE = "source";
@@ -71,11 +77,14 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
     protected Environment environment;
 
     @Inject
+    protected ReplicationClient client;
+
+    @Inject
     protected Logger logger;
 
     private File home;
 
-    protected abstract M createReplicationMessage(String id) throws ReplicationException;
+    protected abstract M createReplicationMessage(File messageFolder) throws ReplicationException;
 
     protected void setHome(File home)
     {
@@ -89,38 +98,17 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
     protected File getMessageFolder(String id)
     {
-        return new File(this.home, id);
+        return new File(this.home, String.valueOf(Util.getHash(id)));
     }
 
-    private File getMetadataFile(String id)
+    private File getMetadataFile(File messageFolder)
     {
-        File messageFolder = getMessageFolder(id);
-
-        return getMetadataFile(messageFolder);
+        return new File(messageFolder, FILE_METADATA);
     }
 
-    private File getMetadataFile(File dataFolder)
+    private File getCustomFile(File messageFolder)
     {
-        return new File(dataFolder, FILE_METADATA);
-    }
-
-    private File getCustomFile(String id)
-    {
-        File messageFolder = getMessageFolder(id);
-
-        return getCustomFile(messageFolder);
-    }
-
-    private File getCustomFile(File dataFolder)
-    {
-        return new File(dataFolder, FILE_CUSTOM);
-    }
-
-    private File getDataFile(String id)
-    {
-        File messageFolder = getMessageFolder(id);
-
-        return getDataFile(messageFolder);
+        return new File(messageFolder, FILE_CUSTOM);
     }
 
     private File getDataFile(File messageFolder)
@@ -143,15 +131,14 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
         protected File dataFile;
 
-        protected AbstractFileReplicationMessage(String id) throws ConfigurationException
+        protected AbstractFileReplicationMessage(File messageFolder) throws ConfigurationException
         {
-            this.id = id;
-
             // Standard metadata
 
-            File metadataFile = getMetadataFile(getId());
+            File metadataFile = getMetadataFile(messageFolder);
             PropertiesConfiguration metadata = new Configurations().properties(metadataFile);
 
+            this.id = (String) metadata.getProperty(PROPERTY_ID);
             this.type = (String) metadata.getProperty(PROPERTY_TYPE);
 
             String sourceURI = (String) metadata.getProperty(PROPERTY_SOURCE);
@@ -163,9 +150,9 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
             // Custom metadata
 
             this.custom = new HashMap<>();
-            File customFile = getCustomFile(getId());
+            File customFile = getCustomFile(messageFolder);
             PropertiesConfiguration customProperties = new Configurations().properties(customFile);
-            for (Iterator<String> it = customProperties.getKeys(id); it.hasNext();) {
+            for (Iterator<String> it = customProperties.getKeys(); it.hasNext();) {
                 String key = it.next();
 
                 Object propertyValue = customProperties.getProperty(key);
@@ -183,7 +170,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
             // Data
 
-            this.dataFile = getDataFile(getId());
+            this.dataFile = getDataFile(messageFolder);
         }
 
         @Override
@@ -230,14 +217,15 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
     {
         Queue<M> list = new PriorityQueue<>();
 
-        for (File file : this.home.listFiles()) {
-            if (file.isDirectory()) {
-                String id = file.getName();
-
-                try {
-                    list.offer(createReplicationMessage(id));
-                } catch (ReplicationException e) {
-                    this.logger.error("Failed to load replication message from folder [{}]", file.getAbsolutePath(), e);
+        if (this.home.exists()) {
+            for (File file : this.home.listFiles()) {
+                if (file.isDirectory()) {
+                    try {
+                        list.offer(createReplicationMessage(file));
+                    } catch (ReplicationException e) {
+                        this.logger.error("Failed to load replication message from folder [{}]", file.getAbsolutePath(),
+                            e);
+                    }
                 }
             }
         }
@@ -249,17 +237,20 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
      * @param message the message to store
      * @throws ReplicationException when failing to store the message
      */
-    protected void storeMessage(M message) throws ReplicationException
+    protected File storeMessage(M message) throws ReplicationException
     {
         File messageFolder = getMessageFolder(message.getId());
 
         if (messageFolder.exists()) {
-            throw new ReplicationException("The data with id [" + message.getId() + "] already exist in the queue");
+            throw new ReplicationException("The message with id [" + message.getId() + "] already exist in the store");
         }
 
         boolean clean = true;
 
         try {
+            // Make sure the folder exist on filesystem
+            messageFolder.mkdirs();
+
             // Data
             try {
                 storeData(message, getDataFile(messageFolder));
@@ -270,12 +261,22 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
             // Standard metadata
             try {
-                FileBasedConfigurationBuilder<PropertiesConfiguration> metadata =
-                    new Configurations().propertiesBuilder(getMetadataFile(messageFolder));
-                metadata.getConfiguration().setProperty(PROPERTY_TYPE, message.getType());
-                metadata.getConfiguration().setProperty(PROPERTY_SOURCE, message.getSource().getURI());
-                metadata.getConfiguration().setProperty(PROPERTY_DATE, String.valueOf(message.getDate().getTime()));
-                metadata.save();
+                FileBasedConfigurationBuilder<PropertiesConfiguration> builder =
+                    new FileBasedConfigurationBuilder<>(PropertiesConfiguration.class, null, true)
+                        .configure(new Parameters().properties().setFile(getMetadataFile(messageFolder)));
+
+                PropertiesConfiguration configuration = builder.getConfiguration();
+                configuration.setProperty(PROPERTY_ID, message.getId());
+                configuration.setProperty(PROPERTY_TYPE, message.getType());
+                configuration.setProperty(PROPERTY_DATE, String.valueOf(message.getDate().getTime()));
+
+                ReplicationInstance source = message.getSource();
+                if (source == null) {
+                    source = this.client.getCurrentInstance();
+                }
+                configuration.setProperty(PROPERTY_SOURCE, source.getURI());
+
+                builder.save();
             } catch (ConfigurationException e) {
                 throw new ReplicationException(
                     "Failed to write on disk the standard metadata of the message with id [" + message.getId() + "]",
@@ -284,10 +285,14 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
             // Custom metadata
             try {
-                FileBasedConfigurationBuilder<PropertiesConfiguration> custom =
-                    new Configurations().propertiesBuilder(getCustomFile(messageFolder));
-                message.getCustomMetadata().forEach(custom.getConfiguration()::setProperty);
-                custom.save();
+                FileBasedConfigurationBuilder<PropertiesConfiguration> builder =
+                    new FileBasedConfigurationBuilder<>(PropertiesConfiguration.class, null, true)
+                        .configure(new Parameters().properties().setFile(getCustomFile(messageFolder)));
+
+                PropertiesConfiguration configuration = builder.getConfiguration();
+                message.getCustomMetadata().forEach(configuration::setProperty);
+
+                builder.save();
             } catch (ConfigurationException e) {
                 throw new ReplicationException(
                     "Failed to write on disk the custom metadata of the message with id [" + message.getId() + "]", e);
@@ -300,6 +305,8 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
                 delete(message);
             }
         }
+
+        return messageFolder;
     }
 
     protected abstract void storeData(M message, File file) throws IOException;

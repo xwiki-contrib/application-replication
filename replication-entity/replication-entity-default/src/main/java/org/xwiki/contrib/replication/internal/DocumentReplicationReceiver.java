@@ -61,29 +61,34 @@ public class DocumentReplicationReceiver implements ReplicationReceiver
     public static final String TYPE = "entity";
 
     /**
+     * The prefix in front of all entity metadata properties.
+     */
+    public static final String METADATAPREFIX = TYPE.toUpperCase();
+
+    /**
      * The name of the metadata containing the type of entity message.
      */
-    public static final String METADATA_TYPE = TYPE + "_TYPE";
+    public static final String METADATA_TYPE = METADATAPREFIX + "_TYPE";
 
     /**
      * The name of the metadata containing the reference of the entity in the message.
      */
-    public static final String METADATA_REFERENCE = TYPE + "_REFERENCE";
+    public static final String METADATA_REFERENCE = METADATAPREFIX + "_REFERENCE";
 
     /**
      * The name of the metadata containing the locale of the entity in the message.
      */
-    public static final String METADATA_LOCALE = TYPE + "_LOCALE";
+    public static final String METADATA_LOCALE = METADATAPREFIX + "_LOCALE";
 
     /**
      * The name of the metadata containing the version of the entity in the message.
      */
-    public static final String METADATA_VERSION = TYPE + "_VERSION";
+    public static final String METADATA_VERSION = METADATAPREFIX + "_VERSION";
 
     /**
      * The name of the metadata containing the previous version of the entity in the message.
      */
-    public static final String METADATA_PREVIOUSVERSION = TYPE + "_PREVIOUSVERSION";
+    public static final String METADATA_PREVIOUSVERSION = METADATAPREFIX + "_PREVIOUSVERSION";
 
     /**
      * The type of entity message containing document updates.

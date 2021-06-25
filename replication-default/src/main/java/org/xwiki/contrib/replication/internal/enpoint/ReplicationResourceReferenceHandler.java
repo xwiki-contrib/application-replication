@@ -88,10 +88,10 @@ public class ReplicationResourceReferenceHandler extends AbstractResourceReferen
         Request request = this.container.getRequest();
         if (request instanceof ServletRequest) {
             ServletRequest servletRequest = (ServletRequest) request;
-            ServletResponse servletRespone = (ServletResponse) this.container.getResponse();
+            ServletResponse servletResponse = (ServletResponse) this.container.getResponse();
 
             try {
-                enpoint.handle(servletRequest.getHttpServletRequest(), servletRespone.getHttpServletResponse(),
+                enpoint.handle(servletRequest.getHttpServletRequest(), servletResponse.getHttpServletResponse(),
                     reference);
             } catch (Exception e) {
                 throw new ResourceReferenceHandlerException("Could not handle the replication data", e);

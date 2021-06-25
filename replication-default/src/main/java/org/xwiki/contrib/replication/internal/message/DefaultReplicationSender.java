@@ -28,7 +28,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
@@ -37,6 +36,9 @@ import org.xwiki.component.manager.ComponentLifecycleException;
 import org.xwiki.component.phase.Disposable;
 import org.xwiki.component.phase.Initializable;
 import org.xwiki.component.phase.InitializationException;
+import org.xwiki.context.ExecutionContext;
+import org.xwiki.context.ExecutionContextException;
+import org.xwiki.context.ExecutionContextManager;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
@@ -66,6 +68,9 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
     private ReplicationSenderMessageStore store;
 
     @Inject
+    private ExecutionContextManager executionContextManager;
+
+    @Inject
     private Logger logger;
 
     private boolean disposed;
@@ -82,7 +87,7 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
     {
         private final Collection<ReplicationInstance> targets;
 
-        private final ReplicationSenderMessage data;
+        private final ReplicationSenderMessage message;
 
         private QueueEntry(ReplicationSenderMessage data, ReplicationInstance target)
         {
@@ -92,7 +97,7 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
         private QueueEntry(ReplicationSenderMessage data, Collection<ReplicationInstance> targets)
         {
             this.targets = targets;
-            this.data = data;
+            this.message = data;
         }
     }
 
@@ -127,14 +132,16 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
         while (true) {
             QueueEntry entry;
             try {
-                entry = this.sendingQueue.take();
+                entry = this.storeQueue.take();
 
                 // Stop the loop when asked to
                 if (entry == STOP) {
                     break;
                 }
 
-                syncStore(entry.data, entry.targets);
+                syncStore(entry.message, entry.targets);
+            } catch (ExecutionContextException e) {
+                this.logger.error("Failed to initialize an ExecutionContext", e);
             } catch (InterruptedException e) {
                 this.logger.warn("The replication storing thread has been interrupted");
 
@@ -148,24 +155,33 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
     }
 
     private void syncStore(ReplicationSenderMessage message, Collection<ReplicationInstance> targets)
+        throws ExecutionContextException
     {
         // Get the instances to send the data to
         Collection<ReplicationInstance> finalTargets = targets;
-        if (CollectionUtils.isEmpty(targets)) {
+        if (targets == null) {
             finalTargets = this.instances.getInstances();
         }
 
-        try {
-            FileReplicationSenderMessage fileMessage = this.store.store(message, finalTargets);
+        // Stop there if there is no instance to send the message to
+        if (!finalTargets.isEmpty()) {
+            // Make sure an ExecutionContext is available
+            this.executionContextManager.pushContext(new ExecutionContext(), false);
 
-            // Put the stored message in the sending queue
-            this.sendingQueue.add(new QueueEntry(message, fileMessage.getTargets()));
-        } catch (ReplicationException e) {
-            this.logger.error("Failed to store the message with id [" + message.getId() + "] on disk."
-                + " Might be lost if it cannot be sent to the target instance before next restart.", e);
+            try {
+                FileReplicationSenderMessage fileMessage = this.store.store(message, finalTargets);
 
-            // Put the initial message in the sending queue and hope it's reusable
-            this.sendingQueue.add(new QueueEntry(message, finalTargets));
+                // Put the stored message in the sending queue
+                this.sendingQueue.add(new QueueEntry(message, fileMessage.getTargets()));
+            } catch (ReplicationException e) {
+                this.logger.error("Failed to store the message with id [" + message.getId() + "] on disk."
+                    + " Might be lost if it cannot be sent to the target instance before next restart.", e);
+
+                // Put the initial message in the sending queue and hope it's reusable
+                this.sendingQueue.add(new QueueEntry(message, finalTargets));
+            } finally {
+                this.executionContextManager.popContext();
+            }
         }
     }
 
@@ -176,7 +192,7 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
             try {
                 entry = this.sendingQueue.take();
 
-                syncSend(entry.data, entry.targets);
+                syncSend(entry.message, entry.targets);
             } catch (InterruptedException e) {
                 this.logger.warn("The replication sending thread has been interrupted");
 

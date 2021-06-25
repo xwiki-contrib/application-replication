@@ -51,7 +51,7 @@ public class DocumentReplicationListener extends AbstractEventListener
     public static final String NAME = "DocumentReplicationListener";
 
     @Inject
-    private ReplicationSender sender;
+    private Provider<ReplicationSender> senderProvider;
 
     @Inject
     private Provider<DocumentReplicationSenderMessage> messageProvider;
@@ -72,6 +72,12 @@ public class DocumentReplicationListener extends AbstractEventListener
     {
         XWikiDocument document = (XWikiDocument) source;
 
+        // TODO: make configurable the entities to replicate
+        // Only replicate documents in Replication space for now
+        if (!document.getDocumentReference().getSpaceReferences().get(0).getName().equals("Replication")) {
+            return;
+        }
+
         // Create a new message
         DocumentReplicationSenderMessage message = this.messageProvider.get();
         message.initialize(document.getDocumentReferenceWithLocale(), document.getVersion(),
@@ -80,7 +86,7 @@ public class DocumentReplicationListener extends AbstractEventListener
 
         // Send the message
         try {
-            this.sender.send(message);
+            this.senderProvider.get().send(message);
         } catch (ReplicationException e) {
             this.logger.error("Failed to send a replication message for document [{}] in version [{}]",
                 document.getDocumentReferenceWithLocale(), document.getVersion());

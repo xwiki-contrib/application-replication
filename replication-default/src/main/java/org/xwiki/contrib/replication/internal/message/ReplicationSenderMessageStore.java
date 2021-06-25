@@ -64,9 +64,9 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
     {
         private final Collection<ReplicationInstance> targets;
 
-        private FileReplicationSenderMessage(String id) throws ConfigurationException, IOException
+        private FileReplicationSenderMessage(File messageFolder) throws ConfigurationException, IOException
         {
-            super(id);
+            super(messageFolder);
 
             this.targets = Collections.unmodifiableCollection(loadTargets(getId()));
         }
@@ -93,14 +93,13 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
     }
 
     @Override
-    protected FileReplicationSenderMessage createReplicationMessage(String id) throws ReplicationException
+    protected FileReplicationSenderMessage createReplicationMessage(File messageFolder) throws ReplicationException
     {
         try {
-            return new FileReplicationSenderMessage(id);
+            return new FileReplicationSenderMessage(messageFolder);
         } catch (Exception e) {
             throw new ReplicationException(
-                "Failed to create a file based ReplicationReceiverMessage instance for the message with id [" + id
-                    + "]",
+                "Failed to create a file based ReplicationReceiverMessage instance from folder [" + messageFolder + "]",
                 e);
         }
     }
@@ -176,18 +175,12 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
         }
     }
 
-    private void storeTargets(String id, Collection<ReplicationInstance> targets) throws IOException
-    {
-        File targetsFile = getTargetsFile(id);
-
-        storeTargets(targetsFile, targets);
-    }
-
     private void storeTargets(File targetsFile, Collection<ReplicationInstance> targets) throws IOException
     {
         try (FileOutputStream stream = new FileOutputStream(targetsFile)) {
             for (ReplicationInstance target : targets) {
                 stream.write(target.getURI().getBytes(StandardCharsets.UTF_8));
+                stream.write('\n');
             }
         }
     }
@@ -209,10 +202,10 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
     public FileReplicationSenderMessage store(ReplicationSenderMessage message, Collection<ReplicationInstance> targets)
         throws ReplicationException
     {
-        storeMessage(message);
+        File messageFolder = storeMessage(message);
 
         try {
-            storeTargets(message.getId(), targets);
+            storeTargets(getTargetsFile(messageFolder), targets);
         } catch (IOException e) {
             // Clean
             delete(message);
@@ -220,6 +213,6 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
             throw new ReplicationException("Failed to store targets for message with id [" + message.getId() + "]", e);
         }
 
-        return createReplicationMessage(message.getId());
+        return createReplicationMessage(messageFolder);
     }
 }

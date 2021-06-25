@@ -139,10 +139,11 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
         for (Enumeration<String> en = this.request.getHeaderNames(); en.hasMoreElements();) {
             String headerName = en.nextElement();
 
-            if (headerName.startsWith(HEADER_METADATA_PREFIX)) {
+            String upperCaseHeaderName = headerName.toUpperCase();
+            if (upperCaseHeaderName.startsWith(HEADER_METADATA_PREFIX)) {
                 Collection<String> values = Collections.list(this.request.getHeaders(headerName));
 
-                metadatas.put(headerName.substring(HEADER_METADATA_PREFIX.length()), values);
+                metadatas.put(upperCaseHeaderName.substring(HEADER_METADATA_PREFIX.length()), values);
             }
         }
 

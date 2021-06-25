@@ -29,6 +29,8 @@ import org.xwiki.bridge.event.ApplicationReadyEvent;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
+import org.xwiki.contrib.replication.ReplicationSender;
+import org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageQueue;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.event.Event;
 
@@ -55,6 +57,12 @@ public class ReplicationInstanceListener extends AbstractEventListener
     private Provider<ReplicationInstanceManager> instances;
 
     @Inject
+    private Provider<ReplicationSender> senderProvider;
+
+    @Inject
+    private Provider<ReplicationReceiverMessageQueue> receiverProvider;
+
+    @Inject
     private Logger logger;
 
     /**
@@ -77,10 +85,17 @@ public class ReplicationInstanceListener extends AbstractEventListener
 
     private void reload()
     {
+        // Load instances
         try {
             this.instances.get().reload();
         } catch (ReplicationException e) {
             this.logger.error("Failed to reload stored instances", e);
         }
+
+        // Initialize the sender
+        this.senderProvider.get();
+
+        // Initialize the receiver
+        this.receiverProvider.get();
     }
 }

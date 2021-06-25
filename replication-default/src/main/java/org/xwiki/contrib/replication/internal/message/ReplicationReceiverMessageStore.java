@@ -45,9 +45,9 @@ public class ReplicationReceiverMessageStore extends AbstractReplicationMessageS
     private final class FileReplicationReceiverMessage extends AbstractFileReplicationMessage
         implements ReplicationReceiverMessage
     {
-        private FileReplicationReceiverMessage(String id) throws ConfigurationException
+        private FileReplicationReceiverMessage(File messageFolder) throws ConfigurationException
         {
-            super(id);
+            super(messageFolder);
         }
 
         @Override
@@ -70,9 +70,9 @@ public class ReplicationReceiverMessageStore extends AbstractReplicationMessageS
      */
     public ReplicationReceiverMessage store(ReplicationReceiverMessage message) throws ReplicationException
     {
-        store(message);
+        File messageFolder = storeMessage(message);
 
-        return createReplicationMessage(message.getId());
+        return createReplicationMessage(messageFolder);
     }
 
     @Override
@@ -84,14 +84,13 @@ public class ReplicationReceiverMessageStore extends AbstractReplicationMessageS
     }
 
     @Override
-    protected FileReplicationReceiverMessage createReplicationMessage(String id) throws ReplicationException
+    protected FileReplicationReceiverMessage createReplicationMessage(File messageFolder) throws ReplicationException
     {
         try {
-            return new FileReplicationReceiverMessage(id);
+            return new FileReplicationReceiverMessage(messageFolder);
         } catch (ConfigurationException e) {
             throw new ReplicationException(
-                "Failed to create a file based ReplicationReceiverMessage instance for the message with id [" + id
-                    + "]",
+                "Failed to create a file based ReplicationReceiverMessage instance from folder [" + messageFolder + "]",
                 e);
         }
     }
