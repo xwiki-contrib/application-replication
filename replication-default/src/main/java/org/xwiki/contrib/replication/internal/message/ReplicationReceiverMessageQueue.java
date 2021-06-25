@@ -24,6 +24,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
@@ -43,6 +44,7 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
  * @version $Id$
  */
 @Component(roles = ReplicationReceiverMessageQueue.class)
+@Singleton
 public class ReplicationReceiverMessageQueue implements Initializable, Disposable, Runnable
 {
     private boolean disposed;

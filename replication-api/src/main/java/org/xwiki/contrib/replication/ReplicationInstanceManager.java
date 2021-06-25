@@ -21,9 +21,12 @@ package org.xwiki.contrib.replication;
 
 import java.util.Collection;
 
+import org.xwiki.component.annotation.Role;
+
 /**
  * @version $Id$
  */
+@Role
 public interface ReplicationInstanceManager
 {
     /**

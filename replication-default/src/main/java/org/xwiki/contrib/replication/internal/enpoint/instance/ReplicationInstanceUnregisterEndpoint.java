@@ -20,9 +20,11 @@
 package org.xwiki.contrib.replication.internal.enpoint.instance;
 
 import javax.inject.Named;
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
@@ -30,7 +32,9 @@ import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferen
 /**
  * @version $Id$
  */
+@Component
 @Named(ReplicationInstanceUnregisterEndpoint.PATH)
+@Singleton
 public class ReplicationInstanceUnregisterEndpoint extends AbstractReplicationEndpoint
 {
     /**

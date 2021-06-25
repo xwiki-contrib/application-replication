@@ -19,12 +19,9 @@
  */
 package org.xwiki.contrib.replication;
 
-import org.xwiki.component.annotation.Role;
-
 /**
  * @version $Id$
  */
-@Role
 public interface ReplicationInstance
 {
     /**

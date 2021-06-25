@@ -22,9 +22,11 @@ package org.xwiki.contrib.replication.internal.enpoint.message;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationReceiver;
@@ -36,7 +38,9 @@ import org.xwiki.resource.ResourceReferenceHandlerException;
 /**
  * @version $Id$
  */
+@Component
 @Named(ReplicationMessageEndpoint.PATH)
+@Singleton
 public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
 {
     /**
