@@ -44,13 +44,14 @@
     <module>replication-api</module>
     <module>replication-default</module>
     <module>replication-entity</module>
+    <module>replication-ui</module>
   </modules>
 
   <profiles>
     <profile>
       <id>integration-tests</id>
       <modules>
-        <!--<module>replication-test</module>-->
+        <module>replication-test</module>
       </modules>
     </profile>
   </profiles>
