@@ -58,7 +58,5 @@ public class ReplicationInstanceUnregisterEndpoint extends AbstractReplicationEn
         // TODO: validate key
 
         this.instances.removeInstance(uri);
-
-        return;
     }
 }

@@ -63,10 +63,12 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public ReplicationInstance getInstance(String uri)
     {
-        ReplicationInstance instance = this.cache.getInstances().get(uri);
+        String cleanURI = DefaultReplicationInstance.cleanURI(uri);
+
+        ReplicationInstance instance = this.cache.getInstances().get(cleanURI);
 
         try {
-            if (instance == null && this.client.getCurrentInstance().getURI().equals(uri)) {
+            if (instance == null && this.client.getCurrentInstance().getURI().equals(cleanURI)) {
                 instance = this.client.getCurrentInstance();
             }
         } catch (ReplicationException e) {
@@ -86,46 +88,67 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         // Add the instance to the store
         this.store.addInstance(instance);
 
+        // TODO: do that as part of ReplicationInstanceListener
+        this.cache.getInstances().put(instance.getURI(), instance);
+
         return true;
     }
 
     @Override
-    public boolean removeInstance(String uri) throws ReplicationException
+    public ReplicationInstance removeInstance(String uri) throws ReplicationException
     {
-        ReplicationInstance instance = this.cache.getInstances().get(uri);
+        String cleanURI = DefaultReplicationInstance.cleanURI(uri);
+
+        ReplicationInstance instance = this.cache.getInstances().get(cleanURI);
 
         if (instance == null) {
-            return false;
+            return null;
         }
 
+        removeInstanceInternal(instance);
+
+        return instance;
+    }
+
+    private ReplicationInstance removeInstanceInternal(ReplicationInstance instance) throws ReplicationException
+    {
         // Remove the instance from the store
-        this.store.deleteInstance(uri);
+        this.store.deleteInstance(instance.getURI());
 
-        // Notify the target instance that it's not linked anymore
-        try {
-            this.client.unregister(instance);
-        } catch (Exception e) {
-            // TODO: put it in a retry queue
-            this.logger.warn("Failed to notify the instance it's been removed [{}]: {}", uri,
-                ExceptionUtils.getRootCauseMessage(e));
-        }
+        // TODO: do that as part of ReplicationInstanceListener
+        this.cache.getInstances().remove(instance.getURI());
 
-        return true;
+        return instance;
+    }
+
+    @Override
+    public Collection<ReplicationInstance> getRegisteredInstances()
+    {
+        return this.cache.getInstances().values().stream().filter(i -> i.getStatus() == Status.REGISTERED)
+            .collect(Collectors.toList());
     }
 
     @Override
     public void requestInstance(String uri) throws ReplicationException
     {
+        String cleanURI = DefaultReplicationInstance.cleanURI(uri);
+
         // Send a request to the target instance
-        ReplicationInstance instance;
+        Status status;
         try {
-            instance = this.client.register(uri);
+            status = this.client.register(cleanURI);
         } catch (Exception e) {
-            throw new ReplicationException("Failed to register the instance on [" + uri + "]", e);
+            throw new ReplicationException("Failed to register the instance on [" + cleanURI + "]", e);
         }
+
+        // Create the new instance
+        ReplicationInstance instance = new DefaultReplicationInstance(null, cleanURI, status);
 
         // Add instance to the store
         this.store.addInstance(instance);
+
+        // TODO: do that as part of ReplicationInstanceListener
+        this.cache.getInstances().put(instance.getURI(), instance);
     }
 
     @Override
@@ -138,21 +161,23 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public boolean cancelRequestedInstance(String uri) throws ReplicationException
     {
-        ReplicationInstance instance = this.cache.getInstances().get(uri);
+        String cleanURI = DefaultReplicationInstance.cleanURI(uri);
+
+        ReplicationInstance instance = this.cache.getInstances().get(cleanURI);
 
         if (instance == null || instance.getStatus() != Status.REQUESTED) {
             return false;
         }
 
-        // Remove instance from the store
-        this.store.deleteInstance(instance.getURI());
+        // Remove instance from the store/cache
+        removeInstanceInternal(instance);
 
         // Notify the instance about the cancelled request
         try {
             this.client.unregister(instance);
         } catch (Exception e) {
             // TODO: put it in a retry queue
-            this.logger.warn("Failed to notify the instance it's not requested anymore [{}]: {}", uri,
+            this.logger.warn("Failed to notify the instance it's not requested anymore [{}]: {}", cleanURI,
                 ExceptionUtils.getRootCauseMessage(e));
         }
 
@@ -171,6 +196,9 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         // Update
         this.store.updateInstance(newInstance);
 
+        // TODO: do that as part of ReplicationInstanceListener
+        this.cache.getInstances().put(newInstance.getURI(), newInstance);
+
         return true;
     }
 
@@ -184,33 +212,36 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public boolean acceptRequestingInstance(String uri) throws ReplicationException
     {
-        ReplicationInstance instance = this.cache.getInstances().get(uri);
+        String cleanURI = DefaultReplicationInstance.cleanURI(uri);
+
+        ReplicationInstance instance = this.cache.getInstances().get(cleanURI);
 
         if (instance == null || instance.getStatus() != Status.REQUESTING) {
             return false;
         }
 
         // Notify the instance of the acceptance
+        Status status;
         try {
-            instance = this.client.register(instance.getURI());
+            status = this.client.register(cleanURI);
         } catch (Exception e) {
-            throw new ReplicationException("Failed to send a request to instance [" + uri + "]", e);
+            throw new ReplicationException("Failed to send a request to instance [" + cleanURI + "]", e);
         }
 
-        if (instance != null) {
-            // Update the instance metadata and status
-            this.store.updateInstance(instance);
-
-            return true;
+        if (status != Status.REQUESTING) {
+            // Update the instance status
+            this.store.updateStatus(instance, status);
         }
 
-        return false;
+        return true;
     }
 
     @Override
     public boolean declineRequestingInstance(String uri) throws ReplicationException
     {
-        ReplicationInstance instance = this.cache.getInstances().get(uri);
+        String cleanURI = DefaultReplicationInstance.cleanURI(uri);
+
+        ReplicationInstance instance = this.cache.getInstances().get(cleanURI);
 
         if (instance == null || instance.getStatus() != Status.REQUESTING) {
             return false;
@@ -220,26 +251,28 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         try {
             this.client.unregister(instance);
         } catch (Exception e) {
-            throw new ReplicationException("Failed to decline the request of instance [" + uri + "]", e);
+            throw new ReplicationException("Failed to decline the request of instance [" + cleanURI + "]", e);
         }
 
         // Remove the instance locally
-        return removeRequestingInstance(uri);
+        removeInstanceInternal(instance);
+
+        return true;
     }
 
     @Override
-    public boolean removeRequestingInstance(String uri) throws ReplicationException
+    public ReplicationInstance removeRequestingInstance(String uri) throws ReplicationException
     {
         ReplicationInstance instance = this.cache.getInstances().get(uri);
 
         if (instance == null || instance.getStatus() != Status.REQUESTING) {
-            return false;
+            return null;
         }
 
-        // Remove it from the requesting list
-        this.store.deleteInstance(uri);
+        // Remove instance from the store/cache
+        removeInstanceInternal(instance);
 
-        return true;
+        return instance;
     }
 
     @Override

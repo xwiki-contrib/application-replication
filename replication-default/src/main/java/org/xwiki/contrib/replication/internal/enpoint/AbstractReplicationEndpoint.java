@@ -22,6 +22,7 @@ package org.xwiki.contrib.replication.internal.enpoint;
 import javax.inject.Inject;
 
 import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.resource.ResourceReferenceHandlerException;
 
@@ -48,7 +49,7 @@ public abstract class AbstractReplicationEndpoint implements ReplicationEndpoint
     {
         ReplicationInstance instance = this.instances.getInstance(instanceId);
 
-        if (instance == null) {
+        if (instance == null || instance.getStatus() != Status.REGISTERED) {
             throw new ResourceReferenceHandlerException(
                 "The instance with id [" + instanceId + "] is not authorized to send replication data");
         }

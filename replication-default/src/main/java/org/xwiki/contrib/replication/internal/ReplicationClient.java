@@ -80,9 +80,15 @@ public class ReplicationClient implements Initializable
         this.client = HttpClients.createSystem();
     }
 
+    private URIBuilder createURIBuilder(String uri) throws URISyntaxException
+    {
+        // Cleanup trailing / to avoid empty path element
+        return new URIBuilder(DefaultReplicationInstance.cleanURI(uri));
+    }
+
     private URIBuilder createURIBuilder(String uri, String endpoint) throws URISyntaxException
     {
-        URIBuilder builder = new URIBuilder(uri);
+        URIBuilder builder = createURIBuilder(uri);
         builder.appendPath(ReplicationResourceReferenceHandler.HINT);
         builder.appendPath(endpoint);
 
@@ -102,7 +108,7 @@ public class ReplicationClient implements Initializable
                 URL url = xcontext.getWiki().getServerURL(xcontext.getMainXWiki(), xcontext);
                 String webapp = xcontext.getWiki().getWebAppPath(xcontext);
 
-                URIBuilder builder = new URIBuilder(url.toURI());
+                URIBuilder builder = createURIBuilder(url.toURI().toString());
                 if (webapp != null) {
                     builder.appendPath(webapp);
                 }
@@ -113,7 +119,7 @@ public class ReplicationClient implements Initializable
 
                 this.currentInstance = new DefaultReplicationInstance(currentName, currentURI, null);
             } catch (Exception e) {
-                throw new ReplicationException("Failedd to get the current instance URI", e);
+                throw new ReplicationException("Failed to get the current instance URI", e);
             }
         }
 
@@ -139,8 +145,12 @@ public class ReplicationClient implements Initializable
         builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_TYPE, message.getType());
         builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_DATE,
             HttpServletRequestReplicationReceiverMessage.fromDate(message.getDate()));
-        builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_SOURCE,
-            message.getSource().getURI());
+
+        ReplicationInstance source = message.getSource();
+        if (source == null) {
+            source = getCurrentInstance();
+        }
+        builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_SOURCE, source.getURI());
 
         HttpPut httpPut = new HttpPut(builder.build());
 
@@ -198,7 +208,7 @@ public class ReplicationClient implements Initializable
                 }
 
                 throw new ReplicationException(
-                    String.format("Failedd to unregister instance [%s]: %s", instance.getURI(), error));
+                    String.format("Failed to unregister instance [%s]: %s", instance.getURI(), error));
             }
         }
     }
@@ -210,7 +220,7 @@ public class ReplicationClient implements Initializable
      * @throws IOException when failing to register the instance
      * @throws URISyntaxException when failing to register the instance
      */
-    public ReplicationInstance register(String uri) throws ReplicationException, IOException, URISyntaxException
+    public Status register(String uri) throws ReplicationException, IOException, URISyntaxException
     {
         URIBuilder builder = createURIBuilder(uri, ReplicationInstanceRegisterEndpoint.PATH);
         builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_URI, getCurrentInstance().getURI());
@@ -222,14 +232,14 @@ public class ReplicationClient implements Initializable
         try (CloseableHttpResponse response = this.client.execute(httpPut)) {
             if (response.getCode() == 200) {
                 // TODO: registered both ways
-                return new DefaultReplicationInstance(null, uri, Status.REGISTERED);
+                return Status.REGISTERED;
             } else if (response.getCode() == 201) {
                 // TODO: new registration
             } else if (response.getCode() == 202) {
-                // TODO: already registered
-                return new DefaultReplicationInstance(null, uri, Status.REGISTERED);
-            } else if (response.getCode() == 204) {
                 // TODO: already requested
+            } else if (response.getCode() == 204) {
+                // TODO: already registered
+                return Status.REGISTERED;
             } else {
                 String error;
                 try {
@@ -238,10 +248,10 @@ public class ReplicationClient implements Initializable
                     error = UNKNWON_ERROR;
                 }
 
-                throw new ReplicationException(String.format("Failedd to register instance [%s]: %s", uri, error));
+                throw new ReplicationException(String.format("Failed to register instance [%s]: %s", uri, error));
             }
         }
 
-        return new DefaultReplicationInstance(null, uri, Status.REQUESTED);
+        return Status.REQUESTED;
     }
 }

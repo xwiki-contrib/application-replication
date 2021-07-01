@@ -30,7 +30,7 @@ import org.xwiki.component.annotation.Role;
 public interface ReplicationInstanceManager
 {
     /**
-     * @return all the registered instances
+     * @return all the instances
      */
     Collection<ReplicationInstance> getInstances();
 
@@ -49,10 +49,15 @@ public interface ReplicationInstanceManager
 
     /**
      * @param uri the uri of the instance to remove
-     * @return <tt>true</tt> if an instance was removed as a result of this call
+     * @return the instance that was removed or null if none could be found matching the URI
      * @throws ReplicationException
      */
-    boolean removeInstance(String uri) throws ReplicationException;
+    ReplicationInstance removeInstance(String uri) throws ReplicationException;
+
+    /**
+     * @return all instances which been validated on both ends
+     */
+    Collection<ReplicationInstance> getRegisteredInstances();
 
     /**
      * @param instanceURL the base URL of the instance
@@ -103,7 +108,7 @@ public interface ReplicationInstanceManager
      * @return <tt>true</tt> if an instance was removed as a result of this call
      * @throws ReplicationException
      */
-    boolean removeRequestingInstance(String uri) throws ReplicationException;
+    ReplicationInstance removeRequestingInstance(String uri) throws ReplicationException;
 
     /**
      * Reload all the instances from the store.

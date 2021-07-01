@@ -160,7 +160,7 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
         // Get the instances to send the data to
         Collection<ReplicationInstance> finalTargets = targets;
         if (targets == null) {
-            finalTargets = this.instances.getInstances();
+            finalTargets = this.instances.getRegisteredInstances();
         }
 
         // Stop there if there is no instance to send the message to
@@ -172,7 +172,7 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
                 FileReplicationSenderMessage fileMessage = this.store.store(message, finalTargets);
 
                 // Put the stored message in the sending queue
-                this.sendingQueue.add(new QueueEntry(message, fileMessage.getTargets()));
+                this.sendingQueue.add(new QueueEntry(fileMessage, fileMessage.getTargets()));
             } catch (ReplicationException e) {
                 this.logger.error("Failed to store the message with id [" + message.getId() + "] on disk."
                     + " Might be lost if it cannot be sent to the target instance before next restart.", e);

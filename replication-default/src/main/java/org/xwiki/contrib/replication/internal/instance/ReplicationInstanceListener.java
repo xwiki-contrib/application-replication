@@ -34,6 +34,8 @@ import org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessage
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.event.Event;
 
+import com.xpn.xwiki.internal.event.XObjectEvent;
+
 /**
  * @version $Id$
  */
@@ -78,8 +80,8 @@ public class ReplicationInstanceListener extends AbstractEventListener
     {
         if (event instanceof ApplicationReadyEvent) {
             reload();
-        } else {
-            // TODO
+        } else if (event instanceof XObjectEvent) {
+            // TODO: react to direct modifications of the instances xobjects
         }
     }
 

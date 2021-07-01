@@ -37,9 +37,11 @@ import org.xwiki.component.phase.InitializationException;
 import org.xwiki.context.ExecutionContext;
 import org.xwiki.context.ExecutionContextException;
 import org.xwiki.context.ExecutionContextManager;
+import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.internal.DefaultReplicationContext;
 
 /**
  * Maintain a queue of replication data to give to the various receivers.
@@ -64,6 +66,9 @@ public class ReplicationReceiverMessageQueue implements Initializable, Disposabl
 
     @Inject
     private ExecutionContextManager executionContextManager;
+
+    @Inject
+    private ReplicationContext replicationContext;
 
     @Inject
     private Logger logger;
@@ -122,6 +127,9 @@ public class ReplicationReceiverMessageQueue implements Initializable, Disposabl
 
         // Make sure an ExecutionContext is available
         this.executionContextManager.pushContext(new ExecutionContext(), false);
+
+        // Indicate in the context that this is a replication change
+        ((DefaultReplicationContext) this.replicationContext).setReplicationMessage(true);
 
         try {
             // Execute the receiver

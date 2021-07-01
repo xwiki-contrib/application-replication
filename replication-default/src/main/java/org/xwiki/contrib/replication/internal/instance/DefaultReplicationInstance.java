@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.internal.instance;
 
+import org.apache.commons.lang3.StringUtils;
 import org.xwiki.contrib.replication.ReplicationInstance;
 
 /**
@@ -40,7 +41,20 @@ public class DefaultReplicationInstance implements ReplicationInstance
     public DefaultReplicationInstance(String name, String uri, Status status)
     {
         this.name = name;
-        this.uri = uri;
+        this.uri = cleanURI(uri);
+        this.status = status;
+    }
+
+    /**
+     * Make sure the URI has the standard format.
+     * 
+     * @param uri the uri to clean
+     * @return the clean version of the URI
+     */
+    public static String cleanURI(String uri)
+    {
+        // Cleanup trailing / to avoid empty path element
+        return StringUtils.stripEnd(uri, "/");
     }
 
     @Override

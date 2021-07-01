@@ -179,8 +179,9 @@ public class ReplicationInstanceStore
     public void deleteInstance(String uri) throws ReplicationException
     {
         executeInstanceDocument((instancesDocument, xcontext) -> {
-            BaseObject objectToDelete = instancesDocument.getXObject(REPLICATION_HOME,
-                ReplicationInstanceClassInitializer.FIELD_URI, uri, false);
+            BaseObject objectToDelete =
+                instancesDocument.getXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE,
+                    ReplicationInstanceClassInitializer.FIELD_URI, uri, false);
 
             if (objectToDelete != null) {
                 instancesDocument.removeXObject(objectToDelete);
@@ -200,8 +201,9 @@ public class ReplicationInstanceStore
     public void updateStatus(ReplicationInstance instance, Status status) throws ReplicationException
     {
         executeInstanceDocument((instancesDocument, xcontext) -> {
-            BaseObject instanceObject = instancesDocument.getXObject(REPLICATION_HOME,
-                ReplicationInstanceClassInitializer.FIELD_URI, instance.getURI(), false);
+            BaseObject instanceObject =
+                instancesDocument.getXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE,
+                    ReplicationInstanceClassInitializer.FIELD_URI, instance.getURI(), false);
 
             setStatus(instanceObject, status);
 
@@ -223,8 +225,9 @@ public class ReplicationInstanceStore
     public void updateInstance(ReplicationInstance instance) throws ReplicationException
     {
         executeInstanceDocument((instancesDocument, xcontext) -> {
-            BaseObject instanceObject = instancesDocument.getXObject(REPLICATION_HOME,
-                ReplicationInstanceClassInitializer.FIELD_URI, instance.getURI(), false);
+            BaseObject instanceObject =
+                instancesDocument.getXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE,
+                    ReplicationInstanceClassInitializer.FIELD_URI, instance.getURI(), false);
 
             setReplicationInstance(instance, instanceObject);
 
