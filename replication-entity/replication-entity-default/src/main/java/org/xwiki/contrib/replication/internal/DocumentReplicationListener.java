@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.xwiki.bridge.event.DocumentCreatedEvent;
 import org.xwiki.bridge.event.DocumentUpdatedEvent;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.observation.AbstractEventListener;
@@ -57,6 +58,9 @@ public class DocumentReplicationListener extends AbstractEventListener
     private Provider<DocumentReplicationSenderMessage> messageProvider;
 
     @Inject
+    private ReplicationContext replicationContext;
+
+    @Inject
     private Logger logger;
 
     /**
@@ -70,6 +74,11 @@ public class DocumentReplicationListener extends AbstractEventListener
     @Override
     public void onEvent(Event event, Object source, Object data)
     {
+        // Ignore the modification if it's been cause by a replication
+        if (this.replicationContext.isReplicationMessage()) {
+            return;
+        }
+
         XWikiDocument document = (XWikiDocument) source;
 
         // TODO: make configurable the entities to replicate
