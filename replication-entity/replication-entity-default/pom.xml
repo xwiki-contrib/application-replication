@@ -29,9 +29,13 @@
   </parent>
 
   <artifactId>replication-entity-default</artifactId>
-  <name>Replication Entity Default</name>
+  <name>Replication Entity Implementation</name>
   <packaging>jar</packaging>
   <description>The default implementation of the entity replication API</description>
+
+  <properties>
+    <xwiki.extension.namespaces>{root}</xwiki.extension.namespaces>
+  </properties>
 
   <dependencies>
     <dependency>

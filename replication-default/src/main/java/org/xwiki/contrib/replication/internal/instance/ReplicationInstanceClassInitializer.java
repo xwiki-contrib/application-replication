@@ -77,6 +77,13 @@ public class ReplicationInstanceClassInitializer extends AbstractMandatoryClassI
     }
 
     @Override
+    public boolean isMainWikiOnly()
+    {
+        // Initialize it only for the main wiki.
+        return true;
+    }
+
+    @Override
     protected void createClass(BaseClass xclass)
     {
         xclass.addTextField(FIELD_URI, "URI", 30);

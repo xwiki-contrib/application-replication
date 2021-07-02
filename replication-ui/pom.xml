@@ -29,14 +29,17 @@
   </parent>
 
   <artifactId>replication-ui</artifactId>
-  <name>Replication UI</name>
+  <name>Replication Application</name>
   <packaging>xar</packaging>
   <description>Allow relicating pages and other data between different XWiki instances</description>
+
   <properties>
-    <!-- Name to display by the Extension Manager -->
-    <xwiki.extension.name>Replication application</xwiki.extension.name>
     <xwiki.extension.category>application</xwiki.extension.category>
+
+    <!-- Should only be installed on main wiki -->
+    <xwiki.extension.namespaces>wiki:xwiki</xwiki.extension.namespaces>
   </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.xwiki.contrib.replication</groupId>

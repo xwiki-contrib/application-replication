@@ -33,6 +33,10 @@
   <packaging>jar</packaging>
   <description>Default implementation of the low level replication API</description>
 
+  <properties>
+    <xwiki.extension.namespaces>{root}</xwiki.extension.namespaces>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.xwiki.contrib.replication</groupId>
