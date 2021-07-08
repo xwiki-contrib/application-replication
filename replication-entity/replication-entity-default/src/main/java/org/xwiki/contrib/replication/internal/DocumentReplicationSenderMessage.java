@@ -61,11 +61,11 @@ public class DocumentReplicationSenderMessage implements ReplicationSenderMessag
     @Named("uid")
     private EntityReferenceSerializer<String> uidSerializer;
 
+    private final Date date = new Date();
+
     private DocumentReference documentReference;
 
     private String version;
-
-    private Date date;
 
     private Map<String, Collection<String>> metadata;
 
@@ -75,13 +75,11 @@ public class DocumentReplicationSenderMessage implements ReplicationSenderMessag
      * @param documentReference the reference of the document affected by this message
      * @param version the version of the document
      * @param previousVersion the previous version of the document
-     * @param date the date of the modification
      */
-    public void initialize(DocumentReference documentReference, String version, String previousVersion, Date date)
+    public void initialize(DocumentReference documentReference, String version, String previousVersion)
     {
         this.documentReference = documentReference;
         this.version = version;
-        this.date = date;
 
         this.metadata = new HashMap<>();
         this.metadata.put(DocumentReplicationReceiver.METADATA_TYPE,
