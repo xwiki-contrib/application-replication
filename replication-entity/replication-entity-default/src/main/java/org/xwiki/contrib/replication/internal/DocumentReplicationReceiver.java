@@ -30,6 +30,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.contrib.replication.ReplicationException;
@@ -41,10 +42,15 @@ import org.xwiki.filter.instance.output.DocumentInstanceOutputProperties;
 import org.xwiki.filter.xar.input.XARInputProperties;
 import org.xwiki.localization.LocaleUtils;
 import org.xwiki.model.reference.DocumentReferenceResolver;
+import org.xwiki.store.merge.MergeDocumentResult;
+import org.xwiki.store.merge.MergeManager;
 
+import com.google.common.base.Objects;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
+import com.xpn.xwiki.doc.DocumentRevisionProvider;
 import com.xpn.xwiki.doc.XWikiDocument;
+import com.xpn.xwiki.doc.merge.MergeConfiguration;
 import com.xpn.xwiki.internal.filter.XWikiDocumentFilterUtils;
 
 /**
@@ -106,6 +112,15 @@ public class DocumentReplicationReceiver implements ReplicationReceiver
     @Inject
     private Provider<XWikiContext> xcontextProvider;
 
+    @Inject
+    private DocumentRevisionProvider revisionProvider;
+
+    @Inject
+    private MergeManager mergeManager;
+
+    @Inject
+    private Logger logger;
+
     @Override
     public void receive(ReplicationReceiverMessage message) throws ReplicationException
     {
@@ -114,56 +129,116 @@ public class DocumentReplicationReceiver implements ReplicationReceiver
         if (TYPE_DOCUMENT.equals(type)) {
             String referenceString = getMetadata(message, METADATA_REFERENCE);
             Locale locale = LocaleUtils.toLocale(getMetadata(message, METADATA_LOCALE));
+            String previousVersion = getMetadata(message, METADATA_PREVIOUSVERSION);
 
             if (referenceString != null && locale != null) {
                 XWikiContext xcontext = this.xcontextProvider.get();
 
                 // Load the current document
-                XWikiDocument document;
+                XWikiDocument currentDocument;
                 try {
-                    document = xcontext.getWiki().getDocument(this.resolver.resolve(referenceString), xcontext);
+                    // Clone the document to not be disturbed by modifications made by other threads
+                    currentDocument =
+                        xcontext.getWiki().getDocument(this.resolver.resolve(referenceString), xcontext).clone();
                 } catch (XWikiException e) {
                     throw new ReplicationException("Failed to load document to update", e);
                 }
 
                 // Update the document
+                XWikiDocument newDocument;
                 try (InputStream stream = message.open()) {
-                    importDocument(document, stream, xcontext);
+                    newDocument = importDocument(currentDocument, stream, xcontext);
                 } catch (Exception e) {
                     throw new ReplicationException("Failed to parse document message to update", e);
                 }
 
                 // Save the updated document
                 try {
-                    xcontext.getWiki().saveDocument(document, document.getComment(), xcontext);
+                    xcontext.getWiki().saveDocument(newDocument, newDocument.getComment(), newDocument.isMinorEdit(),
+                        xcontext);
                 } catch (XWikiException e) {
                     throw new ReplicationException("Failed to save document", e);
+                }
+
+                // Get current version
+                String currentVersion = currentDocument.isNew() ? currentDocument.getVersion() : null;
+
+                // Check if the previous version is the expected one
+                if (!Objects.equal(currentVersion, previousVersion)) {
+                    // If not create and save a merged version of the document
+                    merge(previousVersion, currentDocument, newDocument, xcontext);
                 }
             }
         }
     }
 
-    private void importDocument(XWikiDocument document, InputStream stream, XWikiContext xcontext)
+    private void merge(String previousVersion, XWikiDocument currentDocument, XWikiDocument newDocument,
+        XWikiContext xcontext)
+    {
+        // Get expected previous version from the history
+        XWikiDocument previousDocument;
+        if (previousVersion == null) {
+            // Previous version is an empty document
+            previousDocument = new XWikiDocument(newDocument.getDocumentReference(), newDocument.getLocale());
+        } else {
+            try {
+                previousDocument =
+                    this.revisionProvider.getRevision(newDocument.getDocumentReferenceWithLocale(), previousVersion);
+            } catch (XWikiException e) {
+                this.logger.error("Failed to access the expected previous version", e);
+
+                return;
+            }
+            // If the previous version does not exist anymore don't merge
+            if (previousDocument == null) {
+                return;
+            }
+        }
+
+        // Remember last version
+        String newVersion = newDocument.getVersion();
+
+        // Execute the merge
+        MergeDocumentResult mergeResult =
+            this.mergeManager.mergeDocument(previousDocument, currentDocument, newDocument, new MergeConfiguration());
+
+        // Save the merged version if anything changed
+        if (mergeResult.isModified()) {
+            try {
+                xcontext.getWiki().saveDocument(newDocument,
+                    currentDocument.getVersion() + "] and [" + newVersion + "]", true, xcontext);
+            } catch (XWikiException e) {
+                this.logger.error("Failed to save merged document", e);
+            }
+        }
+
+        // TODO: send corrected history to other instances (the new merged version and the order in which the changes
+        // have been made since the expected previous version)
+    }
+
+    private XWikiDocument importDocument(XWikiDocument currentDocument, InputStream stream, XWikiContext xcontext)
         throws FilterException, IOException, ComponentLookupException
     {
-        // Save things we don't want to change
-        String currentVersion = document.getVersion();
-
         // Output
         DocumentInstanceOutputProperties documentProperties = new DocumentInstanceOutputProperties();
         if (xcontext != null) {
-            documentProperties.setDefaultReference(document.getDocumentReference());
+            documentProperties.setDefaultReference(currentDocument.getDocumentReference());
         }
 
         // Input
         XARInputProperties xarProperties = new XARInputProperties();
         xarProperties.setWithHistory(false);
 
-        this.importer.importEntity(XWikiDocument.class, document, new DefaultInputStreamInputSource(stream),
+        // Close the document coming because we might need it later
+        XWikiDocument newDocument = currentDocument.clone();
+
+        this.importer.importEntity(XWikiDocument.class, newDocument, new DefaultInputStreamInputSource(stream),
             xarProperties, documentProperties);
 
         // Restore things we don't want to change
-        document.setVersion(currentVersion);
+        newDocument.setVersion(currentDocument.getVersion());
+
+        return newDocument;
     }
 
     private String getMetadata(ReplicationReceiverMessage message, String key)

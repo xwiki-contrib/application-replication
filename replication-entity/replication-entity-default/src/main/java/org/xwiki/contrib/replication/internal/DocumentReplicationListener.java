@@ -88,10 +88,10 @@ public class DocumentReplicationListener extends AbstractEventListener
         }
 
         // Create a new message
+        // Don't set a previous version if it's a new document
         DocumentReplicationSenderMessage message = this.messageProvider.get();
         message.initialize(document.getDocumentReferenceWithLocale(), document.getVersion(),
-            event instanceof DocumentCreatedEvent ? null : document.getOriginalDocument().getVersion(),
-            document.getDate());
+            event instanceof DocumentCreatedEvent ? null : document.getOriginalDocument().getVersion());
 
         // Send the message
         try {
