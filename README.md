@@ -5,7 +5,7 @@ Various tools to replicate data between XWiki instances.
 * Project Lead: [Thomas Mortagne](http://www.xwiki.org/xwiki/bin/view/XWiki/ThomasMortagne)
 * [Documentation & Downloads](http://extensions.xwiki.org/xwiki/bin/view/Extension/Replication/)
 * [Issue Tracker](http://jira.xwiki.org/browse/REPLICAT)
-* Communication: [Forum](<url, e.g. https://forum.xwiki.org/>), [Chat](<url, e.g. https://dev.xwiki.org/xwiki/bin/view/Community/Chat>)
+* Communication: [Forum](https://forum.xwiki.org), [Chat](https://dev.xwiki.org/xwiki/bin/view/Community/Chat)
 * [Development Practices](http://dev.xwiki.org)
 * Minimal XWiki version supported: XWiki 12.10
 * License: LGPL 2.1
