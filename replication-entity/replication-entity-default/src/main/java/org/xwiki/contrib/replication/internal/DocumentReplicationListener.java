@@ -27,10 +27,14 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.xwiki.bridge.event.DocumentCreatedEvent;
 import org.xwiki.bridge.event.DocumentUpdatedEvent;
+import org.xwiki.bridge.event.DocumentVersionRangeDeletedEvent;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationSender;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.internal.history.DocumentHistoryDeleteReplicationMessage;
+import org.xwiki.contrib.replication.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.event.Event;
 
@@ -55,7 +59,10 @@ public class DocumentReplicationListener extends AbstractEventListener
     private Provider<ReplicationSender> senderProvider;
 
     @Inject
-    private Provider<DocumentReplicationSenderMessage> messageProvider;
+    private Provider<DocumentUpdateReplicationMessage> documentMessageProvider;
+
+    @Inject
+    private Provider<DocumentHistoryDeleteReplicationMessage> historyMessageProvider;
 
     @Inject
     private ReplicationContext replicationContext;
@@ -68,7 +75,8 @@ public class DocumentReplicationListener extends AbstractEventListener
      */
     public DocumentReplicationListener()
     {
-        super(NAME, new DocumentCreatedEvent(), new DocumentUpdatedEvent());
+        // TODO: XWiki 13.6 to finish https://jira.xwiki.org/browse/REPLICAT-9
+        super(NAME, new DocumentCreatedEvent(), new DocumentUpdatedEvent()/*, new DocumentVersionRangeDeletedEvent()*/);
     }
 
     @Override
@@ -88,10 +96,19 @@ public class DocumentReplicationListener extends AbstractEventListener
         }
 
         // Create a new message
-        // Don't set a previous version if it's a new document
-        DocumentReplicationSenderMessage message = this.messageProvider.get();
-        message.initialize(document.getDocumentReferenceWithLocale(), document.getVersion(),
-            event instanceof DocumentCreatedEvent ? null : document.getOriginalDocument().getVersion());
+        ReplicationSenderMessage message;
+        if (event instanceof DocumentVersionRangeDeletedEvent) {
+            message = this.historyMessageProvider.get();
+            ((DocumentHistoryDeleteReplicationMessage) message).initialize(
+                document.getDocumentReferenceWithLocale(), ((DocumentVersionRangeDeletedEvent) event).getFrom(),
+                ((DocumentVersionRangeDeletedEvent) event).getTo());
+        } else {
+            message = this.documentMessageProvider.get();
+            // Don't set a previous version if it's a new document
+            ((DocumentUpdateReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
+                document.getVersion(),
+                event instanceof DocumentCreatedEvent ? null : document.getOriginalDocument().getVersion());
+        }
 
         // Send the message
         try {

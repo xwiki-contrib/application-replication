@@ -20,11 +20,9 @@
 package org.xwiki.contrib.replication;
 
 /**
- * The base exception used for all the API of the replication module.
- *
- * @version $Id: 04b8bde8963bacb572628764ef2eb36d3dbf3493 $
+ * @version $Id$
  */
-public class ReplicationException extends Exception
+public class InvalidReplicationMessageException extends ReplicationException
 {
     /**
      * Serialization identifier.
@@ -37,7 +35,7 @@ public class ReplicationException extends Exception
      *
      * @param message the detail message (which is saved for later retrieval by the {@link #getMessage()} method)
      */
-    public ReplicationException(String message)
+    public InvalidReplicationMessageException(String message)
     {
         super(message);
     }
@@ -46,7 +44,7 @@ public class ReplicationException extends Exception
      * @param cause the cause (which is saved for later retrieval by the {@link #getCause()} method). (A <tt>null</tt>
      *            value is permitted, and indicates that the cause is nonexistent or unknown.)
      */
-    public ReplicationException(Throwable cause)
+    public InvalidReplicationMessageException(Throwable cause)
     {
         super(cause);
     }
@@ -58,7 +56,7 @@ public class ReplicationException extends Exception
      * @param cause the cause (which is saved for later retrieval by the {@link #getCause()} method). A null value is
      *            permitted, and indicates that the cause is nonexistent or unknown
      */
-    public ReplicationException(String message, Throwable cause)
+    public InvalidReplicationMessageException(String message, Throwable cause)
     {
         super(message, cause);
     }

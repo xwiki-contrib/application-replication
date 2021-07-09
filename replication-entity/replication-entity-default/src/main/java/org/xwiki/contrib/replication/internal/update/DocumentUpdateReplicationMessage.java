@@ -17,27 +17,18 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal;
+package org.xwiki.contrib.replication.internal.update;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Provider;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.component.annotation.InstantiationStrategy;
-import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
-import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.internal.AbstractDocumentReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
-import org.xwiki.model.reference.EntityReferenceSerializer;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
@@ -46,28 +37,33 @@ import com.xpn.xwiki.doc.XWikiDocument;
 /**
  * @version $Id$
  */
-@Component(roles = DocumentReplicationSenderMessage.class)
-@InstantiationStrategy(ComponentInstantiationStrategy.PER_LOOKUP)
-public class DocumentReplicationSenderMessage implements ReplicationSenderMessage
+@Component(roles = DocumentUpdateReplicationMessage.class)
+public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicationMessage
 {
+    /**
+     * The message type for these messages.
+     */
+    public static final String TYPE = TYPE_PREFIX + "update";
+
+    /**
+     * The prefix in front of all entity metadata properties.
+     */
+    public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
+
+    /**
+     * The name of the metadata containing the version of the entity in the message.
+     */
+    public static final String METADATA_VERSION = METADATA_PREFIX + "VERSION";
+
+    /**
+     * The name of the metadata containing the previous version of the entity in the message.
+     */
+    public static final String METADATA_PREVIOUSVERSION = METADATA_PREFIX + "PREVIOUSVERSION";
+
     @Inject
     private Provider<XWikiContext> xcontextProvider;
 
-    @Inject
-    @Named("local")
-    private EntityReferenceSerializer<String> localSerializer;
-
-    @Inject
-    @Named("uid")
-    private EntityReferenceSerializer<String> uidSerializer;
-
-    private final Date date = new Date();
-
-    private DocumentReference documentReference;
-
     private String version;
-
-    private Map<String, Collection<String>> metadata;
 
     private String id;
 
@@ -78,53 +74,28 @@ public class DocumentReplicationSenderMessage implements ReplicationSenderMessag
      */
     public void initialize(DocumentReference documentReference, String version, String previousVersion)
     {
-        this.documentReference = documentReference;
+        initialize(documentReference);
+
         this.version = version;
 
-        this.metadata = new HashMap<>();
-        this.metadata.put(DocumentReplicationReceiver.METADATA_TYPE,
-            Collections.singleton(DocumentReplicationReceiver.TYPE_DOCUMENT));
-        this.metadata.put(DocumentReplicationReceiver.METADATA_REFERENCE,
-            Collections.singleton(this.localSerializer.serialize(documentReference)));
-        this.metadata.put(DocumentReplicationReceiver.METADATA_LOCALE,
-            Collections.singleton(documentReference.getLocale().toString()));
-        this.metadata.put(DocumentReplicationReceiver.METADATA_VERSION, Collections.singleton(version));
-        this.metadata.put(DocumentReplicationReceiver.METADATA_PREVIOUSVERSION, Collections.singleton(previousVersion));
+        this.metadata.put(METADATA_VERSION, Collections.singleton(version));
+        this.metadata.put(METADATA_PREVIOUSVERSION, Collections.singleton(previousVersion));
 
-        this.id = getDate().getTime() + '/' + this.version + '/' + this.uidSerializer.serialize(documentReference);
+        this.id += '/' + this.version;
 
         this.metadata = Collections.unmodifiableMap(this.metadata);
+    }
+
+    @Override
+    public String getType()
+    {
+        return TYPE;
     }
 
     @Override
     public String getId()
     {
         return this.id;
-    }
-
-    @Override
-    public Date getDate()
-    {
-        return this.date;
-    }
-
-    @Override
-    public ReplicationInstance getSource()
-    {
-        // Will be filled by the sender
-        return null;
-    }
-
-    @Override
-    public String getType()
-    {
-        return DocumentReplicationReceiver.TYPE;
-    }
-
-    @Override
-    public Map<String, Collection<String>> getCustomMetadata()
-    {
-        return this.metadata;
     }
 
     @Override
