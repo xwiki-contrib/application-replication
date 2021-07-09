@@ -27,12 +27,14 @@ import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.internal.AbstractDocumentReplicationReceiver;
+import org.xwiki.contrib.replication.internal.DocumentReplicationSender;
 import org.xwiki.filter.FilterException;
 import org.xwiki.filter.input.DefaultInputStreamInputSource;
 import org.xwiki.filter.instance.output.DocumentInstanceOutputProperties;
@@ -71,47 +73,82 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     private MergeManager mergeManager;
 
     @Inject
+    private DocumentReplicationSender sender;
+
+    @Inject
     private Logger logger;
 
     @Override
     public void receive(ReplicationReceiverMessage message) throws ReplicationException
     {
         DocumentReference documentReference = getDocumentReference(message);
-        String previousVersion = getMetadata(message, DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION, false);
 
         XWikiContext xcontext = this.xcontextProvider.get();
 
-        // Load the current document
-        XWikiDocument currentDocument;
-        try {
-            // Clone the document to not be disturbed by modifications made by other threads
-            currentDocument = xcontext.getWiki().getDocument(documentReference, xcontext).clone();
-        } catch (XWikiException e) {
-            throw new ReplicationException("Failed to load document to update", e);
-        }
+        boolean complete =
+            BooleanUtils.toBoolean(getMetadata(message, DocumentUpdateReplicationMessage.METADATA_COMPLETE, false));
 
-        // Update the document
-        XWikiDocument newDocument;
+        // Load the document
+        XWikiDocument document = new XWikiDocument(documentReference, documentReference.getLocale());
         try (InputStream stream = message.open()) {
-            newDocument = importDocument(currentDocument, stream, xcontext);
+            importDocument(document, stream);
         } catch (Exception e) {
             throw new ReplicationException("Failed to parse document message to update", e);
         }
 
-        // Save the updated document
-        try {
-            xcontext.getWiki().saveDocument(newDocument, newDocument.getComment(), newDocument.isMinorEdit(), xcontext);
-        } catch (XWikiException e) {
-            throw new ReplicationException("Failed to save document", e);
-        }
+        if (complete) {
+            // We want to save the document as is
+            document.setMetaDataDirty(false);
+            document.setContentDirty(false);
 
-        // Get current version
-        String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
+            // Save the new complete document
+            // The fact that isNew() return true makes saveDocument automatically delete the current document in
+            // database and replace it with the received one
+            try {
+                xcontext.getWiki().saveDocument(document, document.getComment(), document.isMinorEdit(), xcontext);
+            } catch (XWikiException e) {
+                throw new ReplicationException("Failed to save complete document", e);
+            }
+        } else {
+            String previousVersion =
+                getMetadata(message, DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION, false);
 
-        // Check if the previous version is the expected one
-        if (!Objects.equal(currentVersion, previousVersion)) {
-            // If not create and save a merged version of the document
-            merge(previousVersion, currentDocument, newDocument, xcontext);
+            // Load the current document
+            XWikiDocument currentDocument;
+            try {
+                // Clone the document to not be disturbed by modifications made by other threads
+                currentDocument = xcontext.getWiki().getDocument(documentReference, xcontext).clone();
+            } catch (XWikiException e) {
+                throw new ReplicationException("Failed to load document to update", e);
+            }
+
+            // Keep a copy of the current document for later
+            XWikiDocument newDocument = currentDocument.clone();
+
+            // Update the document
+            newDocument.apply(document, true);
+            // Also copy some revision related properties
+            newDocument.setAuthorReference(document.getAuthorReference());
+            newDocument.setContentAuthorReference(document.getContentAuthorReference());
+            newDocument.setCreatorReference(document.getCreatorReference());
+            newDocument.setDate(document.getDate());
+            newDocument.setContentUpdateDate(document.getContentUpdateDate());
+
+            // Save the updated document
+            try {
+                xcontext.getWiki().saveDocument(newDocument, document.getComment(), document.isMinorEdit(), xcontext);
+            } catch (XWikiException e) {
+                throw new ReplicationException("Failed to save document update", e);
+            }
+
+            // Get previous database version
+            String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
+
+            // Check if the previous version is the expected one
+            if (!Objects.equal(currentVersion, previousVersion)) {
+                // If not create and save a merged version of the document
+                merge(previousVersion, currentDocument, newDocument, xcontext);
+            }
         }
     }
 
@@ -155,39 +192,26 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             }
         }
 
-        // TODO: send corrected history to other instances (the new merged version and the order in which the changes
-        // have been made since the expected previous version)
+        // Send the complete document with updated history to other instances so that they synchronize
+        try {
+            this.sender.sendDocument(newDocument, true);
+        } catch (ReplicationException e) {
+            this.logger.error("Failed to send back the corrected complete document for reference [{}]",
+                newDocument.getDocumentReferenceWithLocale(), e);
+        }
     }
 
-    private XWikiDocument importDocument(XWikiDocument currentDocument, InputStream stream, XWikiContext xcontext)
+    private void importDocument(XWikiDocument document, InputStream stream)
         throws FilterException, IOException, ComponentLookupException
     {
         // Output
         DocumentInstanceOutputProperties documentProperties = new DocumentInstanceOutputProperties();
-        if (xcontext != null) {
-            documentProperties.setDefaultReference(currentDocument.getDocumentReference());
-        }
+        documentProperties.setDefaultReference(document.getDocumentReferenceWithLocale());
 
         // Input
         XARInputProperties xarProperties = new XARInputProperties();
-        xarProperties.setWithHistory(false);
 
-        // Close the document coming because we might need it later
-        XWikiDocument newDocument = currentDocument.clone();
-
-        this.importer.importEntity(XWikiDocument.class, newDocument, new DefaultInputStreamInputSource(stream),
+        this.importer.importEntity(XWikiDocument.class, document, new DefaultInputStreamInputSource(stream),
             xarProperties, documentProperties);
-
-        // Restore things we don't want to change
-        // TODO: do that using a filter instead
-        if (newDocument.isNew()) {
-            // Reset the version so that the new one is 1.1
-            newDocument.setRCSVersion(null); 
-        } else {
-            // Put back previous current version so that it's incremented
-            newDocument.setVersion(currentDocument.getVersion());
-        }
-
-        return newDocument;
     }
 }

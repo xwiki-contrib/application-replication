@@ -33,7 +33,7 @@ public interface ReplicationSender
      * Asynchronously send a message to all registered instances.
      * 
      * @param message the data to send
-     * @throws ReplicationException when failing to queue the replication data
+     * @throws ReplicationException when failing to queue the replication message
      */
     void send(ReplicationSenderMessage message) throws ReplicationException;
 
@@ -42,7 +42,7 @@ public interface ReplicationSender
      * 
      * @param message the data to send
      * @param targets the instances to send data to
-     * @throws ReplicationException when failing to queue the replication data
+     * @throws ReplicationException when failing to queue the replication message
      */
     void send(ReplicationSenderMessage message, Collection<ReplicationInstance> targets) throws ReplicationException;
 }

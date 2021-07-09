@@ -31,10 +31,6 @@ import org.xwiki.bridge.event.DocumentVersionRangeDeletedEvent;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationSender;
-import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.internal.history.DocumentHistoryDeleteReplicationMessage;
-import org.xwiki.contrib.replication.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.event.Event;
 
@@ -56,13 +52,7 @@ public class DocumentReplicationListener extends AbstractEventListener
     public static final String NAME = "DocumentReplicationListener";
 
     @Inject
-    private Provider<ReplicationSender> senderProvider;
-
-    @Inject
-    private Provider<DocumentUpdateReplicationMessage> documentMessageProvider;
-
-    @Inject
-    private Provider<DocumentHistoryDeleteReplicationMessage> historyMessageProvider;
+    private Provider<DocumentReplicationSender> senderProvider;
 
     @Inject
     private ReplicationContext replicationContext;
@@ -76,7 +66,8 @@ public class DocumentReplicationListener extends AbstractEventListener
     public DocumentReplicationListener()
     {
         // TODO: XWiki 13.6 to finish https://jira.xwiki.org/browse/REPLICAT-9
-        super(NAME, new DocumentCreatedEvent(), new DocumentUpdatedEvent()/*, new DocumentVersionRangeDeletedEvent()*/);
+        super(NAME, new DocumentCreatedEvent(),
+            new DocumentUpdatedEvent()/* , new DocumentVersionRangeDeletedEvent() */);
     }
 
     @Override
@@ -95,24 +86,15 @@ public class DocumentReplicationListener extends AbstractEventListener
             return;
         }
 
-        // Create a new message
-        ReplicationSenderMessage message;
-        if (event instanceof DocumentVersionRangeDeletedEvent) {
-            message = this.historyMessageProvider.get();
-            ((DocumentHistoryDeleteReplicationMessage) message).initialize(
-                document.getDocumentReferenceWithLocale(), ((DocumentVersionRangeDeletedEvent) event).getFrom(),
-                ((DocumentVersionRangeDeletedEvent) event).getTo());
-        } else {
-            message = this.documentMessageProvider.get();
-            // Don't set a previous version if it's a new document
-            ((DocumentUpdateReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
-                document.getVersion(),
-                event instanceof DocumentCreatedEvent ? null : document.getOriginalDocument().getVersion());
-        }
-
         // Send the message
         try {
-            this.senderProvider.get().send(message);
+            if (event instanceof DocumentVersionRangeDeletedEvent) {
+                this.senderProvider.get().sendDocumentHistoryDelete(document.getDocumentReferenceWithLocale(),
+                    ((DocumentVersionRangeDeletedEvent) event).getFrom(),
+                    ((DocumentVersionRangeDeletedEvent) event).getTo());
+            } else {
+                this.senderProvider.get().sendDocument(document, false);
+            }
         } catch (ReplicationException e) {
             this.logger.error("Failed to send a replication message for document [{}] in version [{}]",
                 document.getDocumentReferenceWithLocale(), document.getVersion());

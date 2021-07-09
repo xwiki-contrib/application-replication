@@ -51,14 +51,14 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
 
     /**
-     * The name of the metadata containing the version of the entity in the message.
+     * The name of the metadata containing the previous version of the entity in the message.
      */
-    public static final String METADATA_VERSION = METADATA_PREFIX + "VERSION";
+    public static final String METADATA_PREVIOUSVERSION = METADATA_PREFIX + "PREVIOUSVERSION";
 
     /**
      * The name of the metadata containing the previous version of the entity in the message.
      */
-    public static final String METADATA_PREVIOUSVERSION = METADATA_PREFIX + "PREVIOUSVERSION";
+    public static final String METADATA_COMPLETE = METADATA_PREFIX + "COMPLETE";
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;
@@ -67,6 +67,8 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
 
     private String id;
 
+    private boolean complete;
+
     /**
      * @param documentReference the reference of the document affected by this message
      * @param version the version of the document
@@ -74,14 +76,29 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      */
     public void initialize(DocumentReference documentReference, String version, String previousVersion)
     {
-        initialize(documentReference);
+        super.initialize(documentReference);
 
+        this.complete = false;
         this.version = version;
 
-        this.metadata.put(METADATA_VERSION, Collections.singleton(version));
         this.metadata.put(METADATA_PREVIOUSVERSION, Collections.singleton(previousVersion));
 
         this.id += '/' + this.version;
+
+        this.metadata = Collections.unmodifiableMap(this.metadata);
+    }
+
+    /**
+     * @param documentReference the reference of the document affected by this message
+     */
+    @Override
+    public void initialize(DocumentReference documentReference)
+    {
+        super.initialize(documentReference);
+
+        this.complete = true;
+
+        this.metadata.put(METADATA_COMPLETE, Collections.singleton(String.valueOf(complete)));
 
         this.metadata = Collections.unmodifiableMap(this.metadata);
     }
@@ -116,8 +133,11 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
             // TODO: get the right version
         }
 
+        // TODO: find out which attachments should be sent (which attachments versions are new compared to the previous
+        // version)
+
         try {
-            document.toXML(stream, true, false, false, false, xcontext);
+            document.toXML(stream, true, false, this.complete, this.complete, xcontext);
         } catch (Exception e) {
             throw new IOException("Failed to write document to write", e);
         }
