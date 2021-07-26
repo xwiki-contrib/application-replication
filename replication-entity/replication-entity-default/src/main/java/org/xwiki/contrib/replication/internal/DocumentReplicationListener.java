@@ -65,9 +65,7 @@ public class DocumentReplicationListener extends AbstractEventListener
      */
     public DocumentReplicationListener()
     {
-        // TODO: XWiki 13.6 to finish https://jira.xwiki.org/browse/REPLICAT-9
-        super(NAME, new DocumentCreatedEvent(),
-            new DocumentUpdatedEvent()/* , new DocumentVersionRangeDeletedEvent() */);
+        super(NAME, new DocumentCreatedEvent(), new DocumentUpdatedEvent(), new DocumentVersionRangeDeletedEvent());
     }
 
     @Override

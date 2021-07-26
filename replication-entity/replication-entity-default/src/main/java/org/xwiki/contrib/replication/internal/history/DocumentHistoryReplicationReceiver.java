@@ -61,7 +61,10 @@ public class DocumentHistoryReplicationReceiver extends AbstractDocumentReplicat
             throw new ReplicationException("Failed to load document to update", e);
         }
 
-        // TODO: Require XWiki 13.6 to finish https://jira.xwiki.org/browse/REPLICAT-9
-        // xcontext.getWiki().deleteDocumentVersions(document, fromVersion, toVersion, xcontext);
+        try {
+            xcontext.getWiki().deleteDocumentVersions(document, fromVersion, toVersion, xcontext);
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to delete document versions", e);
+        }
     }
 }
