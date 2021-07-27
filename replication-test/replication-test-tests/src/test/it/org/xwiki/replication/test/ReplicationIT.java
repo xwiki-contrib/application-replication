@@ -19,7 +19,9 @@
  */
 package org.xwiki.replication.test;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
@@ -29,8 +31,12 @@ import org.xwiki.contrib.replication.test.po.ReplicationAdministrationSectionPag
 import org.xwiki.contrib.replication.test.po.RequestedInstancePane;
 import org.xwiki.contrib.replication.test.po.RequestingInstancePane;
 import org.xwiki.model.reference.LocalDocumentReference;
+import org.xwiki.rest.model.jaxb.History;
+import org.xwiki.rest.model.jaxb.HistorySummary;
 import org.xwiki.rest.model.jaxb.Page;
+import org.xwiki.rest.resources.pages.PageResource;
 import org.xwiki.test.ui.AbstractTest;
+import org.xwiki.test.ui.TestUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -42,19 +48,60 @@ import static org.junit.Assert.fail;
  */
 public class ReplicationIT extends AbstractTest
 {
-    private void assertEqualsWithTimeout(String expected, Supplier<String> supplier) throws InterruptedException
+    private <T> void assertEqualsWithTimeout(T expected, Supplier<T> supplier) throws InterruptedException
     {
         long t2;
         long t1 = System.currentTimeMillis();
-        String result;
-        while (!(result = supplier.get()).equalsIgnoreCase(expected)) {
+        T result;
+        while (!(result = supplier.get()).equals(expected)) {
             t2 = System.currentTimeMillis();
             if (t2 - t1 > 10000L) {
-                fail(String.format("Content should have been [%s] but was [%s]", expected, result));
+                fail(String.format("Should have been [%s] but was [%s]", expected, result));
             }
             Thread.sleep(100L);
         }
     }
+
+    private void assertEqualsContentWithTimeout(LocalDocumentReference documentReference, String content)
+        throws InterruptedException
+    {
+        assertEqualsWithTimeout(content, () -> {
+            try {
+                return getUtil().rest().<Page>get(documentReference).getContent();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private void assertEqualsHistorySizeWithTimeout(LocalDocumentReference documentReference, int historySize)
+        throws InterruptedException
+    {
+        assertEqualsWithTimeout(historySize, () -> {
+            try {
+                return getHistory(documentReference).getHistorySummaries().size();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private void saveMinor(Page page) throws Exception
+    {
+        Map<String, Object[]> queryParams = new HashMap<>();
+        queryParams.put("minorRevision", new Object[] {Boolean.TRUE.toString()});
+
+        TestUtils.assertStatusCodes(getUtil().rest().executePut(PageResource.class, page, queryParams,
+            getUtil().getCurrentWiki(), page.getSpace(), page.getName()), true, TestUtils.STATUS_CREATED_ACCEPTED);
+    }
+
+    private History getHistory(LocalDocumentReference documentReference) throws Exception
+    {
+        return getUtil().rest().getResource("/wikis/{wikiName}/spaces/{spaceName: .+}/pages/{pageName}/history", null,
+            getUtil().getCurrentWiki(), documentReference.getParent().getName(), documentReference.getName());
+    }
+
+    // Tests
 
     @Test
     public void all() throws Exception
@@ -130,37 +177,108 @@ public class ReplicationIT extends AbstractTest
 
         LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
 
-        // Edit a page on XWiki 0
-        AbstractTest.getUtil().switchExecutor(0);
-        page.setContent("content");
-        AbstractTest.getUtil().rest().save(page);
-        assertEquals("content", AbstractTest.getUtil().rest().<Page>get(documentReference).getContent());
+        ////////////////////////////////////
+        // Major edit on XWiki 0
+        ////////////////////////////////////
 
-        // ASSERT) The content in XWiki 0 should be the one set than in XWiki 1
+        // Edit a page on XWiki 0
+        getUtil().switchExecutor(0);
+        page.setContent("content");
+        getUtil().rest().save(page);
+        assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
+
+        // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
+        getUtil().switchExecutor(1);
         // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
-        AbstractTest.getUtil().switchExecutor(1);
-        assertEqualsWithTimeout("content", () -> {
-            try {
-                return AbstractTest.getUtil().rest().<Page>get(documentReference).getContent();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        assertEqualsContentWithTimeout(documentReference, "content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+
+        ////////////////////////////////////
+        // Minor edit on XWiki 0
+        ////////////////////////////////////
+
+        // Edit a page on XWiki 0
+        getUtil().switchExecutor(0);
+        page.setContent("minor content");
+        saveMinor(page);
+        assertEquals("minor content", getUtil().rest().<Page>get(documentReference).getContent());
+
+        // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
+        getUtil().switchExecutor(1);
+        // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
+        assertEqualsContentWithTimeout(documentReference, "minor content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.2", page.getVersion());
+
+        ////////////////////////////////////
+        // Major edit on XWiki 1
+        ////////////////////////////////////
 
         // Modify content of the page on XWiki 1
+        getUtil().switchExecutor(1);
         page.setContent("modified content");
-        AbstractTest.getUtil().rest().save(page);
-        assertEquals("modified content", AbstractTest.getUtil().rest().<Page>get(documentReference).getContent());
+        getUtil().rest().save(page);
+        assertEquals("modified content", getUtil().rest().<Page>get(documentReference).getContent());
 
-        // ASSERT) The content in XWiki 0 should be the one set than in XWiki 1
+        // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
+        getUtil().switchExecutor(0);
         // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
-        AbstractTest.getUtil().switchExecutor(0);
-        assertEqualsWithTimeout("modified content", () -> {
-            try {
-                return AbstractTest.getUtil().rest().<Page>get(documentReference).getContent();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        assertEqualsContentWithTimeout(documentReference, "modified content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "2.1", page.getVersion());
+
+        ////////////////////////////////////
+        // Delete version on XWiki 0
+        ////////////////////////////////////
+
+        // Delete a page history version on XWiki 0
+        getUtil().switchExecutor(0);
+        History history = getHistory(documentReference);
+        HistorySummary historySummary = history.getHistorySummaries().get(0);
+        assertEquals("2.1", historySummary.getVersion());
+        historySummary = history.getHistorySummaries().get(1);
+        assertEquals("1.2", historySummary.getVersion());
+        historySummary = history.getHistorySummaries().get(2);
+        assertEquals("1.1", historySummary.getVersion());
+
+        getUtil().deleteVersion(page.getSpace(), page.getName(), "1.2");
+
+        history = getHistory(documentReference);
+        historySummary = history.getHistorySummaries().get(0);
+        assertEquals("2.1", historySummary.getVersion());
+        historySummary = history.getHistorySummaries().get(1);
+        assertEquals("1.1", historySummary.getVersion());
+
+        // ASSERT) The history in XWiki 1 should be the one set in XWiki 0
+        getUtil().switchExecutor(1);
+        // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
+        assertEqualsHistorySizeWithTimeout(documentReference, 2);
+        history = getHistory(documentReference);
+        historySummary = history.getHistorySummaries().get(0);
+        assertEquals("2.1", historySummary.getVersion());
+        historySummary = history.getHistorySummaries().get(1);
+        assertEquals("1.1", historySummary.getVersion());
+
+        ////////////////////////////////////
+        // Delete current version on XWiki 1
+        ////////////////////////////////////
+
+        // Delete a page history version on XWiki 1
+        getUtil().switchExecutor(1);
+        getUtil().deleteVersion(page.getSpace(), page.getName(), "2.1");
+
+        history = getHistory(documentReference);
+        historySummary = history.getHistorySummaries().get(0);
+        assertEquals("1.1", historySummary.getVersion());
+
+        // FIXME: needs https://jira.xwiki.org/browse/REPLICAT-20
+        // ASSERT) The history in XWiki 1 should be the one set in XWiki 0
+        // getUtil().switchExecutor(0);
+        // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
+        // assertEqualsHistorySizeWithTimeout(documentReference, 1);
+        // history = getHistory(documentReference);
+        // historySummary = history.getHistorySummaries().get(0);
+        // assertEquals("1.1", historySummary.getVersion());
     }
 }
