@@ -260,19 +260,19 @@ public class ReplicationIT extends AbstractTest
         historySummary = history.getHistorySummaries().get(1);
         assertEquals("1.1", historySummary.getVersion());
 
+        // FIXME: needs https://jira.xwiki.org/browse/REPLICAT-20
         ////////////////////////////////////
         // Delete current version on XWiki 1
         ////////////////////////////////////
 
         // Delete a page history version on XWiki 1
-        getUtil().switchExecutor(1);
-        getUtil().deleteVersion(page.getSpace(), page.getName(), "2.1");
+        //getUtil().switchExecutor(1);
+        //getUtil().deleteVersion(page.getSpace(), page.getName(), "2.1");
 
-        history = getHistory(documentReference);
-        historySummary = history.getHistorySummaries().get(0);
-        assertEquals("1.1", historySummary.getVersion());
+        //history = getHistory(documentReference);
+        //historySummary = history.getHistorySummaries().get(0);
+        //assertEquals("1.1", historySummary.getVersion());
 
-        // FIXME: needs https://jira.xwiki.org/browse/REPLICAT-20
         // ASSERT) The history in XWiki 1 should be the one set in XWiki 0
         // getUtil().switchExecutor(0);
         // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
