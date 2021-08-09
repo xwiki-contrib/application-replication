@@ -202,7 +202,7 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
                 // Put the stored message in the sending queue
                 addSend(fileMessage, fileMessage.getTargets());
-            } catch (ReplicationException e) {
+            } catch (Exception e) {
                 this.logger.error("Failed to store the message with id [" + message.getId() + "] on disk."
                     + " Might be lost if it cannot be sent to the target instance before next restart.", e);
 
