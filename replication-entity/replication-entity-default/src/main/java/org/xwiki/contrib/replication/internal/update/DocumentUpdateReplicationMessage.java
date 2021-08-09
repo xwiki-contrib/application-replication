@@ -22,6 +22,7 @@ package org.xwiki.contrib.replication.internal.update;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collections;
+import java.util.Date;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -56,6 +57,13 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     public static final String METADATA_PREVIOUSVERSION = METADATA_PREFIX + "PREVIOUSVERSION";
 
     /**
+     * The name of the metadata containing the date of the previous version of the entity in the message.
+     * 
+     * @since 0.3
+     */
+    public static final String METADATA_PREVIOUSVERSION_DATE = METADATA_PREFIX + "PREVIOUSVERSION_DATE";
+
+    /**
      * The name of the metadata containing the previous version of the entity in the message.
      */
     public static final String METADATA_COMPLETE = METADATA_PREFIX + "COMPLETE";
@@ -73,15 +81,19 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param documentReference the reference of the document affected by this message
      * @param version the version of the document
      * @param previousVersion the previous version of the document
+     * @param previousVersionDate the date of the previous version of the document
+     * @since 0.3
      */
-    public void initialize(DocumentReference documentReference, String version, String previousVersion)
+    public void initialize(DocumentReference documentReference, String version, String previousVersion,
+        Date previousVersionDate)
     {
         super.initialize(documentReference);
 
         this.complete = false;
         this.version = version;
 
-        this.metadata.put(METADATA_PREVIOUSVERSION, Collections.singleton(previousVersion));
+        putMetadata(METADATA_PREVIOUSVERSION, previousVersion);
+        putMetadata(METADATA_PREVIOUSVERSION_DATE, previousVersionDate);
 
         this.id += '/' + this.version;
 
@@ -98,7 +110,7 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
 
         this.complete = true;
 
-        this.metadata.put(METADATA_COMPLETE, Collections.singleton(String.valueOf(complete)));
+        putMetadata(METADATA_COMPLETE, this.complete);
 
         this.metadata = Collections.unmodifiableMap(this.metadata);
     }

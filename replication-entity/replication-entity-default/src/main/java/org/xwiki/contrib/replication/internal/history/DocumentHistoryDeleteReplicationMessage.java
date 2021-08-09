@@ -62,8 +62,8 @@ public class DocumentHistoryDeleteReplicationMessage extends AbstractDocumentRep
     {
         initialize(documentReference);
 
-        this.metadata.put(METADATA_VERSION_FROM, Collections.singleton(from));
-        this.metadata.put(METADATA_VERSION_TO, Collections.singleton(to));
+        putMetadata(METADATA_VERSION_FROM, from);
+        putMetadata(METADATA_VERSION_TO, to);
 
         this.id += '/' + from + '/' + to;
 

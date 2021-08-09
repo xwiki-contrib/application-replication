@@ -34,6 +34,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReferenceSerializer;
+import org.xwiki.properties.ConverterManager;
 
 /**
  * @version $Id$
@@ -69,6 +70,9 @@ public abstract class AbstractDocumentReplicationMessage implements ReplicationS
     @Named("uid")
     protected EntityReferenceSerializer<String> uidSerializer;
 
+    @Inject
+    protected ConverterManager converter;
+
     protected final Date date = new Date();
 
     protected DocumentReference documentReference;
@@ -85,10 +89,15 @@ public abstract class AbstractDocumentReplicationMessage implements ReplicationS
         this.documentReference = documentReference;
 
         this.metadata = new HashMap<>();
-        this.metadata.put(METADATA_REFERENCE, Collections.singleton(this.localSerializer.serialize(documentReference)));
-        this.metadata.put(METADATA_LOCALE, Collections.singleton(documentReference.getLocale().toString()));
+        putMetadata(METADATA_REFERENCE, documentReference);
+        putMetadata(METADATA_LOCALE, documentReference.getLocale());
 
         this.id = getType() + '/' + getDate().getTime() + '/' + this.uidSerializer.serialize(documentReference);
+    }
+
+    public <T> void putMetadata(String key, T value)
+    {
+        this.metadata.put(key, Collections.singleton(this.converter.convert(String.class, value)));
     }
 
     @Override

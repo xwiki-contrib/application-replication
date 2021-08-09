@@ -49,8 +49,8 @@ public class DocumentHistoryReplicationReceiver extends AbstractDocumentReplicat
     public void receive(ReplicationReceiverMessage message) throws ReplicationException
     {
         DocumentReference documentReference = getDocumentReference(message);
-        String fromVersion = getMetadata(message, DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_FROM);
-        String toVersion = getMetadata(message, DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_TO);
+        String fromVersion = getMetadata(message, DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_FROM, true);
+        String toVersion = getMetadata(message, DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_TO, true);
 
         XWikiContext xcontext = this.xcontextProvider.get();
 

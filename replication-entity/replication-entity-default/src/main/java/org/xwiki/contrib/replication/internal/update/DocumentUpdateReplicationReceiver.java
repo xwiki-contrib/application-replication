@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.internal.update;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -112,6 +113,8 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         } else {
             String previousVersion =
                 getMetadata(message, DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION, false);
+            Date previousVersionDate =
+                getMetadata(message, DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION_DATE, false, Date.class);
 
             // Load the current document
             XWikiDocument currentDocument;
@@ -143,9 +146,11 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
 
             // Get previous database version
             String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
+            Date currentVersionDate = currentDocument.isNew() ? null : currentDocument.getDate();
 
             // Check if the previous version is the expected one
-            if (!Objects.equal(currentVersion, previousVersion)) {
+            if (!Objects.equal(currentVersion, previousVersion)
+                || !Objects.equal(currentVersionDate, previousVersionDate)) {
                 // If not create and save a merged version of the document
                 merge(previousVersion, currentDocument, newDocument, xcontext);
             }

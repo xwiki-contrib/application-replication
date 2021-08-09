@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.internal;
 
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Locale;
 
@@ -30,10 +31,10 @@ import org.slf4j.Logger;
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.localization.LocaleUtils;
 import org.xwiki.model.EntityType;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReferenceResolver;
+import org.xwiki.properties.ConverterManager;
 
 /**
  * @version $Id$
@@ -45,24 +46,27 @@ public abstract class AbstractDocumentReplicationReceiver implements Replication
     protected EntityReferenceResolver<String> currentEntityResolver;
 
     @Inject
+    protected ConverterManager converter;
+
+    @Inject
     protected Logger logger;
 
     protected DocumentReference getDocumentReference(ReplicationReceiverMessage message)
         throws InvalidReplicationMessageException
     {
-        String referenceString = getMetadata(message, AbstractDocumentReplicationMessage.METADATA_REFERENCE);
-        Locale locale = LocaleUtils.toLocale(getMetadata(message, AbstractDocumentReplicationMessage.METADATA_LOCALE));
+        String referenceString = getMetadata(message, AbstractDocumentReplicationMessage.METADATA_REFERENCE, true);
+        Locale locale = getMetadata(message, AbstractDocumentReplicationMessage.METADATA_LOCALE, true, Locale.class);
 
         return new DocumentReference(this.currentEntityResolver.resolve(referenceString, EntityType.DOCUMENT), locale);
     }
 
-    protected String getMetadata(ReplicationReceiverMessage message, String key)
+    protected String getMetadata(ReplicationReceiverMessage message, String key, boolean mandatory)
         throws InvalidReplicationMessageException
     {
-        return getMetadata(message, key, true);
+        return getMetadata(message, key, mandatory, null);
     }
 
-    protected String getMetadata(ReplicationReceiverMessage message, String key, boolean mandatory)
+    protected <T> T getMetadata(ReplicationReceiverMessage message, String key, boolean mandatory, Type type)
         throws InvalidReplicationMessageException
     {
         Collection<String> values = message.getCustomMetadata().get(key);
@@ -76,6 +80,12 @@ public abstract class AbstractDocumentReplicationReceiver implements Replication
             }
         }
 
-        return values.iterator().next();
+        String value = values.iterator().next();
+
+        if (type != null) {
+            return this.converter.convert(type, value);
+        }
+
+        return (T) value;
     }
 }
