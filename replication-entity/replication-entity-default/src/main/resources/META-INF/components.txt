@@ -1,5 +1,7 @@
 org.xwiki.contrib.replication.internal.DocumentReplicationListener
 org.xwiki.contrib.replication.internal.DocumentReplicationSender
+org.xwiki.contrib.replication.internal.delete.DocumentDeleteReplicationMessage
+org.xwiki.contrib.replication.internal.delete.DocumentDeleteReplicationReceiver
 org.xwiki.contrib.replication.internal.history.DocumentHistoryDeleteReplicationMessage
 org.xwiki.contrib.replication.internal.history.DocumentHistoryReplicationReceiver
 org.xwiki.contrib.replication.internal.update.DocumentUpdateReplicationMessage

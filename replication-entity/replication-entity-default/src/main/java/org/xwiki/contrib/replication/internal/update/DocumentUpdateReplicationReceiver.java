@@ -29,7 +29,6 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.apache.commons.lang3.BooleanUtils;
-import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.contrib.replication.ReplicationException;
@@ -76,9 +75,6 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     @Inject
     private DocumentReplicationSender sender;
 
-    @Inject
-    private Logger logger;
-
     @Override
     public void receive(ReplicationReceiverMessage message) throws ReplicationException
     {
@@ -98,18 +94,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         }
 
         if (complete) {
-            // We want to save the document as is
-            document.setMetaDataDirty(false);
-            document.setContentDirty(false);
-
-            // Save the new complete document
-            // The fact that isNew() return true makes saveDocument automatically delete the current document in
-            // database and replace it with the received one
-            try {
-                xcontext.getWiki().saveDocument(document, document.getComment(), document.isMinorEdit(), xcontext);
-            } catch (XWikiException e) {
-                throw new ReplicationException("Failed to save complete document", e);
-            }
+            completeUpdate(document, xcontext);
         } else {
             String previousVersion =
                 getMetadata(message, DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION, false);
@@ -157,6 +142,22 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         }
     }
 
+    private void completeUpdate(XWikiDocument document, XWikiContext xcontext) throws ReplicationException
+    {
+        // We want to save the document as is
+        document.setMetaDataDirty(false);
+        document.setContentDirty(false);
+
+        // Save the new complete document
+        // The fact that isNew() return true makes saveDocument automatically delete the current document in
+        // database and replace it with the received one
+        try {
+            xcontext.getWiki().saveDocument(document, document.getComment(), document.isMinorEdit(), xcontext);
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to save complete document", e);
+        }
+    }
+    
     private void merge(String previousVersion, XWikiDocument currentDocument, XWikiDocument newDocument,
         XWikiContext xcontext)
     {

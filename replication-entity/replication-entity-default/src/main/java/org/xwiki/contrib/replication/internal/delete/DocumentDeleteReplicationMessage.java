@@ -17,58 +17,30 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal.history;
+package org.xwiki.contrib.replication.internal.delete;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collections;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.internal.AbstractDocumentReplicationMessage;
-import org.xwiki.model.reference.DocumentReference;
 
 /**
  * @version $Id$
+ * @since 0.3
  */
-@Component(roles = DocumentHistoryDeleteReplicationMessage.class)
-public class DocumentHistoryDeleteReplicationMessage extends AbstractDocumentReplicationMessage
+@Component(roles = DocumentDeleteReplicationMessage.class)
+public class DocumentDeleteReplicationMessage extends AbstractDocumentReplicationMessage
 {
     /**
      * The message type for these messages.
      */
-    public static final String TYPE = TYPE_PREFIX + "_history";
+    public static final String TYPE = TYPE_PREFIX + "delete";
 
     /**
      * The prefix in front of all entity metadata properties.
      */
     public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
-
-    /**
-     * The name of the metadata containing the lowest version to delete from the document history.
-     */
-    public static final String METADATA_VERSION_FROM = METADATA_PREFIX + "VERSION_FROM";
-
-    /**
-     * The name of the metadata containing the highest version to delete from the document history.
-     */
-    public static final String METADATA_VERSION_TO = METADATA_PREFIX + "VERSION_TO";
-
-    /**
-     * @param documentReference the reference of the document affected by this message
-     * @param from the lowest version to delete
-     * @param to the highest version to delete
-     */
-    public void initialize(DocumentReference documentReference, String from, String to)
-    {
-        initialize(documentReference);
-
-        putMetadata(METADATA_VERSION_FROM, from);
-        putMetadata(METADATA_VERSION_TO, to);
-
-        this.id += '/' + from + '/' + to;
-
-        this.metadata = Collections.unmodifiableMap(this.metadata);
-    }
 
     @Override
     public String getType()

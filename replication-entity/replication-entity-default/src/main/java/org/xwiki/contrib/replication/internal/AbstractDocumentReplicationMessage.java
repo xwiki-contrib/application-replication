@@ -95,9 +95,28 @@ public abstract class AbstractDocumentReplicationMessage implements ReplicationS
         this.id = getType() + '/' + getDate().getTime() + '/' + this.uidSerializer.serialize(documentReference);
     }
 
-    public <T> void putMetadata(String key, T value)
+    /**
+     * Associate a custom metadata with the message.
+     * 
+     * @param key the name of the metadata
+     * @param value the value of the metadata
+     */
+    public void putMetadata(String key, Object value)
     {
-        this.metadata.put(key, Collections.singleton(this.converter.convert(String.class, value)));
+        String stringValue;
+        if (value instanceof Date) {
+            stringValue = String.valueOf(((Date) value).getTime());
+        } else {
+            stringValue = this.converter.convert(String.class, value);
+        }
+
+        this.metadata.put(key, Collections.singleton(stringValue));
+    }
+
+    @Override
+    public String getId()
+    {
+        return this.id;
     }
 
     @Override

@@ -73,8 +73,6 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
 
     private String version;
 
-    private String id;
-
     private boolean complete;
 
     /**
@@ -119,12 +117,6 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     public String getType()
     {
         return TYPE;
-    }
-
-    @Override
-    public String getId()
-    {
-        return this.id;
     }
 
     @Override

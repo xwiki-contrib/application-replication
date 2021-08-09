@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.internal;
 
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Locale;
 
 import javax.inject.Inject;
@@ -83,7 +84,12 @@ public abstract class AbstractDocumentReplicationReceiver implements Replication
         String value = values.iterator().next();
 
         if (type != null) {
-            return this.converter.convert(type, value);
+            if (type == Date.class) {
+                // Standard Date converter does not support Date -> String -> Date
+                return value != null ? (T) new Date(Long.parseLong(value)) : null;
+            } else {
+                return this.converter.convert(type, value);
+            }
         }
 
         return (T) value;

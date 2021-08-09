@@ -38,8 +38,11 @@ import org.xwiki.rest.resources.pages.PageResource;
 import org.xwiki.test.ui.AbstractTest;
 import org.xwiki.test.ui.TestUtils;
 
+import com.google.common.base.Objects;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNull;
 
 /**
  * Verify the document cache update based on distributed events.
@@ -53,7 +56,7 @@ public class ReplicationIT extends AbstractTest
         long t2;
         long t1 = System.currentTimeMillis();
         T result;
-        while (!(result = supplier.get()).equals(expected)) {
+        while (!Objects.equal((result = supplier.get()), expected)) {
             t2 = System.currentTimeMillis();
             if (t2 - t1 > 10000L) {
                 fail(String.format("Should have been [%s] but was [%s]", expected, result));
@@ -67,7 +70,9 @@ public class ReplicationIT extends AbstractTest
     {
         assertEqualsWithTimeout(content, () -> {
             try {
-                return getUtil().rest().<Page>get(documentReference).getContent();
+                Page page = getUtil().rest().<Page>get(documentReference, false);
+
+                return page != null ? page.getContent() : null;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -280,5 +285,16 @@ public class ReplicationIT extends AbstractTest
         // history = getHistory(documentReference);
         // historySummary = history.getHistorySummaries().get(0);
         // assertEquals("1.1", historySummary.getVersion());
+
+        ////////////////////////////////////
+        // Delete document on XWiki 0
+        ////////////////////////////////////
+
+        getUtil().switchExecutor(0);
+        getUtil().rest().delete(documentReference);
+
+        // ASSERT) The document should not exist anymore on XWiki 1
+        page = getUtil().rest().<Page>get(documentReference, false);
+        assertNull("The page still exist on XWiki 1", page);
     }
 }
