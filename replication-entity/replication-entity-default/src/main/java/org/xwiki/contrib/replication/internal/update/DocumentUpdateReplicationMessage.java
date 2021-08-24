@@ -58,8 +58,6 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
 
     /**
      * The name of the metadata containing the date of the previous version of the entity in the message.
-     * 
-     * @since 0.3
      */
     public static final String METADATA_PREVIOUSVERSION_DATE = METADATA_PREFIX + "PREVIOUSVERSION_DATE";
 
@@ -80,7 +78,6 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param version the version of the document
      * @param previousVersion the previous version of the document
      * @param previousVersionDate the date of the previous version of the document
-     * @since 0.3
      */
     public void initialize(DocumentReference documentReference, String version, String previousVersion,
         Date previousVersionDate)
