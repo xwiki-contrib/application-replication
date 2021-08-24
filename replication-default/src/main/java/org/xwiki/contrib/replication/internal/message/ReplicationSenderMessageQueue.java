@@ -19,18 +19,16 @@
  */
 package org.xwiki.contrib.replication.internal.message;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.inject.Inject;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
-import org.xwiki.component.manager.ComponentLifecycleException;
-import org.xwiki.component.phase.Disposable;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
@@ -43,7 +41,7 @@ import org.xwiki.contrib.replication.internal.ReplicationClient;
  */
 @Component(roles = ReplicationSenderMessageQueue.class)
 @InstantiationStrategy(ComponentInstantiationStrategy.PER_LOOKUP)
-public class ReplicationSenderMessageQueue implements Disposable, Runnable
+public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQueue<ReplicationSenderMessage>
 {
     @Inject
     private ReplicationSenderMessageStore store;
@@ -51,14 +49,15 @@ public class ReplicationSenderMessageQueue implements Disposable, Runnable
     @Inject
     private ReplicationClient client;
 
-    @Inject
-    private Logger logger;
+    /**
+     * Used to wait for a ping or a timeout.
+     */
+    private final transient ReentrantLock pingLock = new ReentrantLock();
 
-    private final BlockingQueue<ReplicationSenderMessage> queue = new LinkedBlockingQueue<>(1000);
-
-    private boolean disposed;
-
-    private Thread thread;
+    /**
+     * Condition for waiting answer.
+     */
+    private final transient Condition pingCondition = this.pingLock.newCondition();
 
     private ReplicationInstance instance;
 
@@ -79,43 +78,17 @@ public class ReplicationSenderMessageQueue implements Disposable, Runnable
     {
         this.instance = instance;
 
-        // Create a thread in charge of dispatching data to other instances
-        this.thread = new Thread(this);
-        this.thread.setName("Replication message sending to [" + instance.getURI() + "]");
-        this.thread.setPriority(Thread.NORM_PRIORITY - 2);
-        // That thread can be stopped any time without really loosing anything
-        this.thread.setDaemon(true);
-        this.thread.start();
+        initializeQueue();
     }
 
     @Override
-    public void dispose() throws ComponentLifecycleException
+    protected String getThreadName()
     {
-        this.disposed = true;
+        return "Replication message sending to [" + instance.getURI() + "]";
     }
 
     @Override
-    public void run()
-    {
-        while (!this.disposed) {
-            ReplicationSenderMessage entry;
-            try {
-                entry = this.queue.take();
-
-                syncSend(entry);
-            } catch (InterruptedException e) {
-                this.logger.warn("The replication sending thread has been interrupted");
-
-                // Mark the thread as interrupted
-                this.thread.interrupt();
-
-                // Stop the loop
-                break;
-            }
-        }
-    }
-
-    private void syncSend(ReplicationSenderMessage message) throws InterruptedException
+    protected void handle(ReplicationSenderMessage message) throws InterruptedException
     {
         // Try to send the message until it works
         while (true) {
@@ -141,21 +114,23 @@ public class ReplicationSenderMessageQueue implements Disposable, Runnable
                     this.instance.getURI(), this.wait, ExceptionUtils.getRootCauseMessage(e));
 
                 // Wait
-                Thread.sleep(this.wait * 60 * 1000);
+                this.pingLock.lockInterruptibly();
+                try {
+                    this.pingCondition.await(this.wait, TimeUnit.MINUTES);
+                } finally {
+                    this.pingLock.unlock();
+                }
             }
         }
 
         // Reset the wait
         this.wait = 0;
+    }
 
-        // Remove this target (and data if it's the last target) from disk
-        // TODO: put the remove in an async queue
-        try {
-            this.store.removeTarget(message, this.instance);
-        } catch (ReplicationException e) {
-            this.logger.error("Failed to remove sent message with id [{}] for target instance [{}]", message.getId(),
-                this.instance.getURI(), e);
-        }
+    @Override
+    protected void removeFromStore(ReplicationSenderMessage message) throws ReplicationException
+    {
+        this.store.removeTarget(message, this.instance);
     }
 
     /**
@@ -164,5 +139,19 @@ public class ReplicationSenderMessageQueue implements Disposable, Runnable
     public void add(ReplicationSenderMessage message)
     {
         this.queue.add(message);
+    }
+
+    /**
+     * Force the queue to resume sending messages.
+     */
+    public void wakeUp()
+    {
+        this.pingLock.lock();
+
+        try {
+            this.pingCondition.signal();
+        } finally {
+            this.pingLock.unlock();
+        }
     }
 }

@@ -48,11 +48,13 @@ public abstract class AbstractReplicationEndpoint implements ReplicationEndpoint
     protected ReplicationInstance validateInstance(String instanceId) throws ResourceReferenceHandlerException
     {
         ReplicationInstance instance = this.instances.getInstance(instanceId);
-
+        
         if (instance == null || instance.getStatus() != Status.REGISTERED) {
             throw new ResourceReferenceHandlerException(
                 "The instance with id [" + instanceId + "] is not authorized to send replication data");
         }
+
+        // Validate the key
 
         return instance;
     }

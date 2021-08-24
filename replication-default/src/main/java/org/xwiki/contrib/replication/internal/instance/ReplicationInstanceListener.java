@@ -80,6 +80,7 @@ public class ReplicationInstanceListener extends AbstractEventListener
     {
         if (event instanceof ApplicationReadyEvent) {
             reload();
+
         } else if (event instanceof XObjectEvent) {
             // TODO: react to direct modifications of the instances xobjects
         }

@@ -38,6 +38,10 @@
   <properties>
     <xwiki.release.jira.skip>false</xwiki.release.jira.skip>
     <xwiki.issueManagement.jira.id>REPLICAT</xwiki.issueManagement.jira.id>
+
+    <!-- TODO: remove when releasing 1.0 -->
+    <!-- We don't care about API breakage for now -->
+    <xwiki.revapi.skip>true</xwiki.revapi.skip>
   </properties>
 
   <modules>

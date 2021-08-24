@@ -20,28 +20,25 @@
 package org.xwiki.contrib.replication.internal.message;
 
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.slf4j.Logger;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.xwiki.component.annotation.Component;
-import org.xwiki.component.manager.ComponentLifecycleException;
-import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.component.manager.ComponentManager;
-import org.xwiki.component.phase.Disposable;
 import org.xwiki.component.phase.Initializable;
 import org.xwiki.component.phase.InitializationException;
 import org.xwiki.context.ExecutionContext;
-import org.xwiki.context.ExecutionContextException;
 import org.xwiki.context.ExecutionContextManager;
 import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.internal.DefaultReplicationContext;
+import org.xwiki.contrib.replication.internal.ReplicationClient;
 
 /**
  * Maintain a queue of replication data to give to the various receivers.
@@ -50,14 +47,9 @@ import org.xwiki.contrib.replication.internal.DefaultReplicationContext;
  */
 @Component(roles = ReplicationReceiverMessageQueue.class)
 @Singleton
-public class ReplicationReceiverMessageQueue implements Initializable, Disposable, Runnable
+public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQueue<ReplicationReceiverMessage>
+    implements Initializable
 {
-    private boolean disposed;
-
-    private Thread thread;
-
-    private final BlockingQueue<ReplicationReceiverMessage> queue = new LinkedBlockingQueue<>(10000);
-
     @Inject
     private ReplicationReceiverMessageStore store;
 
@@ -71,55 +63,40 @@ public class ReplicationReceiverMessageQueue implements Initializable, Disposabl
     private ReplicationContext replicationContext;
 
     @Inject
-    private Logger logger;
+    private ReplicationInstanceManager instances;
+
+    @Inject
+    private ReplicationClient client;
 
     @Override
     public void initialize() throws InitializationException
     {
         // Initialize handling thread
-        this.thread = new Thread(this);
-        this.thread.setName("Replication receiver");
-        this.thread.setPriority(Thread.NORM_PRIORITY - 1);
-        this.thread.start();
+        initializeQueue();
 
         // Load the queue from disk
         Queue<ReplicationReceiverMessage> messages = this.store.load();
         messages.forEach(this.queue::add);
-    }
 
-    @Override
-    public void dispose() throws ComponentLifecycleException
-    {
-        this.disposed = true;
-    }
-
-    @Override
-    public void run()
-    {
-        while (!this.disposed) {
-            ReplicationReceiverMessage data;
+        // Notify the other instances that we are ready to receive messages
+        for (ReplicationInstance instance : this.instances.getInstances()) {
             try {
-                data = this.queue.take();
-
-                handle(data);
-            } catch (ExecutionContextException e) {
-                this.logger.error("Failed to initialize an ExecutionContext", e);
-            } catch (InterruptedException e) {
-                this.logger.warn("The replication sending thread has been interrupted");
-
-                // Mark the thread as interrupted
-                this.thread.interrupt();
-
-                // Stop the loop
-                break;
-            } catch (Throwable t) {
-                this.logger.error("An unexpected throwable was thrown while handling replication data", t);
+                this.client.ping(instance);
+            } catch (Exception e) {
+                this.logger.warn("Failed to send a ping to instance [{}]: {}", instance.getURI(),
+                    ExceptionUtils.getRootCauseMessage(e));
             }
         }
     }
 
-    private void handle(ReplicationReceiverMessage message)
-        throws ComponentLookupException, ReplicationException, ExecutionContextException
+    @Override
+    protected String getThreadName()
+    {
+        return "Replication receiver";
+    }
+
+    @Override
+    protected void handle(ReplicationReceiverMessage message) throws Exception
     {
         // Find a the receiving corresponding to the type
         ReplicationReceiver replicationReceiver =
@@ -142,6 +119,11 @@ public class ReplicationReceiverMessageQueue implements Initializable, Disposabl
         this.store.delete(message);
     }
 
+    @Override
+    protected void removeFromStore(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        this.store.delete(message);
+    }
     /**
      * @param message the message to store and add to the queue
      */

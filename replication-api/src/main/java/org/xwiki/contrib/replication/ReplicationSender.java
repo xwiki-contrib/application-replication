@@ -45,4 +45,13 @@ public interface ReplicationSender
      * @throws ReplicationException when failing to queue the replication message
      */
     void send(ReplicationSenderMessage message, Collection<ReplicationInstance> targets) throws ReplicationException;
+
+    /**
+     * Notify the sender that the passed instance sent a ping. Among other things this suggest the sender to force
+     * waking up the queue if it has messages to send.
+     * 
+     * @param instance the instance which sent a ping
+     * @since 0.3
+     */
+    void ping(ReplicationInstance instance);
 }

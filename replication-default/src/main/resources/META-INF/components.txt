@@ -2,6 +2,7 @@ org.xwiki.contrib.replication.internal.DefaultReplicationContext
 org.xwiki.contrib.replication.internal.ReplicationClient
 org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferenceHandler
 org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferenceResolver
+org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstancePingEndpoint
 org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstanceRegisterEndpoint
 org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstanceUnregisterEndpoint
 org.xwiki.contrib.replication.internal.enpoint.message.HttpServletRequestReplicationReceiverMessage

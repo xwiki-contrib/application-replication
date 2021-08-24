@@ -126,14 +126,14 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
     private void addSend(ReplicationSenderMessage message, ReplicationInstance instance)
     {
-        getSendQueue(instance).add(message);
+        getSendQueue(instance, true).add(message);
     }
 
-    private ReplicationSenderMessageQueue getSendQueue(ReplicationInstance instance)
+    private ReplicationSenderMessageQueue getSendQueue(ReplicationInstance instance, boolean create)
     {
         ReplicationSenderMessageQueue queue = this.sendQueues.get(instance.getURI());
 
-        if (queue != null) {
+        if (queue != null || !create) {
             return queue;
         }
 
@@ -276,6 +276,16 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
             throw new ReplicationException(
                 String.format("Failed to queue the data [%s] targetting instances %s", data, targets), e);
+        }
+    }
+
+    @Override
+    public void ping(ReplicationInstance instance)
+    {
+        ReplicationSenderMessageQueue queue = getSendQueue(instance, false);
+
+        if (queue != null) {
+            queue.wakeUp();
         }
     }
 }

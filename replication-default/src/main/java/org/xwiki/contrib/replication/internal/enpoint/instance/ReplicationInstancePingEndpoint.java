@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.internal.enpoint.instance;
 
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
@@ -26,54 +27,32 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.ReplicationInstance.Status;
+import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
-import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
 
 /**
  * @version $Id$
  */
 @Component
-@Named(ReplicationInstanceRegisterEndpoint.PATH)
+@Named(ReplicationInstancePingEndpoint.PATH)
 @Singleton
-public class ReplicationInstanceRegisterEndpoint extends AbstractReplicationEndpoint
+public class ReplicationInstancePingEndpoint extends AbstractReplicationEndpoint
 {
     /**
      * The path to use to access this endpoint.
      */
-    public static final String PATH = "instance/register";
+    public static final String PATH = "instance/ping";
 
-    /**
-     * The name of the parameter which contain the display name of the instance which sent the request.
-     */
-    public static final String PARAMETER_NAME = "name";
+    @Inject
+    private ReplicationSender sender;
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, ReplicationResourceReference reference)
         throws Exception
     {
-        String name = reference.getParameterValue(PARAMETER_NAME);
-        String uri = reference.getParameterValue(PARAMETER_URI);
+        ReplicationInstance instance = validateInstance(reference.getParameterValue(PARAMETER_URI));
 
-        ReplicationInstance instance = this.instances.getInstance(uri);
-
-        if (instance != null) {
-            if (instance.getStatus() == Status.REQUESTED) {
-                // Confirm the registration
-                this.instances.confirmRequestedInstance(new DefaultReplicationInstance(name, uri, Status.REGISTERED));
-                response.setStatus(200);
-            } else if (instance.getStatus() == Status.REGISTERED) {
-                // Already registered
-                response.setStatus(204);
-            } else {
-                // Already requested
-                response.setStatus(202);
-            }
-        } else {
-            // Creating a new requesting instance
-            this.instances.addInstance(new DefaultReplicationInstance(name, uri, Status.REQUESTING));
-            response.setStatus(201);
-        }
+        this.sender.ping(instance);
     }
 }

@@ -30,6 +30,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -46,6 +47,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferenceHandler;
+import org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstancePingEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstanceRegisterEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstanceUnregisterEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.message.HttpServletRequestReplicationReceiverMessage;
@@ -209,6 +211,39 @@ public class ReplicationClient implements Initializable
 
                 throw new ReplicationException(
                     String.format("Failed to unregister instance [%s]: %s", instance.getURI(), error));
+            }
+        }
+    }
+
+    /**
+     * @param instance the instance to ping
+     * @throws ReplicationException when failing to unregister the instance
+     * @throws URISyntaxException when failing to unregister the instance
+     * @throws IOException when failing to unregister the instance
+     */
+    public void ping(ReplicationInstance instance) throws ReplicationException, URISyntaxException, IOException
+    {
+        URIBuilder builder = createURIBuilder(instance.getURI(), ReplicationInstancePingEndpoint.PATH);
+        builder.addParameter(ReplicationInstancePingEndpoint.PARAMETER_URI, getCurrentInstance().getURI());
+        // TODO: send a key
+
+        HttpPost httpPost = new HttpPost(builder.build());
+
+        try (CloseableHttpResponse response = this.client.execute(httpPost)) {
+            if (response.getCode() == 200) {
+                // TODO: done
+            } else if (response.getCode() == 404) {
+                // TODO: the instance does not actually exist on the server side
+            } else {
+                String error;
+                try {
+                    error = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                    error = UNKNWON_ERROR;
+                }
+
+                throw new ReplicationException(
+                    String.format("Failed to ping instance [%s]: %s", instance.getURI(), error));
             }
         }
     }
