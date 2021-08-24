@@ -91,6 +91,18 @@ public class ReplicationIT extends AbstractTest
         });
     }
 
+    private void assertDoesNotExistWithTimeout(LocalDocumentReference documentReference)
+        throws InterruptedException
+    {
+        assertEqualsWithTimeout(null, () -> {
+            try {
+                return getUtil().rest().<Page>get(documentReference, false);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
     private void saveMinor(Page page) throws Exception
     {
         Map<String, Object[]> queryParams = new HashMap<>();
@@ -294,7 +306,8 @@ public class ReplicationIT extends AbstractTest
         getUtil().rest().delete(documentReference);
 
         // ASSERT) The document should not exist anymore on XWiki 1
-        page = getUtil().rest().<Page>get(documentReference, false);
-        assertNull("The page still exist on XWiki 1", page);
+        getUtil().switchExecutor(1);
+        // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
+        assertDoesNotExistWithTimeout(documentReference);
     }
 }
