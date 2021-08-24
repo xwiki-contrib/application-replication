@@ -101,12 +101,12 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
             } catch (Exception e) {
                 // Wait before trying to send the message again
 
-                // Wait a maximum of 2h (120 min)
-                if (this.wait <= 60) {
-                    // Increment the wait
+                if (this.wait < 60) {
+                    // Double the wait
                     // Start waiting at 1 minute
                     this.wait = this.wait == 0 ? 1 : this.wait * 2;
                 } else {
+                    // Wait a maximum of 2h (120 min)
                     this.wait = 120;
                 }
 

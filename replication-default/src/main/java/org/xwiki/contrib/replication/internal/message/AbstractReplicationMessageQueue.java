@@ -68,7 +68,7 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
     public void run()
     {
         while (!this.disposed) {
-            M message;
+            M message = null;
             try {
                 message = this.queue.take();
 
@@ -87,7 +87,12 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
                 // Stop the loop
                 break;
             } catch (Throwable t) {
-                this.logger.error("An unexpected throwable was thrown while handling replication message", t);
+                this.logger.error("An unexpected throwable was thrown while handling a replication message", t);
+
+                if (message != null) {
+                    // Put back the message in the queue
+                    this.queue.add(message);
+                }
             }
         }
     }
