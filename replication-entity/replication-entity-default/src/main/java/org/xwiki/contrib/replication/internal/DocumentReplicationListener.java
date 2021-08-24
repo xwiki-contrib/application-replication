@@ -52,9 +52,10 @@ public class DocumentReplicationListener extends AbstractEventListener
      * The name of the listener.
      */
     public static final String NAME = "DocumentReplicationListener";
-    
+
     // TODO
-    //private static final DocumentVersionRangeDeletingEvent HISTORY_DELETING = new DocumentVersionRangeDeletingEvent();
+    // private static final DocumentVersionRangeDeletingEvent HISTORY_DELETING = new
+    // DocumentVersionRangeDeletingEvent();
 
     @Inject
     private Provider<DocumentReplicationSender> senderProvider;
@@ -103,9 +104,9 @@ public class DocumentReplicationListener extends AbstractEventListener
                 this.senderProvider.get().sendDocumentDelete(document.getDocumentReferenceWithLocale());
             } else {
                 // TODO: Don't send document update which are the result of an history modification
-                //if (!this.observationcontext.isIn(HISTORY_DELETING)) {
-                    this.senderProvider.get().sendDocument(document, false);   
-                //}
+                // if (!this.observationcontext.isIn(HISTORY_DELETING)) {
+                this.senderProvider.get().sendDocument(document, false);
+                // }
             }
         } catch (ReplicationException e) {
             this.logger.error("Failed to send a replication message for document [{}] in version [{}]",
