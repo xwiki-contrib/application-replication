@@ -53,12 +53,18 @@ public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicati
         XWikiContext xcontext = this.xcontextProvider.get();
 
         // Load the document
-        XWikiDocument document = new XWikiDocument(documentReference, documentReference.getLocale());
+        XWikiDocument document;
+        try {
+            document = xcontext.getWiki().getDocument(documentReference, xcontext);
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to load document", e);
+        }
 
+        // Delete the document
         try {
             xcontext.getWiki().deleteDocument(document, xcontext);
         } catch (XWikiException e) {
-            throw new ReplicationException("Failed to document", e);
+            throw new ReplicationException("Failed to delete the document", e);
         }
     }
 }
