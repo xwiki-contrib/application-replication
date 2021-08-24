@@ -26,6 +26,7 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationSender;
+import org.xwiki.contrib.replication.internal.delete.DocumentDeleteReplicationMessage;
 import org.xwiki.contrib.replication.internal.history.DocumentHistoryDeleteReplicationMessage;
 import org.xwiki.contrib.replication.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
@@ -44,6 +45,9 @@ public class DocumentReplicationSender
 
     @Inject
     private Provider<DocumentUpdateReplicationMessage> documentMessageProvider;
+
+    @Inject
+    private Provider<DocumentDeleteReplicationMessage> documentDeleteMessageProvider;
 
     @Inject
     private Provider<DocumentHistoryDeleteReplicationMessage> historyMessageProvider;
@@ -65,6 +69,19 @@ public class DocumentReplicationSender
                 document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getVersion(),
                 document.getOriginalDocument().getDate());
         }
+
+        this.sender.send(message);
+    }
+
+    /**
+     * @param documentReference the reference of the document to delete
+     * @throws ReplicationException when failing to queue the replication message
+     */
+    public void sendDocumentDelete(DocumentReference documentReference) throws ReplicationException
+    {
+        DocumentDeleteReplicationMessage message = this.documentDeleteMessageProvider.get();
+
+        message.initialize(documentReference);
 
         this.sender.send(message);
     }

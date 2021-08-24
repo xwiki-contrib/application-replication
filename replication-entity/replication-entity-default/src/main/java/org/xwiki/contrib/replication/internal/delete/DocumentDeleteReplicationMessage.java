@@ -27,7 +27,6 @@ import org.xwiki.contrib.replication.internal.AbstractDocumentReplicationMessage
 
 /**
  * @version $Id$
- * @since 0.3
  */
 @Component(roles = DocumentDeleteReplicationMessage.class)
 public class DocumentDeleteReplicationMessage extends AbstractDocumentReplicationMessage

@@ -26,12 +26,14 @@ import javax.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.xwiki.bridge.event.DocumentCreatedEvent;
+import org.xwiki.bridge.event.DocumentDeletedEvent;
 import org.xwiki.bridge.event.DocumentUpdatedEvent;
 import org.xwiki.bridge.event.DocumentVersionRangeDeletedEvent;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.observation.AbstractEventListener;
+import org.xwiki.observation.ObservationContext;
 import org.xwiki.observation.event.Event;
 
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -50,12 +52,18 @@ public class DocumentReplicationListener extends AbstractEventListener
      * The name of the listener.
      */
     public static final String NAME = "DocumentReplicationListener";
+    
+    // TODO
+    //private static final DocumentVersionRangeDeletingEvent HISTORY_DELETING = new DocumentVersionRangeDeletingEvent();
 
     @Inject
     private Provider<DocumentReplicationSender> senderProvider;
 
     @Inject
     private ReplicationContext replicationContext;
+
+    @Inject
+    private ObservationContext observationcontext;
 
     @Inject
     private Logger logger;
@@ -65,13 +73,14 @@ public class DocumentReplicationListener extends AbstractEventListener
      */
     public DocumentReplicationListener()
     {
-        super(NAME, new DocumentCreatedEvent(), new DocumentUpdatedEvent(), new DocumentVersionRangeDeletedEvent());
+        super(NAME, new DocumentCreatedEvent(), new DocumentUpdatedEvent(), new DocumentDeletedEvent(),
+            new DocumentVersionRangeDeletedEvent());
     }
 
     @Override
     public void onEvent(Event event, Object source, Object data)
     {
-        // Ignore the modification if it's been cause by a replication
+        // Ignore the modification if it's been caused by a replication
         if (this.replicationContext.isReplicationMessage()) {
             return;
         }
@@ -90,8 +99,13 @@ public class DocumentReplicationListener extends AbstractEventListener
                 this.senderProvider.get().sendDocumentHistoryDelete(document.getDocumentReferenceWithLocale(),
                     ((DocumentVersionRangeDeletedEvent) event).getFrom(),
                     ((DocumentVersionRangeDeletedEvent) event).getTo());
+            } else if (event instanceof DocumentDeletedEvent) {
+                this.senderProvider.get().sendDocumentDelete(document.getDocumentReferenceWithLocale());
             } else {
-                this.senderProvider.get().sendDocument(document, false);
+                // TODO: Don't send document update which are the result of an history modification
+                //if (!this.observationcontext.isIn(HISTORY_DELETING)) {
+                    this.senderProvider.get().sendDocument(document, false);   
+                //}
             }
         } catch (ReplicationException e) {
             this.logger.error("Failed to send a replication message for document [{}] in version [{}]",
