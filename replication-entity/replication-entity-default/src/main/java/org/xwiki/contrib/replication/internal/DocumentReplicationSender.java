@@ -61,7 +61,6 @@ public class DocumentReplicationSender
     {
         DocumentUpdateReplicationMessage message = this.documentMessageProvider.get();
 
-        // Don't set a previous version if it's a new document
         if (complete) {
             message.initialize(document.getDocumentReferenceWithLocale());
         } else {

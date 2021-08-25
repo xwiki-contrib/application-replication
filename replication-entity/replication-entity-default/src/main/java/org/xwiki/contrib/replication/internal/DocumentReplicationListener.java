@@ -105,7 +105,7 @@ public class DocumentReplicationListener extends AbstractEventListener
             } else {
                 // TODO: Don't send document update which are the result of an history modification
                 // if (!this.observationcontext.isIn(HISTORY_DELETING)) {
-                this.senderProvider.get().sendDocument(document, false);
+                this.senderProvider.get().sendDocument(document, event instanceof DocumentCreatedEvent);
                 // }
             }
         } catch (ReplicationException e) {
