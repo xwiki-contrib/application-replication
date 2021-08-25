@@ -21,9 +21,14 @@ package org.xwiki.contrib.replication.internal.delete;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
+
+import javax.inject.Inject;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.internal.AbstractDocumentReplicationMessage;
+import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.refactoring.batch.BatchOperationExecutor;
 
 /**
  * @version $Id$
@@ -41,10 +46,28 @@ public class DocumentDeleteReplicationMessage extends AbstractDocumentReplicatio
      */
     public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
 
+    /**
+     * The name of the metadata containing the identifier of the batch the delete is part of.
+     */
+    public static final String METADATA_BATCH = METADATA_PREFIX + "BATCH";
+
+    @Inject
+    private BatchOperationExecutor batchOperation;
+
     @Override
     public String getType()
     {
         return TYPE;
+    }
+
+    @Override
+    public void initialize(DocumentReference documentReference)
+    {
+        super.initialize(documentReference);
+
+        putMetadata(METADATA_BATCH, this.batchOperation.getCurrentBatchId());
+
+        this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 
     @Override

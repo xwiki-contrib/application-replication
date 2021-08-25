@@ -67,7 +67,7 @@ public class DocumentReplicationSender
         } else {
             message.initialize(document.getDocumentReferenceWithLocale(), document.getVersion(),
                 document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getVersion(),
-                document.getOriginalDocument().getDate());
+                    document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getDate());
         }
 
         this.sender.send(message);

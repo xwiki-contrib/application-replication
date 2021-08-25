@@ -26,16 +26,21 @@ import java.util.Locale;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
+import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.model.EntityType;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.model.reference.DocumentReferenceResolver;
 import org.xwiki.model.reference.EntityReferenceResolver;
 import org.xwiki.properties.ConverterManager;
+
+import com.xpn.xwiki.XWikiContext;
 
 /**
  * @version $Id$
@@ -47,10 +52,30 @@ public abstract class AbstractDocumentReplicationReceiver implements Replication
     protected EntityReferenceResolver<String> currentEntityResolver;
 
     @Inject
+    @Named("current")
+    protected DocumentReferenceResolver<String> currentDocumentResolver;
+
+    @Inject
     protected ConverterManager converter;
 
     @Inject
+    protected Provider<XWikiContext> xcontextProvider;
+
+    @Inject
     protected Logger logger;
+
+    @Override
+    public void receive(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        XWikiContext xcontext = this.xcontextProvider.get();
+
+        xcontext.setUserReference(getContextUserReference(message));
+
+        receiveDocument(message, getDocumentReference(message), xcontext);
+    }
+
+    protected abstract void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
+        XWikiContext xcontext) throws ReplicationException;
 
     protected DocumentReference getDocumentReference(ReplicationReceiverMessage message)
         throws InvalidReplicationMessageException
@@ -59,6 +84,13 @@ public abstract class AbstractDocumentReplicationReceiver implements Replication
         Locale locale = getMetadata(message, AbstractDocumentReplicationMessage.METADATA_LOCALE, true, Locale.class);
 
         return new DocumentReference(this.currentEntityResolver.resolve(referenceString, EntityType.DOCUMENT), locale);
+    }
+
+    protected DocumentReference getContextUserReference(ReplicationReceiverMessage message)
+        throws InvalidReplicationMessageException
+    {
+        return getMetadata(message, AbstractDocumentReplicationMessage.METADATA_CONTEXT_USER, false,
+            DocumentReference.class);
     }
 
     protected String getMetadata(ReplicationReceiverMessage message, String key, boolean mandatory)

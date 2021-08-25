@@ -25,7 +25,6 @@ import java.util.Date;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.apache.commons.lang3.BooleanUtils;
@@ -64,9 +63,6 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     private XWikiDocumentFilterUtils importer;
 
     @Inject
-    private Provider<XWikiContext> xcontextProvider;
-
-    @Inject
     private DocumentRevisionProvider revisionProvider;
 
     @Inject
@@ -76,12 +72,9 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     private DocumentReplicationSender sender;
 
     @Override
-    public void receive(ReplicationReceiverMessage message) throws ReplicationException
+    protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
+        XWikiContext xcontext) throws ReplicationException
     {
-        DocumentReference documentReference = getDocumentReference(message);
-
-        XWikiContext xcontext = this.xcontextProvider.get();
-
         boolean complete =
             BooleanUtils.toBoolean(getMetadata(message, DocumentUpdateReplicationMessage.METADATA_COMPLETE, false));
 
@@ -157,7 +150,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             throw new ReplicationException("Failed to save complete document", e);
         }
     }
-    
+
     private void merge(String previousVersion, XWikiDocument currentDocument, XWikiDocument newDocument,
         XWikiContext xcontext)
     {

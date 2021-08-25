@@ -19,9 +19,7 @@
  */
 package org.xwiki.contrib.replication.internal.history;
 
-import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
@@ -42,17 +40,12 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Named(DocumentHistoryDeleteReplicationMessage.TYPE)
 public class DocumentHistoryReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
-    @Inject
-    private Provider<XWikiContext> xcontextProvider;
-
     @Override
-    public void receive(ReplicationReceiverMessage message) throws ReplicationException
+    protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
+        XWikiContext xcontext) throws ReplicationException
     {
-        DocumentReference documentReference = getDocumentReference(message);
         String fromVersion = getMetadata(message, DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_FROM, true);
         String toVersion = getMetadata(message, DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_TO, true);
-
-        XWikiContext xcontext = this.xcontextProvider.get();
 
         XWikiDocument document;
         try {

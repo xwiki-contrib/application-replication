@@ -28,6 +28,7 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.xwiki.bridge.DocumentAccessBridge;
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.ReplicationInstance;
@@ -62,6 +63,11 @@ public abstract class AbstractDocumentReplicationMessage implements ReplicationS
      */
     public static final String METADATA_LOCALE = METADATA_PREFIX + "LOCALE";
 
+    /**
+     * The name of the metadata containing the reference of the user in the context.
+     */
+    public static final String METADATA_CONTEXT_USER = METADATA_PREFIX + "CONTEXT_USER";
+
     @Inject
     @Named("local")
     protected EntityReferenceSerializer<String> localSerializer;
@@ -72,6 +78,9 @@ public abstract class AbstractDocumentReplicationMessage implements ReplicationS
 
     @Inject
     protected ConverterManager converter;
+
+    @Inject
+    protected DocumentAccessBridge documentAccessBridge;
 
     protected final Date date = new Date();
 
@@ -89,8 +98,11 @@ public abstract class AbstractDocumentReplicationMessage implements ReplicationS
         this.documentReference = documentReference;
 
         this.metadata = new HashMap<>();
+
         putMetadata(METADATA_REFERENCE, documentReference);
         putMetadata(METADATA_LOCALE, documentReference.getLocale());
+
+        putMetadata(METADATA_CONTEXT_USER, documentAccessBridge.getCurrentUserReference());
 
         this.id = getType() + '/' + getDate().getTime() + '/' + this.uidSerializer.serialize(documentReference);
     }

@@ -21,7 +21,6 @@ package org.xwiki.contrib.replication.internal.delete;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
@@ -29,6 +28,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.refactoring.batch.BatchOperationExecutor;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
@@ -43,15 +43,12 @@ import com.xpn.xwiki.doc.XWikiDocument;
 public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
     @Inject
-    private Provider<XWikiContext> xcontextProvider;
+    private BatchOperationExecutor batchOperation;
 
     @Override
-    public void receive(ReplicationReceiverMessage message) throws ReplicationException
+    protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
+        XWikiContext xcontext) throws ReplicationException
     {
-        DocumentReference documentReference = getDocumentReference(message);
-
-        XWikiContext xcontext = this.xcontextProvider.get();
-
         // Load the document
         XWikiDocument document;
         try {
@@ -61,10 +58,19 @@ public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicati
         }
 
         // Delete the document
-        try {
-            xcontext.getWiki().deleteDocument(document, xcontext);
-        } catch (XWikiException e) {
-            throw new ReplicationException("Failed to delete the document", e);
+        // If the document is already deleted or does not exist for some reason, ignore it
+        if (!document.isNew()) {
+            try {
+                // Set the batch id if any is provided
+                String batchId = getMetadata(message, DocumentDeleteReplicationMessage.METADATA_BATCH, false);
+                if (batchId != null) {
+                    this.batchOperation.execute(() -> xcontext.getWiki().deleteDocument(document, xcontext), batchId);
+                } else {
+                    xcontext.getWiki().deleteDocument(document, xcontext);
+                }
+            } catch (XWikiException e) {
+                throw new ReplicationException("Failed to delete the document", e);
+            }
         }
     }
 }
