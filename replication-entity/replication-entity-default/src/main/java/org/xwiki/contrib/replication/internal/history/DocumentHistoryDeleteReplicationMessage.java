@@ -19,19 +19,17 @@
  */
 package org.xwiki.contrib.replication.internal.history;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Collections;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.internal.AbstractDocumentReplicationMessage;
+import org.xwiki.contrib.replication.internal.AbstractNoContentDocumentReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
 /**
  * @version $Id$
  */
 @Component(roles = DocumentHistoryDeleteReplicationMessage.class)
-public class DocumentHistoryDeleteReplicationMessage extends AbstractDocumentReplicationMessage
+public class DocumentHistoryDeleteReplicationMessage extends AbstractNoContentDocumentReplicationMessage
 {
     /**
      * The message type for these messages.
@@ -74,11 +72,5 @@ public class DocumentHistoryDeleteReplicationMessage extends AbstractDocumentRep
     public String getType()
     {
         return TYPE;
-    }
-
-    @Override
-    public void write(OutputStream stream) throws IOException
-    {
-        // No content associated with this event
     }
 }

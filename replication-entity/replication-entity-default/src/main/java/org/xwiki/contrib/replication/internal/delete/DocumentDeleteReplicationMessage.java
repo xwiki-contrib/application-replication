@@ -19,14 +19,12 @@
  */
 package org.xwiki.contrib.replication.internal.delete;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Collections;
 
 import javax.inject.Inject;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.internal.AbstractDocumentReplicationMessage;
+import org.xwiki.contrib.replication.internal.AbstractNoContentDocumentReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.refactoring.batch.BatchOperationExecutor;
 
@@ -34,7 +32,7 @@ import org.xwiki.refactoring.batch.BatchOperationExecutor;
  * @version $Id$
  */
 @Component(roles = DocumentDeleteReplicationMessage.class)
-public class DocumentDeleteReplicationMessage extends AbstractDocumentReplicationMessage
+public class DocumentDeleteReplicationMessage extends AbstractNoContentDocumentReplicationMessage
 {
     /**
      * The message type for these messages.
@@ -68,11 +66,5 @@ public class DocumentDeleteReplicationMessage extends AbstractDocumentReplicatio
         putMetadata(METADATA_BATCH, this.batchOperation.getCurrentBatchId());
 
         this.metadata = Collections.unmodifiableMap(this.metadata);
-    }
-
-    @Override
-    public void write(OutputStream stream) throws IOException
-    {
-        // No content associated with this event
     }
 }
