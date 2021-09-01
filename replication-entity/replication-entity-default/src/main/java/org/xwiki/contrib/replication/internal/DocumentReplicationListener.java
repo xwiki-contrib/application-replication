@@ -29,12 +29,14 @@ import org.xwiki.bridge.event.DocumentCreatedEvent;
 import org.xwiki.bridge.event.DocumentDeletedEvent;
 import org.xwiki.bridge.event.DocumentUpdatedEvent;
 import org.xwiki.bridge.event.DocumentVersionRangeDeletedEvent;
+import org.xwiki.bridge.event.DocumentVersionRangeDeletingEvent;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.ObservationContext;
 import org.xwiki.observation.event.Event;
+import org.xwiki.observation.remote.RemoteObservationManagerContext;
 
 import com.xpn.xwiki.doc.XWikiDocument;
 
@@ -53,9 +55,7 @@ public class DocumentReplicationListener extends AbstractEventListener
      */
     public static final String NAME = "DocumentReplicationListener";
 
-    // TODO
-    // private static final DocumentVersionRangeDeletingEvent HISTORY_DELETING = new
-    // DocumentVersionRangeDeletingEvent();
+    private static final DocumentVersionRangeDeletingEvent HISTORY_DELETING = new DocumentVersionRangeDeletingEvent();
 
     @Inject
     private Provider<DocumentReplicationSender> senderProvider;
@@ -65,6 +65,9 @@ public class DocumentReplicationListener extends AbstractEventListener
 
     @Inject
     private ObservationContext observationcontext;
+
+    @Inject
+    private RemoteObservationManagerContext remoteContext;
 
     @Inject
     private Logger logger;
@@ -81,8 +84,8 @@ public class DocumentReplicationListener extends AbstractEventListener
     @Override
     public void onEvent(Event event, Object source, Object data)
     {
-        // Ignore the modification if it's been caused by a replication
-        if (this.replicationContext.isReplicationMessage()) {
+        // Ignore the modification if it's been caused by a replication or a remote event
+        if (this.replicationContext.isReplicationMessage() || this.remoteContext.isRemoteState()) {
             return;
         }
 
@@ -103,10 +106,10 @@ public class DocumentReplicationListener extends AbstractEventListener
             } else if (event instanceof DocumentDeletedEvent) {
                 this.senderProvider.get().sendDocumentDelete(document.getDocumentReferenceWithLocale());
             } else {
-                // TODO: Don't send document update which are the result of an history modification
-                // if (!this.observationcontext.isIn(HISTORY_DELETING)) {
-                this.senderProvider.get().sendDocument(document, event instanceof DocumentCreatedEvent);
-                // }
+                // Don't send document update which are the result of an history modification
+                if (!this.observationcontext.isIn(HISTORY_DELETING)) {
+                    this.senderProvider.get().sendDocument(document, event instanceof DocumentCreatedEvent);
+                }
             }
         } catch (ReplicationException e) {
             this.logger.error("Failed to send a replication message for document [{}] in version [{}]",
