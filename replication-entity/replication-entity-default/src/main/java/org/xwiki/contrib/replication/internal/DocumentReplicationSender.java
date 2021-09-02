@@ -19,6 +19,9 @@
  */
 package org.xwiki.contrib.replication.internal;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -31,6 +34,7 @@ import org.xwiki.contrib.replication.internal.history.DocumentHistoryDeleteRepli
 import org.xwiki.contrib.replication.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
+import com.xpn.xwiki.doc.XWikiAttachment;
 import com.xpn.xwiki.doc.XWikiDocument;
 
 /**
@@ -66,10 +70,38 @@ public class DocumentReplicationSender
         } else {
             message.initialize(document.getDocumentReferenceWithLocale(), document.getVersion(),
                 document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getVersion(),
-                document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getDate());
+                document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getDate(),
+                getModifiedAttachments(document));
         }
 
         this.sender.send(message);
+    }
+
+    private Set<String> getModifiedAttachments(XWikiDocument document)
+    {
+        Set<String> attachments = null;
+
+        // Find out which attachments were modified
+        XWikiDocument originalDocument = document.getOriginalDocument();
+        for (XWikiAttachment attachment : document.getAttachmentList()) {
+            // Check if the attachment has been updated
+            if (originalDocument != null) {
+                XWikiAttachment originalAttachment = originalDocument.getAttachment(attachment.getFilename());
+
+                if (originalAttachment != null && originalAttachment.getVersion().equals(attachment.getVersion())) {
+                    // TODO: compare also the actual content ?
+                    continue;
+                }
+            }
+
+            // The attachment is different
+            if (attachments == null) {
+                attachments = new HashSet<>(document.getAttachmentList().size());
+            }
+            attachments.add(attachment.getFilename());
+        }
+
+        return attachments;
     }
 
     /**
