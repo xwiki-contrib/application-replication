@@ -1,4 +1,4 @@
-# OpenID Connect
+# Replication Application
 
 Various tools to replicate data between XWiki instances.
 
