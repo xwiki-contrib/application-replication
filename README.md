@@ -3,11 +3,11 @@
 Various tools to replicate data between XWiki instances.
 
 * Project Lead: [Thomas Mortagne](http://www.xwiki.org/xwiki/bin/view/XWiki/ThomasMortagne)
-* [Documentation & Downloads](http://extensions.xwiki.org/xwiki/bin/view/Extension/Replication/)
+* [Documentation & Downloads](https://extensions.xwiki.org/xwiki/bin/view/Extension/Replication%20Application)
 * [Issue Tracker](http://jira.xwiki.org/browse/REPLICAT)
 * Communication: [Forum](https://forum.xwiki.org), [Chat](https://dev.xwiki.org/xwiki/bin/view/Community/Chat)
 * [Development Practices](http://dev.xwiki.org)
-* Minimal XWiki version supported: XWiki 12.10
+* Minimal XWiki version supported: XWiki 13.17
 * License: LGPL 2.1
 * Translations: N/A
 * Sonar Dashboard: N/A
@@ -21,5 +21,3 @@ Various tools to replicate data between XWiki instances.
 mvn release:prepare -Pintegration-tests
 mvn release:perform -Pintegration-tests
 ```
-
-* Update http://extensions.xwiki.org/xwiki/bin/view/Extension/Replication/#HReleaseNotes
