@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -30,10 +31,14 @@ import javax.inject.Provider;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance.Level;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationMessage;
+import org.xwiki.filter.instance.input.DocumentInstanceInputProperties;
+import org.xwiki.filter.output.DefaultOutputStreamOutputTarget;
+import org.xwiki.filter.xar.output.XAROutputProperties;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
+import com.xpn.xwiki.doc.DocumentRevisionProvider;
 import com.xpn.xwiki.doc.XWikiDocument;
 
 /**
@@ -70,25 +75,33 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     @Inject
     private Provider<XWikiContext> xcontextProvider;
 
+    @Inject
+    private DocumentRevisionProvider revisionProvider;
+
     private String version;
 
     private Level level;
 
     private boolean complete;
 
+    private Set<String> attachments;
+
     /**
      * @param documentReference the reference of the document affected by this message
      * @param version the version of the document
      * @param previousVersion the previous version of the document
      * @param previousVersionDate the date of the previous version of the document
+     * @param attachments the attachments content to send
      */
     public void initialize(DocumentReference documentReference, String version, String previousVersion,
-        Date previousVersionDate)
+        Date previousVersionDate, Set<String> attachments)
     {
         super.initialize(documentReference);
 
         this.complete = false;
+
         this.version = version;
+        this.attachments = attachments;
 
         putMetadata(METADATA_PREVIOUSVERSION, previousVersion);
         putMetadata(METADATA_PREVIOUSVERSION_DATE, previousVersionDate);
@@ -134,22 +147,55 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
         try {
             document = xcontext.getWiki().getDocument(this.documentReference, xcontext);
         } catch (XWikiException e) {
-            throw new IOException("Failed to get document to write", e);
+            throw new IOException("Failed to get document to write with reference [" + this.documentReference + "]", e);
         }
 
         if (document.isNew()) {
-            // TODO: try to find it in the archives
+            // TODO: try to find it in the recycle bin
         } else if (!document.getVersion().equals(this.version)) {
-            // TODO: get the right version
+            // Get the right version from the history
+            try {
+                document = this.revisionProvider.getRevision(document, this.version);
+            } catch (XWikiException e) {
+                throw new IOException("Failed to get document with reference [" + this.documentReference
+                    + "] and version [" + this.version + "]", e);
+            }
         }
 
         // TODO: find out which attachments should be sent (which attachments versions are new compared to the previous
         // version)
 
         try {
-            document.toXML(stream, true, false, this.complete, this.complete, xcontext);
+            toXML(document, stream, this.complete);
         } catch (Exception e) {
-            throw new IOException("Failed to write document to write", e);
+            throw new IOException(String.format("Failed to serialize the document with reference [%s] and version [%s]",
+                this.documentReference, this.version), e);
+        }
+    }
+
+    private void toXML(XWikiDocument document, OutputStream output, boolean complete) throws XWikiException
+    {
+        // Input
+        DocumentInstanceInputProperties documentProperties = new DocumentInstanceInputProperties();
+        // XAR XML format only support JRCS for the document
+        documentProperties.setWithRevisions(false);
+        documentProperties.setWithJRCSRevisions(complete);
+        // Indicate which attachment content to serialize
+        documentProperties.setAttachmentsContent(this.attachments);
+        // Use the revision format for attachment history since it's better from memory point of view
+        documentProperties.setWithWikiAttachmentJRCSRevisions(false);
+        documentProperties.setWithWikiAttachmentsRevisions(complete);
+
+        // Output
+        XAROutputProperties xarProperties = new XAROutputProperties();
+        // Indicate the stream where you write the XAR XML
+        xarProperties.setTarget(new DefaultOutputStreamOutputTarget(output));
+
+        try {
+            document.toXML(documentProperties, xarProperties);
+        } catch (Exception e) {
+            throw new XWikiException(XWikiException.MODULE_XWIKI_DOC, XWikiException.ERROR_XWIKI_DOC_EXPORT,
+                "Error serializin document to xml", e, null);
         }
     }
 }
