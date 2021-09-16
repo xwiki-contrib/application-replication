@@ -43,6 +43,12 @@
   <dependencies>
     <dependency>
       <groupId>org.xwiki.contrib.replication</groupId>
+      <artifactId>replication-entity-controller</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.xwiki.contrib.replication</groupId>
       <artifactId>replication-entity-default</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>

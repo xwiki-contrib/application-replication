@@ -8,7 +8,6 @@ org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstanceUnreg
 org.xwiki.contrib.replication.internal.enpoint.message.HttpServletRequestReplicationReceiverMessage
 org.xwiki.contrib.replication.internal.enpoint.message.ReplicationMessageEndpoint
 org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstanceManager
-org.xwiki.contrib.replication.internal.instance.ReplicationInstanceCache
 org.xwiki.contrib.replication.internal.instance.ReplicationInstanceClassInitializer
 org.xwiki.contrib.replication.internal.instance.ReplicationInstanceListener
 org.xwiki.contrib.replication.internal.instance.ReplicationInstanceStore

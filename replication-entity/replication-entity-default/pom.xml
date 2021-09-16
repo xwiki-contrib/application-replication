@@ -40,7 +40,7 @@
   <dependencies>
     <dependency>
       <groupId>org.xwiki.contrib.replication</groupId>
-      <artifactId>replication-api</artifactId>
+      <artifactId>replication-entity-api</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

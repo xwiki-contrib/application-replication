@@ -35,10 +35,10 @@ public interface ReplicationInstanceManager
     Collection<ReplicationInstance> getInstances();
 
     /**
-     * @param id the identifier of the instance
+     * @param uir the uri of the instance
      * @return the instance
      */
-    ReplicationInstance getInstance(String id);
+    ReplicationInstance getInstance(String uir);
 
     /**
      * @param instance the instance to add

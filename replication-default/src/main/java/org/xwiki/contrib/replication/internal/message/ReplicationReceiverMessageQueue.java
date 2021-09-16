@@ -37,8 +37,10 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.event.ReplicationReceiverMessageEvent;
 import org.xwiki.contrib.replication.internal.DefaultReplicationContext;
 import org.xwiki.contrib.replication.internal.ReplicationClient;
+import org.xwiki.observation.ObservationManager;
 
 /**
  * Maintain a queue of replication data to give to the various receivers.
@@ -67,6 +69,9 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
 
     @Inject
     private ReplicationClient client;
+
+    @Inject
+    private ObservationManager observation;
 
     @Override
     public void initialize() throws InitializationException
@@ -98,7 +103,17 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
     @Override
     protected void handle(ReplicationReceiverMessage message) throws Exception
     {
-        // Find a the receiving corresponding to the type
+        // Notify that a message is about to be handled by a receiver
+        ReplicationReceiverMessageEvent event = new ReplicationReceiverMessageEvent();
+        this.observation.notify(event, message);
+        if (event.isCanceled()) {
+            this.logger.warn("The message with id [{}] and coming from [{}] was ignored: {}", message.getId(),
+                message.getSource(), event.getReason());
+
+            return;
+        }
+
+        // Find the receiver corresponding to the type
         ReplicationReceiver replicationReceiver =
             this.componentManager.getInstance(ReplicationReceiver.class, message.getType());
 
@@ -124,6 +139,7 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
     {
         this.store.delete(message);
     }
+
     /**
      * @param message the message to store and add to the queue
      */

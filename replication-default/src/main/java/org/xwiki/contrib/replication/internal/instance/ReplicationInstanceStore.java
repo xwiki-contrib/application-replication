@@ -96,17 +96,29 @@ public class ReplicationInstanceStore
         }
     }
 
-    private String getName(BaseObject instanceObject)
-    {
-        return instanceObject.getStringValue(ReplicationInstanceClassInitializer.FIELD_NAME);
-    }
-
-    private String getURI(BaseObject instanceObject)
+    /**
+     * @param instanceObject the object containing a replication instance
+     * @return the URI of the instance
+     */
+    public String getURI(BaseObject instanceObject)
     {
         return instanceObject.getStringValue(ReplicationInstanceClassInitializer.FIELD_URI);
     }
 
-    private Status getStatus(BaseObject instanceObject)
+    /**
+     * @param instanceObject the object containing a replication instance
+     * @return the URI of the instance
+     */
+    public String getName(BaseObject instanceObject)
+    {
+        return instanceObject.getStringValue(ReplicationInstanceClassInitializer.FIELD_NAME);
+    }
+
+    /**
+     * @param instanceObject the object containing a replication instance
+     * @return the URI of the instance
+     */
+    public Status getStatus(BaseObject instanceObject)
     {
         return Enum.valueOf(Status.class,
             instanceObject.getStringValue(ReplicationInstanceClassInitializer.FIELD_STATUS));
@@ -117,7 +129,11 @@ public class ReplicationInstanceStore
         instanceObject.setStringValue(ReplicationInstanceClassInitializer.FIELD_STATUS, status.name());
     }
 
-    private ReplicationInstance toReplicationInstance(BaseObject instanceObject)
+    /**
+     * @param instanceObject the object to parse
+     * @return the {@link ReplicationInstance}
+     */
+    public ReplicationInstance toReplicationInstance(BaseObject instanceObject)
     {
         return new DefaultReplicationInstance(getName(instanceObject), getURI(instanceObject),
             getStatus(instanceObject));

@@ -24,18 +24,34 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.xwiki.contrib.replication</groupId>
-    <artifactId>replication</artifactId>
+    <artifactId>replication-entity</artifactId>
     <version>0.4-SNAPSHOT</version>
   </parent>
 
-  <artifactId>replication-entity</artifactId>
-  <name>Replication API</name>
-  <packaging>pom</packaging>
-  <description>Tools to replicate wiki entities between XWiki instances</description>
+  <artifactId>replication-entity-controller</artifactId>
+  <name>Replication Entity Controller</name>
+  <packaging>jar</packaging>
+  <description>The default controller deciding which document is replicated and with which instance</description>
 
-  <modules>
-    <module>replication-entity-api</module>
-    <module>replication-entity-default</module>
-    <module>replication-entity-controller</module>
-  </modules>
+  <properties>
+    <xwiki.extension.namespaces>{root}</xwiki.extension.namespaces>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.xwiki.contrib.replication</groupId>
+      <artifactId>replication-entity-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.xwiki.platform</groupId>
+      <artifactId>xwiki-platform-oldcore</artifactId>
+      <version>${platform.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.xwiki.platform</groupId>
+      <artifactId>xwiki-platform-uiextension-api</artifactId>
+      <version>${platform.version}</version>
+    </dependency>
+  </dependencies>
 </project>

@@ -38,15 +38,15 @@
   <hidden>true</hidden>
   <content>{{velocity}}
 #macro(displayInstance $instance)
-  ((({{html}}&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;$instance.name (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;) &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;&lt;button class="btn btn-danger" name="remove"&gt;Remove&lt;/button&gt;&lt;/form&gt;{{/html}})))
+  ((({{html}}&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;$instance.name (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;) &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;&lt;button class="btn btn-danger" name="remove"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.remove'))&lt;/button&gt;&lt;/form&gt;{{/html}})))
 #end
 
 #macro(displayRequestingInstance $instance)
-  ((({{html}}&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;$instance.name (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;) &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;&lt;button class="btn btn-success" name="requesting_accept"&gt;Accept&lt;/button&gt;&lt;button class="btn btn-danger" name="requesting_decline"&gt;Decline&lt;/button&gt;&lt;/form&gt;{{/html}})))
+  ((({{html}}&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;$instance.name (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;) &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;&lt;button class="btn btn-success" name="requesting_accept"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.accept'))&lt;/button&gt;&lt;button class="btn btn-danger" name="requesting_decline"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.decline'))&lt;/button&gt;&lt;/form&gt;{{/html}})))
 #end
 
 #macro(displayRequestedInstance $instance)
-  ((({{html}}&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt; &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;&lt;button class="btn btn-danger" name="requested_cancel"&gt;Cancel&lt;/button&gt;&lt;/form&gt;{{/html}})))
+  ((({{html}}&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt; &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;&lt;button class="btn btn-danger" name="requested_cancel"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.cancel'))&lt;/button&gt;&lt;/form&gt;{{/html}})))
 #end
 {{/velocity}}
 
@@ -72,11 +72,11 @@
 #if ($hasProgramming)
 {{html}}
 &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-  &lt;button name="reload"&gt;Reload&lt;/button&gt;
+  &lt;button name="reload"&gt;$escapetool.html($services.localization.render('replication.admin.instance.button.reload'))&lt;/button&gt;
 &lt;/form&gt;
 {{/html}}
 
-=== Validated instances
+=== {{translation key="replication.admin.instance.REGISTERED"/}}
 
 #foreach($instance in $instanceManager.getInstances())
   #if ($instance.status.name() == 'REGISTERED')
@@ -84,7 +84,7 @@
   #end
 #end
 
-=== Requesting instances
+=== {{translation key="replication.admin.instance.REQUESTING"/}}
 
 #foreach($instance in $instanceManager.getInstances())
   #if ($instance.status.name() == 'REQUESTING')
@@ -92,7 +92,7 @@
   #end
 #end
 
-=== Requested instances
+=== {{translation key="replication.admin.instance.REQUESTED"/}}
 
 {{html}}
 &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
@@ -107,7 +107,7 @@
   #end
 #end
 #else
-  {{error}}Administrating replication requires programming right.{{/error}}
+  {{error}}{{translation key="replication.admin.instance.pr"/}}{{/error}}
 #end
 {{/velocity}}</content>
   <object>

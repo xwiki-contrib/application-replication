@@ -32,7 +32,9 @@ import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.event.ReplicationSenderMessageEvent;
 import org.xwiki.contrib.replication.internal.ReplicationClient;
+import org.xwiki.observation.ObservationManager;
 
 /**
  * Maintain a queue of replication data to send to a specific instance.
@@ -49,15 +51,18 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
     @Inject
     private ReplicationClient client;
 
+    @Inject
+    private ObservationManager observation;
+
     /**
      * Used to wait for a ping or a timeout.
      */
-    private final transient ReentrantLock pingLock = new ReentrantLock();
+    private final ReentrantLock pingLock = new ReentrantLock();
 
     /**
      * Condition for waiting answer.
      */
-    private final transient Condition pingCondition = this.pingLock.newCondition();
+    private final Condition pingCondition = this.pingLock.newCondition();
 
     private ReplicationInstance instance;
 
@@ -90,10 +95,20 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
     @Override
     protected void handle(ReplicationSenderMessage message) throws InterruptedException
     {
+        // Notify that a message is about to be sent
+        ReplicationSenderMessageEvent event = new ReplicationSenderMessageEvent();
+        this.observation.notify(event, message, this.instance);
+        if (event.isCanceled()) {
+            this.logger.warn("The sending of the message with id [{}] was cancelled: {}", message.getId(),
+                event.getReason());
+
+            return;
+        }
+
         // Try to send the message until it works
         while (true) {
-            // Send the data to the instance
             try {
+                // Send the data to the instance
                 this.client.sendMessage(message, this.instance);
 
                 // Stop the loop
