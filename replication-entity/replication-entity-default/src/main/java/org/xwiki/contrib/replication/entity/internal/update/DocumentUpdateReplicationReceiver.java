@@ -32,7 +32,7 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance.Level;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationSender;
 import org.xwiki.filter.FilterException;
@@ -194,7 +194,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
 
         // Send the complete document with updated history to other instances so that they synchronize
         try {
-            this.sender.sendDocument(newDocument, true, Level.ALL);
+            this.sender.sendDocument(newDocument, true, DocumentReplicationLevel.ALL);
         } catch (ReplicationException e) {
             this.logger.error("Failed to send back the corrected complete document for reference [{}]",
                 newDocument.getDocumentReferenceWithLocale(), e);

@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!--
+/*
  * See the NOTICE file distributed with this work for additional
  * information regarding copyright ownership.
  *
@@ -18,22 +16,23 @@
  * License along with this software; if not, write to the Free
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
--->
+ */
+package org.xwiki.contrib.replication.entity;
 
-<!DOCTYPE hibernate-mapping PUBLIC
-"-//Hibernate/Hibernate Mapping DTD//EN"
-"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
-<hibernate-mapping>
-  <class name="org.xwiki.contrib.replication.entity.internal.HibernateEntityReplicationInstance" table="replication_entity_instance">
-    <composite-id>
-      <key-property name="entity" type="long"/>
-      <key-property name="instance" type="string" length="400" />
-    </composite-id>
+/**
+ * Indicate how much of the document should be replicated.
+ * 
+ * @version $Id$
+ */
+public enum DocumentReplicationLevel
+{
+    /**
+     * Complete replication of the document.
+     */
+    ALL,
 
-    <property name="level">
-      <type name="org.hibernate.type.EnumType">
-        <param name="enumClass">org.xwiki.contrib.replication.entity.DocumentReplicationLevel</param>
-      </type>
-    </property>
-  </class>
-</hibernate-mapping>
+    /**
+     * Only replicated as a place holder.
+     */
+    REFERENCE
+}

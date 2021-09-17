@@ -68,7 +68,12 @@ public class EntityReplicationStore
     @Inject
     private ReplicationInstanceManager instanceManager;
 
-    private void storeHibernateEntityReplication(EntityReference reference,
+    /**
+     * @param reference the reference of the entity
+     * @param instances the instance to send the entity to
+     * @throws XWikiException when failing to store entity replication configuration
+     */
+    public void storeHibernateEntityReplication(EntityReference reference,
         List<DocumentReplicationControllerInstance> instances) throws XWikiException
     {
         long entityId = this.cache.toEntityId(reference);
@@ -76,31 +81,28 @@ public class EntityReplicationStore
         XWikiContext xcontext = this.xcontextProvider.get();
         XWikiHibernateStore hibernateStore = (XWikiHibernateStore) this.hibernateStoreProvider.get();
 
-        boolean transation = hibernateStore.beginTransaction(xcontext);
+        hibernateStore.executeWrite(xcontext, session -> storeHibernateEntityReplication(entityId, instances, session));
 
-        try {
-            Session session = hibernateStore.getSession(xcontext);
+        // Clear the cache for this entity
+        this.cache.remove(entityId);
+    }
 
-            // Delete existing instances
-            Query<HibernateEntityReplicationInstance> query = session
-                .createQuery("DELETE FROM HibernateEntityReplication AS instance where instance.entity = :entity");
-            query.setParameter(ENTITY, entityId);
+    private Object storeHibernateEntityReplication(long entityId, List<DocumentReplicationControllerInstance> instances,
+        Session session)
+    {
+        // Delete existing instances
+        Query<HibernateEntityReplicationInstance> query = session
+            .createQuery("DELETE FROM HibernateEntityReplicationInstance AS instance where instance.entity = :entity");
+        query.setParameter(ENTITY, entityId);
 
-            // Add new instances
-            if (instances != null) {
-                for (DocumentReplicationControllerInstance instance : instances) {
-                    hibernateStore.getSession(xcontext)
-                        .save(new HibernateEntityReplicationInstance(entityId, instance));
-                }
-            }
-
-            // Clear the cache for this entity
-            this.cache.remove(entityId);
-        } finally {
-            if (transation) {
-                hibernateStore.endTransaction(xcontext, true);
+        // Add new instances
+        if (instances != null) {
+            for (DocumentReplicationControllerInstance instance : instances) {
+                session.save(new HibernateEntityReplicationInstance(entityId, instance));
             }
         }
+
+        return null;
     }
 
     /**
@@ -160,50 +162,49 @@ public class EntityReplicationStore
         XWikiContext xcontext = this.xcontextProvider.get();
         XWikiHibernateStore hibernateStore = (XWikiHibernateStore) this.hibernateStoreProvider.get();
 
-        boolean transation = hibernateStore.beginTransaction(xcontext);
+        instances =
+            hibernateStore.executeRead(xcontext, session -> getHibernateEntityReplication(entityId, cacheKey, session));
 
-        try {
-            Session session = hibernateStore.getSession(xcontext);
+        this.cache.getDataCache().set(cacheKey, instances);
 
-            Query<HibernateEntityReplicationInstance> query = session.createQuery(
-                "SELECT instance FROM HibernateEntityReplication AS instance where instance.entity = :entity");
-            query.setParameter(ENTITY, entityId);
+        return instances;
+    }
 
-            List<HibernateEntityReplicationInstance> hibernateInstances = query.list();
+    private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(long entityId, String cacheKey,
+        Session session)
+    {
+        Query<HibernateEntityReplicationInstance> query = session.createQuery(
+            "SELECT instance FROM HibernateEntityReplicationInstance AS instance where instance.entity = :entity");
+        query.setParameter(ENTITY, entityId);
 
-            // There is a single entry
-            if (hibernateInstances.size() == 1) {
-                HibernateEntityReplicationInstance hibernateInstance = hibernateInstances.get(0);
-                if (hibernateInstance.getInstance() == null) {
-                    if (hibernateInstance.getLevel() == null) {
-                        // Replication is disabled for all instances
-                        return Collections.emptyList();
-                    } else {
-                        // Replication use the same level for all instances
-                        return this.instanceManager.getInstances().stream()
-                            .map(i -> new DocumentReplicationControllerInstance(i, hibernateInstance.getLevel()))
-                            .collect(Collectors.toList());
-                    }
+        List<HibernateEntityReplicationInstance> hibernateInstances = query.list();
+
+        // There is a single entry
+        if (hibernateInstances.size() == 1) {
+            HibernateEntityReplicationInstance hibernateInstance = hibernateInstances.get(0);
+            if (hibernateInstance.getInstance() == null) {
+                if (hibernateInstance.getLevel() == null) {
+                    // Replication is disabled for all instances
+                    return Collections.emptyList();
+                } else {
+                    // Replication use the same level for all instances
+                    return this.instanceManager.getInstances().stream()
+                        .map(i -> new DocumentReplicationControllerInstance(i, hibernateInstance.getLevel()))
+                        .collect(Collectors.toList());
                 }
-            }
-
-            // There is several entries
-            instances = new ArrayList<>(hibernateInstances.size());
-            for (HibernateEntityReplicationInstance hibernateInstance : hibernateInstances) {
-                ReplicationInstance instance = this.instanceManager.getInstance(hibernateInstance.getInstance());
-
-                if (instance.getStatus() == Status.REGISTERED) {
-                    instances.add(new DocumentReplicationControllerInstance(instance, hibernateInstance.getLevel()));
-                }
-            }
-
-            this.cache.getDataCache().set(cacheKey, instances);
-
-            return instances;
-        } finally {
-            if (transation) {
-                hibernateStore.endTransaction(xcontext, true);
             }
         }
+
+        // There is several entries
+        List<DocumentReplicationControllerInstance> instances = new ArrayList<>(hibernateInstances.size());
+        for (HibernateEntityReplicationInstance hibernateInstance : hibernateInstances) {
+            ReplicationInstance instance = this.instanceManager.getInstance(hibernateInstance.getInstance());
+
+            if (instance.getStatus() == Status.REGISTERED) {
+                instances.add(new DocumentReplicationControllerInstance(instance, hibernateInstance.getLevel()));
+            }
+        }
+
+        return instances;
     }
 }

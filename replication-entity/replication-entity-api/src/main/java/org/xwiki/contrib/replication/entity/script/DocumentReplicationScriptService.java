@@ -29,6 +29,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.script.service.ScriptService;
 
 /**
  * Expose some document replication related APIs.
@@ -38,7 +39,7 @@ import org.xwiki.model.reference.DocumentReference;
 @Component
 @Named("replication.document")
 @Singleton
-public class DocumentReplicationScriptService
+public class DocumentReplicationScriptService implements ScriptService
 {
     private DocumentReplicationController controller;
 

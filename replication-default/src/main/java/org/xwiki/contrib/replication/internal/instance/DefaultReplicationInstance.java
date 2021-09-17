@@ -46,6 +46,16 @@ public class DefaultReplicationInstance implements ReplicationInstance
     }
 
     /**
+     * @param instance the instance to copy
+     */
+    public DefaultReplicationInstance(ReplicationInstance instance)
+    {
+        this.name = instance.getName();
+        this.uri = instance.getURI();
+        this.status = instance.getStatus();
+    }
+
+    /**
      * Make sure the URI has the standard format.
      * 
      * @param uri the uri to clean

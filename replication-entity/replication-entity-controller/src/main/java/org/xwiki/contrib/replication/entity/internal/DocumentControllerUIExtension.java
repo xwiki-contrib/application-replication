@@ -27,6 +27,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.localization.ContextualLocalizationManager;
 import org.xwiki.rendering.block.Block;
 import org.xwiki.template.TemplateManager;
@@ -52,6 +53,9 @@ public class DocumentControllerUIExtension implements UIExtension
     private ContextualLocalizationManager localization;
 
     @Inject
+    private ReplicationInstanceManager instances;
+
+    @Inject
     private TemplateManager templates;
 
     @Override
@@ -71,9 +75,9 @@ public class DocumentControllerUIExtension implements UIExtension
     {
         Map<String, String> parameters = new HashMap<>();
 
-        parameters.put("show", "true");
+        parameters.put("show", String.valueOf(!this.instances.getRegisteredInstances().isEmpty()));
         parameters.put("title", translate("replication.entity.docextra.title", "Replication"));
-        // parameters.put("itemnumber", "-1");
+        parameters.put("itemnumber", "-1");
         parameters.put("name", "replication");
         // parameters.put("shortcut", "");
         // parameters.put("order", "");

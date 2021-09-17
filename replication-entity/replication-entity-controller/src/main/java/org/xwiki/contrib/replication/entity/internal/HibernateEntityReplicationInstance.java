@@ -19,19 +19,25 @@
  */
 package org.xwiki.contrib.replication.entity.internal;
 
+import java.io.Serializable;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance.Level;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 
 /**
  * @version $Id$
  */
-public class HibernateEntityReplicationInstance
+public class HibernateEntityReplicationInstance implements Serializable
 {
+    private static final long serialVersionUID = 1L;
+
     private long entity;
 
     private String instance;
 
-    private Level level;
+    private DocumentReplicationLevel level;
 
     /**
      * Default constructor.
@@ -50,6 +56,38 @@ public class HibernateEntityReplicationInstance
         this.entity = entity;
         this.instance = instance.getInstance().getURI();
         this.level = instance.getLevel();
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == this) {
+            return true;
+        }
+
+        if (obj instanceof HibernateEntityReplicationInstance) {
+            HibernateEntityReplicationInstance otherInstance = (HibernateEntityReplicationInstance) obj;
+
+            EqualsBuilder builder = new EqualsBuilder();
+            builder.append(getEntity(), otherInstance.getEntity());
+            builder.append(getInstance(), otherInstance.getInstance());
+            builder.append(getLevel(), otherInstance.getLevel());
+
+            return builder.isEquals();
+        }
+
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        HashCodeBuilder builder = new HashCodeBuilder();
+        builder.append(getEntity());
+        builder.append(getInstance());
+        builder.append(getLevel());
+
+        return builder.toHashCode();
     }
 
     /**
@@ -87,7 +125,7 @@ public class HibernateEntityReplicationInstance
     /**
      * @return how much of the document should be replicated
      */
-    public Level getLevel()
+    public DocumentReplicationLevel getLevel()
     {
         return this.level;
     }
@@ -95,7 +133,7 @@ public class HibernateEntityReplicationInstance
     /**
      * @param level how much of the document should be replicated
      */
-    public void setLevel(Level level)
+    public void setLevel(DocumentReplicationLevel level)
     {
         this.level = level;
     }

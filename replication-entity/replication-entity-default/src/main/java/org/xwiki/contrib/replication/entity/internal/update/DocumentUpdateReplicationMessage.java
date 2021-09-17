@@ -29,7 +29,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance.Level;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationMessage;
 import org.xwiki.filter.instance.input.DocumentInstanceInputProperties;
 import org.xwiki.filter.output.DefaultOutputStreamOutputTarget;
@@ -80,7 +80,7 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
 
     private String version;
 
-    private Level level;
+    private DocumentReplicationLevel level;
 
     private boolean complete;
 
@@ -115,7 +115,7 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param documentReference the reference of the document affected by this message
      * @param level indicates how much of the document should be replicated
      */
-    public void initialize(DocumentReference documentReference, Level level)
+    public void initialize(DocumentReference documentReference, DocumentReplicationLevel level)
     {
         super.initialize(documentReference);
 
@@ -136,7 +136,7 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     @Override
     public void write(OutputStream stream) throws IOException
     {
-        if (this.level == Level.REFERENCE) {
+        if (this.level == DocumentReplicationLevel.REFERENCE) {
             // No content to send if only the reference is replicated
             return;
         }

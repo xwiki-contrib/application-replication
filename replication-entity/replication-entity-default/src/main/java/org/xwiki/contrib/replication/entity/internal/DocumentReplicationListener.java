@@ -33,7 +33,7 @@ import org.xwiki.bridge.event.DocumentVersionRangeDeletingEvent;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance.Level;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.ObservationContext;
 import org.xwiki.observation.event.Event;
@@ -100,14 +100,15 @@ public class DocumentReplicationListener extends AbstractEventListener
                     ((DocumentVersionRangeDeletedEvent) event).getTo());
             } else if (event instanceof DocumentDeletedEvent) {
                 this.senderProvider.get().sendDocumentDelete(document.getDocumentReferenceWithLocale(),
-                    Level.REFERENCE);
+                    DocumentReplicationLevel.REFERENCE);
             } else {
                 // Don't send document update which are the result of an history modification
                 if (!this.observationcontext.isIn(HISTORY_DELETING)) {
                     // There is no point in sending a message for each update of the instance is only allowed to
                     // replicate the reference
                     this.senderProvider.get().sendDocument(document, event instanceof DocumentCreatedEvent,
-                        event instanceof DocumentCreatedEvent ? Level.REFERENCE : Level.ALL);
+                        event instanceof DocumentCreatedEvent ? DocumentReplicationLevel.REFERENCE
+                            : DocumentReplicationLevel.ALL);
                 }
             }
         } catch (ReplicationException e) {

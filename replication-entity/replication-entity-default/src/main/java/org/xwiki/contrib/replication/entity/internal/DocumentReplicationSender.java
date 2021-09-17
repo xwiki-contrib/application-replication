@@ -35,7 +35,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance.Level;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
@@ -72,27 +72,29 @@ public class DocumentReplicationSender
      * @param minimumLevel the minimum that need to be replicated from the document
      * @throws ReplicationException when failing to queue the replication message
      */
-    public void sendDocument(XWikiDocument document, boolean complete, Level minimumLevel) throws ReplicationException
+    public void sendDocument(XWikiDocument document, boolean complete, DocumentReplicationLevel minimumLevel)
+        throws ReplicationException
     {
         List<DocumentReplicationControllerInstance> instances =
             this.controller.getTargetInstances(document.getDocumentReference());
 
         // The message to send to instances allowed to receive full document
-        sendDocument(document, complete, Level.ALL, minimumLevel, instances);
+        sendDocument(document, complete, DocumentReplicationLevel.ALL, minimumLevel, instances);
 
         // The message to send to instances allowed to receive only the reference
-        sendDocument(document, complete, Level.REFERENCE, minimumLevel, instances);
+        sendDocument(document, complete, DocumentReplicationLevel.REFERENCE, minimumLevel, instances);
     }
 
-    private void sendDocument(XWikiDocument document, boolean complete, Level level, Level minimumLevel,
-        List<DocumentReplicationControllerInstance> instances) throws ReplicationException
+    private void sendDocument(XWikiDocument document, boolean complete, DocumentReplicationLevel level,
+        DocumentReplicationLevel minimumLevel, List<DocumentReplicationControllerInstance> instances)
+        throws ReplicationException
     {
         if (level.ordinal() < minimumLevel.ordinal()) {
             // We don't want to send any message for this level of replication
             return;
         }
 
-        List<ReplicationInstance> allInstances = getInstances(Level.ALL, instances);
+        List<ReplicationInstance> allInstances = getInstances(DocumentReplicationLevel.ALL, instances);
 
         DocumentUpdateReplicationMessage message = this.documentMessageProvider.get();
 
@@ -102,7 +104,7 @@ public class DocumentReplicationSender
             message.initialize(document.getDocumentReferenceWithLocale(), document.getVersion(),
                 document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getVersion(),
                 document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getDate(),
-                    getModifiedAttachments(document));
+                getModifiedAttachments(document));
         }
 
         this.sender.send(message, allInstances);
@@ -140,9 +142,10 @@ public class DocumentReplicationSender
      * @param minimumLevel the minimum that need to be replicated from the document
      * @throws ReplicationException when failing to queue the replication message
      */
-    public void sendDocumentDelete(DocumentReference documentReference, Level minimumLevel) throws ReplicationException
+    public void sendDocumentDelete(DocumentReference documentReference, DocumentReplicationLevel minimumLevel)
+        throws ReplicationException
     {
-        List<ReplicationInstance> instances = getInstances(documentReference, Level.REFERENCE);
+        List<ReplicationInstance> instances = getInstances(documentReference, DocumentReplicationLevel.REFERENCE);
 
         DocumentDeleteReplicationMessage message = this.documentDeleteMessageProvider.get();
 
@@ -161,7 +164,7 @@ public class DocumentReplicationSender
         throws ReplicationException
     {
         // Sending history update only make sense to instance allowed to contains complete documents
-        List<ReplicationInstance> instances = getInstances(documentReference, Level.ALL);
+        List<ReplicationInstance> instances = getInstances(documentReference, DocumentReplicationLevel.ALL);
 
         if (!CollectionUtils.isEmpty(instances)) {
             DocumentHistoryDeleteReplicationMessage message = this.historyMessageProvider.get();
@@ -171,13 +174,14 @@ public class DocumentReplicationSender
         }
     }
 
-    private List<ReplicationInstance> getInstances(Level level, List<DocumentReplicationControllerInstance> instances)
+    private List<ReplicationInstance> getInstances(DocumentReplicationLevel level,
+        List<DocumentReplicationControllerInstance> instances)
     {
         return instances.stream().filter(i -> i.getLevel() == level)
             .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
     }
 
-    private List<ReplicationInstance> getInstances(DocumentReference reference, Level minimumLevel)
+    private List<ReplicationInstance> getInstances(DocumentReference reference, DocumentReplicationLevel minimumLevel)
         throws ReplicationException
     {
         List<DocumentReplicationControllerInstance> instances = this.controller.getTargetInstances(reference);

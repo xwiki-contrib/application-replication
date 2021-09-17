@@ -19,11 +19,17 @@
  */
 package org.xwiki.contrib.replication.script;
 
+import java.util.Collection;
+import java.util.stream.Collectors;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
+import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
 import org.xwiki.script.service.ScriptService;
 import org.xwiki.script.service.ScriptServiceManager;
 
@@ -35,7 +41,7 @@ import org.xwiki.script.service.ScriptServiceManager;
 @Component
 @Named(ReplicationScriptService.ROLEHINT)
 @Singleton
-public class ReplicationScriptService
+public class ReplicationScriptService implements ScriptService
 {
     /**
      * The role hint of this component.
@@ -44,6 +50,9 @@ public class ReplicationScriptService
 
     @Inject
     private ScriptServiceManager scriptServiceManager;
+
+    @Inject
+    private ReplicationInstanceManager instances;
 
     /**
      * @param <S> the type of the {@link ScriptService}
@@ -54,5 +63,14 @@ public class ReplicationScriptService
     public <S extends ScriptService> S get(String serviceName)
     {
         return (S) this.scriptServiceManager.get(ReplicationScriptService.ROLEHINT + '.' + serviceName);
+    }
+
+    /**
+     * @return all instances which been validated on both ends
+     */
+    public Collection<ReplicationInstance> getRegisteredInstances()
+    {
+        return this.instances.getRegisteredInstances().stream().map(i -> new DefaultReplicationInstance(i))
+            .collect(Collectors.toList());
     }
 }

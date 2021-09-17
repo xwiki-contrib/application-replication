@@ -26,33 +26,15 @@ import org.xwiki.contrib.replication.ReplicationInstance;
  */
 public class DocumentReplicationControllerInstance
 {
-    /**
-     * Indicate how much of the document should be replicated.
-     * 
-     * @version $Id$
-     */
-    public enum Level
-    {
-        /**
-         * Complete replication of the document.
-         */
-        ALL,
-
-        /**
-         * Only replicated as a place holder.
-         */
-        REFERENCE
-    }
-
     private final ReplicationInstance instance;
 
-    private final Level level;
+    private final DocumentReplicationLevel level;
 
     /**
      * @param instance the instance to replicate the document with
      * @param level indicate how much of the document should be replicated
      */
-    public DocumentReplicationControllerInstance(ReplicationInstance instance, Level level)
+    public DocumentReplicationControllerInstance(ReplicationInstance instance, DocumentReplicationLevel level)
     {
         this.instance = instance;
         this.level = level;
@@ -69,7 +51,7 @@ public class DocumentReplicationControllerInstance
     /**
      * @return how much of the document should be replicated
      */
-    public Level getLevel()
+    public DocumentReplicationLevel getLevel()
     {
         return this.level;
     }
