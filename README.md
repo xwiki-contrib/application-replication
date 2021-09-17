@@ -9,7 +9,7 @@ Various tools to replicate data between XWiki instances.
 * [Development Practices](http://dev.xwiki.org)
 * Minimal XWiki version supported: XWiki 13.17
 * License: LGPL 2.1
-* Translations: N/A
+* Translations: https://l10n.xwiki.org/projects/xwiki-contrib/application-replication-default/
 * Sonar Dashboard: N/A
 * Continuous Integration Status: [![Build Status](https://ci.xwiki.org/buildStatus/icon?job=XWiki+Contrib%2Fapplication-replication%2Fmaster)](https://ci.xwiki.org/job/XWiki%20Contrib/job/application-replication/job/master/)
 
