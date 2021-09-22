@@ -103,7 +103,7 @@ public class EntityReplicationCache implements Initializable, Disposable
      */
     public long toEntityId(EntityReference reference)
     {
-        return Util.getHash(this.idSerializer.serialize(reference));
+        return Util.getHash(reference.getType().name() + ':' + this.idSerializer.serialize(reference));
     }
 
     /**
