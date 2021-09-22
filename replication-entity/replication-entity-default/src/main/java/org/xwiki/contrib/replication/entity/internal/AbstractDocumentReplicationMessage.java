@@ -93,7 +93,7 @@ public abstract class AbstractDocumentReplicationMessage implements ReplicationS
     /**
      * @param documentReference the reference of the document affected by this message
      */
-    public void initialize(DocumentReference documentReference)
+    protected void initialize(DocumentReference documentReference)
     {
         this.documentReference = documentReference;
 

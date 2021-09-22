@@ -54,7 +54,7 @@ public class HibernateEntityReplicationInstance implements Serializable
     public HibernateEntityReplicationInstance(long entity, DocumentReplicationControllerInstance instance)
     {
         this.entity = entity;
-        this.instance = instance.getInstance().getURI();
+        this.instance = instance.getInstance() != null ? instance.getInstance().getURI() : "";
         this.level = instance.getLevel();
     }
 
@@ -119,7 +119,7 @@ public class HibernateEntityReplicationInstance implements Serializable
      */
     public void setInstance(String instance)
     {
-        this.instance = instance;
+        this.instance = instance == null ? "" : instance;
     }
 
     /**

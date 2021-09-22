@@ -33,11 +33,13 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSender;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
@@ -55,7 +57,10 @@ public class DocumentReplicationSender
     private ReplicationSender sender;
 
     @Inject
-    private Provider<DocumentUpdateReplicationMessage> documentMessageProvider;
+    private Provider<DocumentReferenceReplicationMessage> documentReferenceMessageProvider;
+
+    @Inject
+    private Provider<DocumentUpdateReplicationMessage> documentUpdateMessageProvider;
 
     @Inject
     private Provider<DocumentDeleteReplicationMessage> documentDeleteMessageProvider;
@@ -75,18 +80,18 @@ public class DocumentReplicationSender
     public void sendDocument(XWikiDocument document, boolean complete, DocumentReplicationLevel minimumLevel)
         throws ReplicationException
     {
-        List<DocumentReplicationControllerInstance> instances =
+        List<DocumentReplicationControllerInstance> allInstances =
             this.controller.getTargetInstances(document.getDocumentReference());
 
         // The message to send to instances allowed to receive full document
-        sendDocument(document, complete, DocumentReplicationLevel.ALL, minimumLevel, instances);
+        sendDocument(document, complete, DocumentReplicationLevel.ALL, minimumLevel, allInstances);
 
         // The message to send to instances allowed to receive only the reference
-        sendDocument(document, complete, DocumentReplicationLevel.REFERENCE, minimumLevel, instances);
+        sendDocument(document, complete, DocumentReplicationLevel.REFERENCE, minimumLevel, allInstances);
     }
 
     private void sendDocument(XWikiDocument document, boolean complete, DocumentReplicationLevel level,
-        DocumentReplicationLevel minimumLevel, List<DocumentReplicationControllerInstance> instances)
+        DocumentReplicationLevel minimumLevel, List<DocumentReplicationControllerInstance> allInstances)
         throws ReplicationException
     {
         if (level.ordinal() < minimumLevel.ordinal()) {
@@ -94,20 +99,31 @@ public class DocumentReplicationSender
             return;
         }
 
-        List<ReplicationInstance> allInstances = getInstances(DocumentReplicationLevel.ALL, instances);
+        List<ReplicationInstance> instances = getInstances(level, allInstances);
 
-        DocumentUpdateReplicationMessage message = this.documentMessageProvider.get();
+        ReplicationSenderMessage message;
 
-        if (complete) {
-            message.initialize(document.getDocumentReferenceWithLocale(), level);
+        if (level == DocumentReplicationLevel.REFERENCE) {
+            message = this.documentReferenceMessageProvider.get();
+
+            ((DocumentReferenceReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
+                document.getCreatorReference());
         } else {
-            message.initialize(document.getDocumentReferenceWithLocale(), document.getVersion(),
-                document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getVersion(),
-                document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getDate(),
-                getModifiedAttachments(document));
+            message = this.documentUpdateMessageProvider.get();
+
+            if (complete) {
+                ((DocumentUpdateReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
+                    document.getVersion());
+            } else {
+                ((DocumentUpdateReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
+                    document.getVersion(),
+                    document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getVersion(),
+                    document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getDate(),
+                    getModifiedAttachments(document));
+            }
         }
 
-        this.sender.send(message, allInstances);
+        this.sender.send(message, instances);
     }
 
     private Set<String> getModifiedAttachments(XWikiDocument document)

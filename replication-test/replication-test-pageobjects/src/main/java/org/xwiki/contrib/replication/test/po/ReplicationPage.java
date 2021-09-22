@@ -17,22 +17,22 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity;
+package org.xwiki.contrib.replication.test.po;
+
+import org.openqa.selenium.By;
+import org.xwiki.test.ui.po.ViewPage;
 
 /**
- * Indicate how much of the document should be replicated.
+ * Adds Replication elements to a standard view page.
  * 
- * @version $Id$
+ * @version $Id: 72d575e8b741d94ff16c53ccffe266c06511e157 $
  */
-public enum DocumentReplicationLevel
+public class ReplicationPage extends ViewPage
 {
-    /**
-     * Only replicated as a place holder.
-     */
-    REFERENCE,
-
-    /**
-     * Complete replication of the document.
-     */
-    ALL
+    public ReplicationDocExtraPane openReplicationDocExtraPane()
+    {
+        getDriver().findElement(By.id("replication.document_controllerlink")).click();
+        waitForDocExtraPaneActive("replication.document_controller");
+        return new ReplicationDocExtraPane();
+    }
 }

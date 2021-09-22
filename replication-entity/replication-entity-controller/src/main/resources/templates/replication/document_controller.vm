@@ -1,24 +1,157 @@
-#set ($instances = $services.replication.getInstances())
-#if (!$instances.isEmpty())
-  #set ($replicatedInstances = $services.replication.controller.getHibernateEntityReplication($doc.documentReference)
-  #set ($replicationInstanceMap = {})
-  #foreach($replicatedInstance in $replicatedInstances)
-    #set ($void = $replicationInstanceMap.put($replicatedInstance.instance.uri, $replicatedInstance))
-  #end
-  <form action="$xwiki.relativeRequestURL" method="post">
-  <ul>
-  #foreach($instance in $instances)
-    <li>
-      $instance.name (<a href="$instance.uRI">$instance.uRI</a>) :
-    <select id="pet-select">
-      <option value="">$escapetool.xml($services.localization.render('replication.entity.docextra.notreplicated'))</option>
-      <option value="ALL" label="$escapetool.xml($services.localization.render('replication.entity.level.ALL.description'))">$escapetool.xml($services.localization.render('replication.entity.level.ALL'))</option>
-      <option value="ALL" label="$escapetool.xml($services.localization.render('replication.entity.level.REFERENCE.description'))">$escapetool.xml($services.localization.render('replication.entity.level.REFERENCE'))</option>
-    </select>
-  </li>
-#end
-</ul>
+## ---------------------------------------------------------------------------
+## See the NOTICE file distributed with this work for additional
+## information regarding copyright ownership.
+##
+## This is free software; you can redistribute it and/or modify it
+## under the terms of the GNU Lesser General Public License as
+## published by the Free Software Foundation; either version 2.1 of
+## the License, or (at your option) any later version.
+##
+## This software is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+## Lesser General Public License for more details.
+##
+## You should have received a copy of the GNU Lesser General Public
+## License along with this software; if not, write to the Free
+## Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+## 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+## ---------------------------------------------------------------------------
+#if ($request.replication_save)
+  #if ($services.csrf.isTokenValid($request.form_token))
+    #macro(save $namePrefix $reference)
+      #set ($replicationType = $request.get("${namePrefix}_replication_instance_type"))
+      #if ($replicationType == 'default')
+        #set ($instances = $NULL)
+      #elseif ($replicationType == 'all')
+        #set ($instances = {$NULL : $request.get("${namePrefix}_replication_instance_level")})
+      #elseif ($replicationType == 'single')
+        #set ($instances = {})
+        #set ($parameterPrefix = "${namePrefix}_replication_instance_uri_")
+        #foreach($parameterName in $request.parameterNames)
+          #if ($parameterName.startsWith($parameterPrefix))
+            #set ($instanceURI = $request.getParameter($parameterName))
+            #set ($instanceIndex = $parameterName.substring($parameterPrefix.length()))
+            #set ($instanceLevel = $request.getParameter("${namePrefix}_replication_instance_level_$instanceIndex"))
+            #if ($!instanceLevel != '')
+              #set ($void = $instances.put($instanceURI, $instanceLevel))
+            #end
+          #end
+        #end
+      #end
+      #set ($void = $services.replication.controller.save($reference, $instances))
+    #end
 
-<button name="replication_update">$escapetool.xml($services.localization.render('replication.admin.instance.button.remove'))</button>
-</form>
+    #save('document', $doc.documentReference)
+    #if ($doc.documentReference.name == 'WebHome')
+      #save('space', $doc.documentReference.parent)
+    #end
+  #end
+#else
+<script src="$xwiki.jsrx.use('resources/replication/docextra.js')" defer="defer"></script>
+
+#macro(resolveReplicationInstances $reference)
+    #set ($resolvedInstances = $services.replication.controller.resolveHibernateEntityReplication($reference))
+
+    #if ($resolvedInstances.size() > 0)
+      <dl>
+        #foreach($resolvedInstance in $resolvedInstances)
+          <dt>$resolvedInstance.instance.name (<a href="$resolvedInstance.instance.uRI">$resolvedInstance.instance.uRI</a>)</dt>
+          <dd>$escapetool.xml($services.localization.render("replication.entity.level.${resolvedInstance.level}"))</dd>
+        #end
+      </dl>
+    #else
+      $escapetool.xml($services.localization.render("replication.entity.docextra.notreplicated"))
+      <br/>
+    #end
+#end
+
+#macro(selectLevel $currentLevel, $inputId)
+  <select id="$inputId" name="$inputId">
+    <option value="">$escapetool.xml($services.localization.render('replication.entity.docextra.notreplicated'))</option>
+    <optgroup label="$escapetool.xml($services.localization.render('replication.entity.docextra.replicated'))">
+      <option value="ALL"
+        #if($currentLevel == 'ALL')selected#end
+        title="$escapetool.xml($services.localization.render('replication.entity.level.ALL.description'))">
+        $escapetool.xml($services.localization.render('replication.entity.level.ALL'))
+      </option>
+      <option value="REFERENCE"
+        #if($currentLevel == 'REFERENCE')selected#end
+        title="$escapetool.xml($services.localization.render('replication.entity.level.REFERENCE.description'))">
+        $escapetool.xml($services.localization.render('replication.entity.level.REFERENCE'))
+      </option>
+     </optgroup>
+  </select>
+#end
+
+#macro(replicationInstances $namePrefix, $instances, $reference)
+  #if ($services.security.authorization.hasAccess('ADMIN', $reference))
+    #set ($replicatedInstances = $services.replication.controller.getHibernateEntityReplication($reference))
+    #set ($replicationInstanceMap = {})
+    #foreach($replicatedInstance in $replicatedInstances)
+      #set ($void = $replicationInstanceMap.put($replicatedInstance.instance.uRI, $replicatedInstance))
+    #end
+    #if(!$replicatedInstances)
+      #set ($replicationType = 'default')
+    #elseif($replicatedInstances.isEmpty() || ($replicatedInstances.size() == 1 && !$replicatedInstances[0].instance))
+      #set ($replicationType = 'all')
+    #else
+      #set ($replicationType = 'single')
+    #end
+
+    <input type="radio" id="${namePrefix}_replication_instance_type_default" name="${namePrefix}_replication_instance_type" value="default" #if($replicationType == 'default')checked#end>
+    <label for="${namePrefix}_replication_instance_type_all">$escapetool.xml($services.localization.render('replication.entity.docextra.type.default'))</label>
+
+    #resolveReplicationInstances($reference.parent)
+
+    <input type="radio" id="${namePrefix}_replication_instance_type_all" name="${namePrefix}_replication_instance_type" value="all" #if($replicationType == 'all')checked#end>
+    <label for="${namePrefix}_replication_instance_type_all">$escapetool.xml($services.localization.render('replication.entity.docextra.type.all'))</label>
+
+    #set ($inputId = "${namePrefix}_replication_instance_level")
+    #selectLevel($replicationInstanceMap.get($instance.uRI).level.name(), $inputId)
+
+    <br/>
+    <input type="radio" id="${namePrefix}_replication_instance_type_single" name="${namePrefix}_replication_instance_type" value="single" #if($replicationType == 'single')checked#end>
+    <label for="${namePrefix}_replication_instance_type_all">$escapetool.xml($services.localization.render('replication.entity.docextra.type.single'))</label>
+
+    <dl>
+      #foreach($instance in $instances)
+        #set ($inputId = "${namePrefix}_replication_instance_level_$foreach.index")
+        <dt><label for="$inputId">$instance.name (<a href="$instance.uRI">$instance.uRI</a>)</label></dt>
+        <dd>
+          <input type="hidden" name="${namePrefix}_replication_instance_uri_$foreach.index" value="$escapetool.xml($instance.uRI)"/>
+          #selectLevel($replicationInstanceMap.get($instance.uRI).level.name(), $inputId)
+        </dd>
+      #end
+    </dl>
+  #else
+    #resolveReplicationInstances($reference)
+  #end
+#end
+
+#set ($instances = $services.replication.getRegisteredInstances())
+#if (!$instances.isEmpty())
+  <form id="replication_form" action="$xwiki.relativeRequestURL" method="post">
+    <input type="hidden" name="form_token" value="$!{services.csrf.getToken()}" />
+    <input type="hidden" name="replication_save"/>
+
+    #if ($doc.documentReference.name == 'WebHome')
+      <fieldset>
+        <legend>$escapetool.xml($services.localization.render('replication.entity.docextra.pageandchildren'))</legend>
+
+        #replicationInstances('space', $instances, $doc.documentReference.parent)
+      </fieldset>
+    #end
+
+    <fieldset>
+      <legend>$escapetool.xml($services.localization.render('replication.entity.docextra.currentpage'))</legend>
+
+      #replicationInstances('document', $instances, $doc.documentReference)
+    </fieldset>
+
+    #if ($services.security.authorization.hasAccess('ADMIN', $doc.documentReference) || $services.security.authorization.hasAccess('ADMIN', $doc.documentReference.parent))
+      <button id="replication_save" name="replication_save">$escapetool.xml($services.localization.render('replication.entity.docextra.button.save'))</button>
+    #end
+  </form>
+#end
 #end

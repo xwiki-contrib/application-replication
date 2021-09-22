@@ -41,5 +41,10 @@
       <artifactId>xwiki-platform-administration-test-pageobjects</artifactId>
       <version>${platform.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.xwiki.contrib.replication</groupId>
+      <artifactId>replication-entity-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 </project>

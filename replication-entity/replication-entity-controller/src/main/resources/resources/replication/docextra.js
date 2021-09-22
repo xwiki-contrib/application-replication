@@ -17,22 +17,17 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity;
+ require(['jquery'], function ($) {
+  $('#replication_form').submit(function() {
+    // Disable the button
+    $('#replication_save').prop('disabled', true);
 
-/**
- * Indicate how much of the document should be replicated.
- * 
- * @version $Id$
- */
-public enum DocumentReplicationLevel
-{
-    /**
-     * Only replicated as a place holder.
-     */
-    REFERENCE,
+    $.post($(this).attr('action'), $(this).serialize(), function(res) {
+        // Re-enable the button
+        $('#replication_save').prop('disabled', false);
+    });
 
-    /**
-     * Complete replication of the document.
-     */
-    ALL
-}
+    // Cancel default button clicking action
+    return false;
+  });
+});

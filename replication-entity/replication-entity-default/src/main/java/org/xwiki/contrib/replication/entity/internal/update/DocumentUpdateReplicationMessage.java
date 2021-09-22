@@ -29,7 +29,6 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationMessage;
 import org.xwiki.filter.instance.input.DocumentInstanceInputProperties;
 import org.xwiki.filter.output.DefaultOutputStreamOutputTarget;
@@ -80,13 +79,13 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
 
     private String version;
 
-    private DocumentReplicationLevel level;
-
     private boolean complete;
 
     private Set<String> attachments;
 
     /**
+     * Initialize a message for a version replication.
+     * 
      * @param documentReference the reference of the document affected by this message
      * @param version the version of the document
      * @param previousVersion the previous version of the document
@@ -96,35 +95,40 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     public void initialize(DocumentReference documentReference, String version, String previousVersion,
         Date previousVersionDate, Set<String> attachments)
     {
-        super.initialize(documentReference);
+        initialize(documentReference, version, false);
 
-        this.complete = false;
-
-        this.version = version;
         this.attachments = attachments;
 
         putMetadata(METADATA_PREVIOUSVERSION, previousVersion);
         putMetadata(METADATA_PREVIOUSVERSION_DATE, previousVersionDate);
 
-        this.id += '/' + this.version;
-
         this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 
     /**
+     * Initialize a message for a complete replication.
+     * 
      * @param documentReference the reference of the document affected by this message
-     * @param level indicates how much of the document should be replicated
+     * @param version the version of the document
      */
-    public void initialize(DocumentReference documentReference, DocumentReplicationLevel level)
+    public void initialize(DocumentReference documentReference, String version)
+    {
+        initialize(documentReference, version, true);
+
+        this.metadata = Collections.unmodifiableMap(this.metadata);
+    }
+
+    private void initialize(DocumentReference documentReference, String version, boolean complete)
     {
         super.initialize(documentReference);
 
-        this.level = level;
-        this.complete = true;
+        this.complete = complete;
+
+        this.version = version;
 
         putMetadata(METADATA_COMPLETE, this.complete);
 
-        this.metadata = Collections.unmodifiableMap(this.metadata);
+        this.id += '/' + this.version;
     }
 
     @Override
@@ -136,11 +140,6 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     @Override
     public void write(OutputStream stream) throws IOException
     {
-        if (this.level == DocumentReplicationLevel.REFERENCE) {
-            // No content to send if only the reference is replicated
-            return;
-        }
-
         XWikiContext xcontext = this.xcontextProvider.get();
 
         XWikiDocument document;

@@ -19,16 +19,24 @@
  */
 package org.xwiki.contrib.replication.entity.script;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.apache.commons.lang3.StringUtils;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.ReplicationInstance.Status;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationStore;
 import org.xwiki.model.reference.EntityReference;
+import org.xwiki.properties.converter.Converter;
 import org.xwiki.script.service.ScriptService;
 import org.xwiki.security.authorization.AccessDeniedException;
 import org.xwiki.security.authorization.ContextualAuthorizationManager;
@@ -50,7 +58,13 @@ public class ControllerReplicationScriptService implements ScriptService
     private EntityReplicationStore store;
 
     @Inject
+    private ReplicationInstanceManager instanceManager;
+
+    @Inject
     private ContextualAuthorizationManager authorization;
+
+    @Inject
+    private Converter<Enum> enumConverter;
 
     /**
      * @param reference the reference of the entity
@@ -78,5 +92,42 @@ public class ControllerReplicationScriptService implements ScriptService
         this.authorization.checkAccess(Right.PROGRAM);
 
         return this.store.resolveHibernateEntityReplication(reference);
+    }
+
+    /**
+     * @param reference the reference of the entity associated with the configuration
+     * @param instances the instance and level mapping to update
+     * @throws AccessDeniedException if the current script author does not have the right to use this API
+     * @throws XWikiException when failing to save the configuration
+     */
+    public void save(EntityReference reference, Map<String, Object> instances)
+        throws AccessDeniedException, XWikiException
+    {
+        this.authorization.checkAccess(Right.PROGRAM);
+
+        List<DocumentReplicationControllerInstance> configuration;
+        if (instances == null) {
+            configuration = null;
+        } else {
+            configuration = new ArrayList<>(instances.size());
+            for (Map.Entry<String, Object> entry : instances.entrySet()) {
+                ReplicationInstance instance = this.instanceManager.getInstance(entry.getKey());
+                if (StringUtils.isEmpty(entry.getKey())
+                    || (instance != null && instance.getStatus() == Status.REGISTERED)) {
+                    configuration.add(new DocumentReplicationControllerInstance(instance, toLevel(entry.getValue())));
+                }
+            }
+        }
+
+        this.store.storeHibernateEntityReplication(reference, configuration);
+    }
+
+    private DocumentReplicationLevel toLevel(Object value)
+    {
+        if (value == null || (value instanceof String && StringUtils.isEmpty((String) value))) {
+            return null;
+        }
+
+        return this.enumConverter.convert(DocumentReplicationLevel.class, value);
     }
 }

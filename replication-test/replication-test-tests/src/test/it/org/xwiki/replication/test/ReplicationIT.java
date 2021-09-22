@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
 import org.junit.Test;
 import org.xwiki.contrib.replication.test.po.RegisteredInstancePane;
 import org.xwiki.contrib.replication.test.po.ReplicationAdministrationSectionPage;
@@ -37,7 +36,6 @@ import org.xwiki.rest.model.jaxb.HistorySummary;
 import org.xwiki.rest.model.jaxb.Page;
 import org.xwiki.rest.resources.pages.PageResource;
 import org.xwiki.test.ui.AbstractTest;
-import org.xwiki.test.ui.SuperAdminAuthenticationRule;
 import org.xwiki.test.ui.TestUtils;
 
 import com.google.common.base.Objects;
@@ -132,19 +130,22 @@ public class ReplicationIT extends AbstractTest
         // Link two instances
         instances();
 
+        // Configure replication
+        controller();
+
         // Replicate a page between the 2 registered instances
         replicate();
     }
 
     private void instances()
     {
-        // Get instance1 uri
+        // Get instances uris
         getUtil().switchExecutor(1);
         String uri1 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
-
-        // Go to instance0
         getUtil().switchExecutor(0);
         String uri0 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
+
+        // Login on instance0
         getUtil().loginAsSuperAdmin();
         ReplicationAdministrationSectionPage admin0 = ReplicationAdministrationSectionPage.gotoPage();
 
@@ -190,6 +191,15 @@ public class ReplicationIT extends AbstractTest
         registeredInstances = admin1.getRegisteredInstances();
         assertEquals(1, registeredInstances.size());
         assertEquals(uri1, registeredInstances.get(0).getURI());
+    }
+
+    private void controller()
+    {
+        // TODO: create Replication space on instance0
+
+        // TODO: enable full replication for the space Replication
+
+        // TODO: make sure the configuration is replicated on instance1
     }
 
     private void replicate() throws Exception

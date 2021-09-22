@@ -49,7 +49,7 @@ public class DefaultDocumentReplicationController implements DocumentReplication
         throws ReplicationException
     {
         try {
-            return this.store.getHibernateEntityReplication(documentReference);
+            return this.store.resolveHibernateEntityReplication(documentReference);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to retrieve instances from the store", e);
         }
