@@ -35,10 +35,10 @@ public interface ReplicationInstanceManager
     Collection<ReplicationInstance> getInstances();
 
     /**
-     * @param uir the uri of the instance
+     * @param uri the uri of the instance
      * @return the instance
      */
-    ReplicationInstance getInstance(String uir);
+    ReplicationInstance getInstance(String uri);
 
     /**
      * @param instance the instance to add
@@ -60,6 +60,13 @@ public interface ReplicationInstanceManager
     Collection<ReplicationInstance> getRegisteredInstances();
 
     /**
+     * @param uri the base URI of the instance to remove from the list of registered instances
+     * @return <tt>true</tt> if an instance was removed as a result of this call
+     * @throws ReplicationException when failing to remove the instance
+     */
+    boolean removeRegisteredInstance(String uri) throws ReplicationException;
+
+    /**
      * @param instanceURL the base URL of the instance
      * @throws ReplicationException when failing to send a request to the target instance
      */
@@ -73,14 +80,14 @@ public interface ReplicationInstanceManager
     /**
      * @param uri the base URI of the instance to remove from the list of instance which did not yet accepted the link
      * @return <tt>true</tt> if an instance was removed as a result of this call
-     * @throws ReplicationException
+     * @throws ReplicationException when failing to cancel the instance
      */
     boolean cancelRequestedInstance(String uri) throws ReplicationException;
 
     /**
      * @param instance the instance to add
      * @return <tt>true</tt> if an instance was confirmed as a result of this call
-     * @throws ReplicationException
+     * @throws ReplicationException when failing to confirm the instance
      */
     boolean confirmRequestedInstance(ReplicationInstance instance) throws ReplicationException;
 
@@ -92,21 +99,21 @@ public interface ReplicationInstanceManager
     /**
      * @param uri the uri of the instance to accept
      * @return <tt>true</tt> if an instance was created/modified as a result of this call
-     * @throws ReplicationException
+     * @throws ReplicationException when failing to accept the instance
      */
     boolean acceptRequestingInstance(String uri) throws ReplicationException;
 
     /**
      * @param uri the uri of the instance to decline
      * @return <tt>true</tt> if an instance was removed as a result of this call
-     * @throws ReplicationException
+     * @throws ReplicationException when failing to remove the instance
      */
     boolean declineRequestingInstance(String uri) throws ReplicationException;
 
     /**
      * @param uri the uri of the instance to remove
      * @return <tt>true</tt> if an instance was removed as a result of this call
-     * @throws ReplicationException
+     * @throws ReplicationException when failing to remove the instance
      */
     ReplicationInstance removeRequestingInstance(String uri) throws ReplicationException;
 

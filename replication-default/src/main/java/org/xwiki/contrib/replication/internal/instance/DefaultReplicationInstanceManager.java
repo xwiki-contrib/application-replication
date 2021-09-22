@@ -64,6 +64,10 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public ReplicationInstance getInstance(String uri)
     {
+        if (uri == null) {
+            return null;
+        }
+
         String cleanURI = DefaultReplicationInstance.cleanURI(uri);
 
         ReplicationInstance instance = this.instances.get(cleanURI);
@@ -95,6 +99,10 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public ReplicationInstance removeInstance(String uri) throws ReplicationException
     {
+        if (uri == null) {
+            return null;
+        }
+
         String cleanURI = DefaultReplicationInstance.cleanURI(uri);
 
         ReplicationInstance instance = this.instances.get(cleanURI);
@@ -141,6 +149,32 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
 
         // Add instance to the store
         this.store.addInstance(instance);
+    }
+
+    @Override
+    public boolean removeRegisteredInstance(String uri) throws ReplicationException
+    {
+        String cleanURI = DefaultReplicationInstance.cleanURI(uri);
+
+        ReplicationInstance instance = this.instances.get(cleanURI);
+
+        if (instance == null || instance.getStatus() != Status.REGISTERED) {
+            return false;
+        }
+
+        // Remove instance from the store/cache
+        removeInstanceInternal(instance);
+
+        // Notify the instance about the removed instance
+        try {
+            this.client.unregister(instance);
+        } catch (Exception e) {
+            // TODO: put it in a retry queue
+            this.logger.warn("Failed to notify the instance it's not registered anymore [{}]: {}", cleanURI,
+                ExceptionUtils.getRootCauseMessage(e));
+        }
+
+        return true;
     }
 
     @Override
