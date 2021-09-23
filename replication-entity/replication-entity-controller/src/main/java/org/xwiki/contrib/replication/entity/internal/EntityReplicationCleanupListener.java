@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.entity.internal;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.bridge.event.DocumentDeletedEvent;
@@ -39,7 +40,7 @@ import com.xpn.xwiki.doc.XWikiDocument;
  * @version $Id: f9ed06c92322e4b3ba6505fc7b87ea7a142d246d $
  */
 @Component
-@Named("EntityReplicationCacheInvalidationListener")
+@Named("EntityReplicationCleanupListener")
 @Singleton
 public class EntityReplicationCleanupListener extends AbstractEventListener
 {
@@ -47,7 +48,7 @@ public class EntityReplicationCleanupListener extends AbstractEventListener
     private EntityReplicationCache cache;
 
     @Inject
-    private EntityReplicationStore store;
+    private Provider<EntityReplicationStore> storeProvider;
 
     /**
      * Setup the listener.
@@ -64,7 +65,7 @@ public class EntityReplicationCleanupListener extends AbstractEventListener
         // Clean the store
         if (event instanceof ReplicationInstanceUnregisteredEvent) {
             // Remove any entry associated to an instance which is not replicated anymore
-            this.store.deleteInstance(((ReplicationInstanceUnregisteredEvent) event).getURI());
+            this.storeProvider.get().deleteInstance(((ReplicationInstanceUnregisteredEvent) event).getURI());
         } else if (event instanceof DocumentDeletedEvent) {
             // TODO: remove the entity configuration from the store ?
             this.cache.onDelete(((XWikiDocument) source).getDocumentReference());

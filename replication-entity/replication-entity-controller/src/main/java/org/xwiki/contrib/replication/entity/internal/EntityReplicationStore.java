@@ -61,7 +61,7 @@ public class EntityReplicationStore
 
     @Inject
     @Named(XWikiHibernateBaseStore.HINT)
-    private Provider<XWikiStoreInterface> hibernateStoreProvider;
+    private XWikiStoreInterface hibernateStore;
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;
@@ -207,14 +207,13 @@ public class EntityReplicationStore
         }
 
         XWikiContext xcontext = this.xcontextProvider.get();
-        XWikiHibernateStore hibernateStore = (XWikiHibernateStore) this.hibernateStoreProvider.get();
+        XWikiHibernateStore store = (XWikiHibernateStore) this.hibernateStore;
 
         String currentWiki = xcontext.getWikiId();
         try {
             xcontext.setWikiId(wiki);
 
-            instances =
-                hibernateStore.executeRead(xcontext, session -> getHibernateEntityReplication(entityId, session));
+            instances = store.executeRead(xcontext, session -> getHibernateEntityReplication(entityId, session));
         } finally {
             xcontext.setWikiId(currentWiki);
         }
@@ -293,13 +292,13 @@ public class EntityReplicationStore
     private void executeWrite(String wiki, HibernateCallback<Object> callback) throws XWikiException
     {
         XWikiContext xcontext = this.xcontextProvider.get();
-        XWikiHibernateStore hibernateStore = (XWikiHibernateStore) this.hibernateStoreProvider.get();
+        XWikiHibernateStore store = (XWikiHibernateStore) this.hibernateStore;
 
         String currentWiki = xcontext.getWikiId();
         try {
             xcontext.setWikiId(wiki);
 
-            hibernateStore.executeWrite(xcontext, callback);
+            store.executeWrite(xcontext, callback);
         } finally {
             xcontext.setWikiId(currentWiki);
         }

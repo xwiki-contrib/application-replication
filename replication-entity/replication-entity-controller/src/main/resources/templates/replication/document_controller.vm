@@ -27,7 +27,7 @@
         #set ($instances = {$NULL : $request.get("${namePrefix}_replication_instance_level")})
       #elseif ($replicationType == 'single')
         #set ($instances = {})
-        #set ($parameterPrefix = "${namePrefix}_replication_instance_uri_")
+        #set ($parameterPrefix = "${namePrefix}_replication_instance_uri_")  
         #foreach($parameterName in $request.parameterNames)
           #if ($parameterName.startsWith($parameterPrefix))
             #set ($instanceURI = $request.getParameter($parameterName))
@@ -99,20 +99,23 @@
       #set ($replicationType = 'single')
     #end
 
-    <input type="radio" id="${namePrefix}_replication_instance_type_default" name="${namePrefix}_replication_instance_type" value="default" #if($replicationType == 'default')checked#end>
-    <label for="${namePrefix}_replication_instance_type_all">$escapetool.xml($services.localization.render('replication.entity.docextra.type.default'))</label>
+    #set ($inputId = "${namePrefix}_replication_instance_type_default")
+    <input type="radio" id="$inputId" name="${namePrefix}_replication_instance_type" value="default" #if($replicationType == 'default')checked#end>
+    <label for="$inputId">$escapetool.xml($services.localization.render('replication.entity.docextra.type.default'))</label>
 
     #resolveReplicationInstances($reference.parent)
 
-    <input type="radio" id="${namePrefix}_replication_instance_type_all" name="${namePrefix}_replication_instance_type" value="all" #if($replicationType == 'all')checked#end>
-    <label for="${namePrefix}_replication_instance_type_all">$escapetool.xml($services.localization.render('replication.entity.docextra.type.all'))</label>
+    #set ($inputId = "${namePrefix}_replication_instance_type_all")
+    <input type="radio" id="$inputId" name="${namePrefix}_replication_instance_type" value="all" #if($replicationType == 'all')checked#end>
+    <label for="$inputId">$escapetool.xml($services.localization.render('replication.entity.docextra.type.all'))</label>
 
     #set ($inputId = "${namePrefix}_replication_instance_level")
     #selectLevel($replicationInstanceMap.get($instance.uRI).level.name(), $inputId)
 
     <br/>
-    <input type="radio" id="${namePrefix}_replication_instance_type_single" name="${namePrefix}_replication_instance_type" value="single" #if($replicationType == 'single')checked#end>
-    <label for="${namePrefix}_replication_instance_type_all">$escapetool.xml($services.localization.render('replication.entity.docextra.type.single'))</label>
+    #set ($inputId = "${namePrefix}_replication_instance_type_single")
+    <input type="radio" id="$id" name="${namePrefix}_replication_instance_type" value="single" #if($replicationType == 'single')checked#end>
+    <label for="$id">$escapetool.xml($services.localization.render('replication.entity.docextra.type.single'))</label>
 
     <dl>
       #foreach($instance in $instances)

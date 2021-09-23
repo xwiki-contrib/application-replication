@@ -32,6 +32,26 @@ import org.xwiki.test.ui.po.Select;
  */
 public class ReplicationDocExtraPane extends BaseElement
 {
+    public void setSpaceLevel(DocumentReplicationLevel level)
+    {
+        setLevel("space", level);
+    }
+
+    public void setDocumentLevel(DocumentReplicationLevel level)
+    {
+        setLevel("document", level);
+    }
+
+    private void setLevel(String scope, DocumentReplicationLevel level)
+    {
+        // Make sure "All instances" option is selected
+        getDriver().findElement(By.id("space_replication_instance_type_all")).click();
+
+        // Set the level
+        Select levelSelect = new Select(getDriver().findElement(By.id(scope + "_replication_instance_level")));
+        levelSelect.selectByVisibleText(StringUtils.capitalize(level.name().toLowerCase()));
+    }
+
     public void setSpaceLevel(int index, DocumentReplicationLevel level)
     {
         setLevel("space", index, level);
@@ -44,8 +64,11 @@ public class ReplicationDocExtraPane extends BaseElement
 
     private void setLevel(String scope, int index, DocumentReplicationLevel level)
     {
-        Select levelSelect = new Select(getDriver().findElement(By.id(scope + "_replication_instance_level_" + index)));
+        // Make sure "All instances" option is selected
+        getDriver().findElement(By.id("space_replication_instance_type_single")).click();
 
+        // Set the level
+        Select levelSelect = new Select(getDriver().findElement(By.id(scope + "_replication_instance_level_" + index)));
         levelSelect.selectByVisibleText(StringUtils.capitalize(level.name().toLowerCase()));
     }
 }

@@ -26,8 +26,11 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.test.po.RegisteredInstancePane;
 import org.xwiki.contrib.replication.test.po.ReplicationAdministrationSectionPage;
+import org.xwiki.contrib.replication.test.po.ReplicationDocExtraPane;
+import org.xwiki.contrib.replication.test.po.ReplicationPage;
 import org.xwiki.contrib.replication.test.po.RequestedInstancePane;
 import org.xwiki.contrib.replication.test.po.RequestingInstancePane;
 import org.xwiki.model.reference.LocalDocumentReference;
@@ -195,9 +198,13 @@ public class ReplicationIT extends AbstractTest
 
     private void controller()
     {
-        // TODO: create Replication space on instance0
+        // Create Replication space on instance0
+        getUtil().createPage(new LocalDocumentReference("Replication", "WebHome"), "");
+        ReplicationPage page = new ReplicationPage();
+        ReplicationDocExtraPane replicationPane = page.openReplicationDocExtraPane();
 
-        // TODO: enable full replication for the space Replication
+        // Enable full replication for the space Replication
+        replicationPane.setSpaceLevel(DocumentReplicationLevel.ALL);
 
         // TODO: make sure the configuration is replicated on instance1
     }
