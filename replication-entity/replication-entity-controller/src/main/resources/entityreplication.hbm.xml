@@ -26,13 +26,18 @@
 <hibernate-mapping>
   <class name="org.xwiki.contrib.replication.entity.internal.HibernateEntityReplicationInstance" table="replication_entity_instance">
     <composite-id>
-      <key-property name="entity" type="long"/>
-      <key-property name="instance" type="string" length="400" />
+      <key-property name="entity" type="long">
+        <column name="entity" index="ENTITY" />
+      </key-property>
+      <key-property name="instance" type="string">
+        <column name="instance" index="INSTANCE" length="400" />
+      </key-property>
     </composite-id>
 
     <property name="level">
       <type name="org.hibernate.type.EnumType">
         <param name="enumClass">org.xwiki.contrib.replication.entity.DocumentReplicationLevel</param>
+        <param name="useNamed">true</param>
       </type>
     </property>
   </class>

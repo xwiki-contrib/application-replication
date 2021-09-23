@@ -1,7 +1,7 @@
 org.xwiki.contrib.replication.entity.internal.DefaultDocumentReplicationController
 org.xwiki.contrib.replication.entity.internal.DocumentControllerUIExtension
 org.xwiki.contrib.replication.entity.internal.EntityReplicationCache
-org.xwiki.contrib.replication.entity.internal.EntityReplicationCacheInvalidationListener
+org.xwiki.contrib.replication.entity.internal.EntityReplicationCleanupListener
 org.xwiki.contrib.replication.entity.internal.EntityReplicationInitializer
 org.xwiki.contrib.replication.entity.internal.EntityReplicationStore
 org.xwiki.contrib.replication.entity.script.ControllerReplicationScriptService

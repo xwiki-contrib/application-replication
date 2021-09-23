@@ -49,4 +49,12 @@ public class ReplicationInstanceUnregisteredEvent extends AbstractCancelableEven
     {
         super(uri);
     }
+
+    /**
+     * @return the URI of the instance
+     */
+    public String getURI()
+    {
+        return getEventFilter().getFilter();
+    }
 }

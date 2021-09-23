@@ -41,15 +41,18 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Component
 @Named("EntityReplicationCacheInvalidationListener")
 @Singleton
-public class EntityReplicationCacheInvalidationListener extends AbstractEventListener
+public class EntityReplicationCleanupListener extends AbstractEventListener
 {
     @Inject
     private EntityReplicationCache cache;
 
+    @Inject
+    private EntityReplicationStore store;
+
     /**
      * Setup the listener.
      */
-    public EntityReplicationCacheInvalidationListener()
+    public EntityReplicationCleanupListener()
     {
         super("EntityReplicationCacheInvalidationListener", new ReplicationInstanceRegisteredEvent(),
             new ReplicationInstanceUnregisteredEvent(), new DocumentDeletedEvent(), new WikiDeletedEvent());
@@ -58,7 +61,12 @@ public class EntityReplicationCacheInvalidationListener extends AbstractEventLis
     @Override
     public void onEvent(Event event, Object source, Object data)
     {
-        if (event instanceof DocumentDeletedEvent) {
+        // Clean the store
+        if (event instanceof ReplicationInstanceUnregisteredEvent) {
+            // Remove any entry associated to an instance which is not replicated anymore
+            this.store.deleteInstance(((ReplicationInstanceUnregisteredEvent) event).getURI());
+        } else if (event instanceof DocumentDeletedEvent) {
+            // TODO: remove the entity configuration from the store ?
             this.cache.onDelete(((XWikiDocument) source).getDocumentReference());
         } else {
             this.cache.removeAll();

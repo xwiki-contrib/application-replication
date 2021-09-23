@@ -31,21 +31,25 @@ import javax.inject.Singleton;
 
 import org.hibernate.Session;
 import org.hibernate.query.Query;
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.model.reference.EntityReference;
+import org.xwiki.wiki.descriptor.WikiDescriptorManager;
+import org.xwiki.wiki.manager.WikiManagerException;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.store.XWikiHibernateBaseStore;
+import com.xpn.xwiki.store.XWikiHibernateBaseStore.HibernateCallback;
 import com.xpn.xwiki.store.XWikiHibernateStore;
 import com.xpn.xwiki.store.XWikiStoreInterface;
 
 /**
- * Store entity replication configuration in hibernate.
+ * Store entity replication configuration in the database.
  * 
  * @version $Id$
  */
@@ -68,6 +72,12 @@ public class EntityReplicationStore
     @Inject
     private ReplicationInstanceManager instanceManager;
 
+    @Inject
+    private WikiDescriptorManager wikis;
+
+    @Inject
+    private Logger logger;
+
     /**
      * @param reference the reference of the entity
      * @param instances the instance to send the entity to
@@ -78,10 +88,8 @@ public class EntityReplicationStore
     {
         long entityId = this.cache.toEntityId(reference);
 
-        XWikiContext xcontext = this.xcontextProvider.get();
-        XWikiHibernateStore hibernateStore = (XWikiHibernateStore) this.hibernateStoreProvider.get();
-
-        hibernateStore.executeWrite(xcontext, session -> storeHibernateEntityReplication(entityId, instances, session));
+        executeWrite(reference.getRoot().getName(),
+            session -> storeHibernateEntityReplication(entityId, instances, session));
 
         // Clear the cache for this entity
         this.cache.remove(entityId);
@@ -91,10 +99,7 @@ public class EntityReplicationStore
         Session session)
     {
         // Delete existing instances
-        Query<HibernateEntityReplicationInstance> query = session
-            .createQuery("DELETE FROM HibernateEntityReplicationInstance AS instance where instance.entity = :entity");
-        query.setParameter(ENTITY, entityId);
-        query.executeUpdate();
+        deleteEntity(entityId, session);
 
         // Add new instances
         if (instances != null) {
@@ -107,6 +112,28 @@ public class EntityReplicationStore
                 }
             }
         }
+
+        return null;
+    }
+
+    private Object deleteEntity(long entityId, Session session)
+    {
+        // Delete existing instances
+        Query<?> query = session
+            .createQuery("DELETE FROM HibernateEntityReplicationInstance AS instance where instance.entity = :entity");
+        query.setParameter(ENTITY, entityId);
+        query.executeUpdate();
+
+        return null;
+    }
+
+    private Object deleteInstance(String uri, Session session)
+    {
+        // Delete existing instances
+        Query<?> query = session.createQuery(
+            "DELETE FROM HibernateEntityReplicationInstance AS instance where instance.instance = :instance");
+        query.setParameter("instance", uri);
+        query.executeUpdate();
 
         return null;
     }
@@ -132,7 +159,8 @@ public class EntityReplicationStore
 
         // If not in the cache, load from the database
         if (instances == null) {
-            instances = getHibernateEntityReplication(entityId, cacheKey);
+            instances = getHibernateEntityReplication(reference.getRoot().getName(), entityId, cacheKey);
+
             // Resolve "all instances" wildcard
             if (instances != null && instances.size() == 1) {
                 final DocumentReplicationControllerInstance instance = instances.get(0);
@@ -166,11 +194,11 @@ public class EntityReplicationStore
         long entityId = this.cache.toEntityId(reference);
         String cacheKey = this.cache.toCacheKey(entityId);
 
-        return getHibernateEntityReplication(entityId, cacheKey);
+        return getHibernateEntityReplication(reference.getRoot().getName(), entityId, cacheKey);
     }
 
-    private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(long entityId, String cacheKey)
-        throws XWikiException
+    private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(String wiki, long entityId,
+        String cacheKey) throws XWikiException
     {
         List<DocumentReplicationControllerInstance> instances = this.cache.getDataCache().get(cacheKey);
 
@@ -181,7 +209,15 @@ public class EntityReplicationStore
         XWikiContext xcontext = this.xcontextProvider.get();
         XWikiHibernateStore hibernateStore = (XWikiHibernateStore) this.hibernateStoreProvider.get();
 
-        instances = hibernateStore.executeRead(xcontext, session -> getHibernateEntityReplication(entityId, session));
+        String currentWiki = xcontext.getWikiId();
+        try {
+            xcontext.setWikiId(wiki);
+
+            instances =
+                hibernateStore.executeRead(xcontext, session -> getHibernateEntityReplication(entityId, session));
+        } finally {
+            xcontext.setWikiId(currentWiki);
+        }
 
         this.cache.getDataCache().set(cacheKey, instances);
 
@@ -191,7 +227,8 @@ public class EntityReplicationStore
     private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(long entityId, Session session)
     {
         Query<HibernateEntityReplicationInstance> query = session.createQuery(
-            "SELECT instance FROM HibernateEntityReplicationInstance AS instance where instance.entity = :entity");
+            "SELECT instance FROM HibernateEntityReplicationInstance AS instance where instance.entity = :entity",
+            HibernateEntityReplicationInstance.class);
         query.setParameter(ENTITY, entityId);
 
         List<HibernateEntityReplicationInstance> hibernateInstances = query.list();
@@ -228,5 +265,43 @@ public class EntityReplicationStore
         }
 
         return instances;
+    }
+
+    /**
+     * @param uri the uri of the instance to remove
+     */
+    public void deleteInstance(String uri)
+    {
+        // Remove from the database
+        try {
+            for (String wiki : this.wikis.getAllIds()) {
+                try {
+                    executeWrite(wiki, session -> deleteInstance(uri, session));
+                } catch (XWikiException e) {
+                    this.logger.error("Failed to delete replication configuration for instance [{}] and wiki [{}]", uri,
+                        wiki, e);
+                }
+            }
+        } catch (WikiManagerException e) {
+            this.logger.error("Failed to get the wikis", e);
+        }
+
+        // Remove from the cache
+        this.cache.removeAll();
+    }
+
+    private void executeWrite(String wiki, HibernateCallback<Object> callback) throws XWikiException
+    {
+        XWikiContext xcontext = this.xcontextProvider.get();
+        XWikiHibernateStore hibernateStore = (XWikiHibernateStore) this.hibernateStoreProvider.get();
+
+        String currentWiki = xcontext.getWikiId();
+        try {
+            xcontext.setWikiId(wiki);
+
+            hibernateStore.executeWrite(xcontext, callback);
+        } finally {
+            xcontext.setWikiId(currentWiki);
+        }
     }
 }
