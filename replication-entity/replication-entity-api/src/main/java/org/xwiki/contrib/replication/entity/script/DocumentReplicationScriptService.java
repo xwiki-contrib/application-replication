@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.entity.script;
 
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -41,6 +42,7 @@ import org.xwiki.script.service.ScriptService;
 @Singleton
 public class DocumentReplicationScriptService implements ScriptService
 {
+    @Inject
     private DocumentReplicationController controller;
 
     /**
@@ -53,6 +55,6 @@ public class DocumentReplicationScriptService implements ScriptService
     public List<DocumentReplicationControllerInstance> getDocumentInstances(DocumentReference documentReference)
         throws ReplicationException
     {
-        return this.controller.getTargetInstances(documentReference);
+        return this.controller.getDocumentInstances(documentReference);
     }
 }

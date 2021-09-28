@@ -17,25 +17,27 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.history;
+package org.xwiki.contrib.replication.entity.internal.message;
 
 import java.util.Collections;
+import java.util.List;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
-import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerInstanceConverter;
+import org.xwiki.model.reference.EntityReference;
 
 /**
  * @version $Id$
  */
-@Component(roles = DocumentHistoryDeleteReplicationMessage.class)
-public class DocumentHistoryDeleteReplicationMessage
-    extends AbstractNoContentEntityReplicationMessage<DocumentReference>
+@Component(roles = EntityReplicatioControllerMessage.class)
+public class EntityReplicatioControllerMessage extends AbstractNoContentEntityReplicationMessage<EntityReference>
 {
     /**
      * The message type for these messages.
      */
-    public static final String TYPE = TYPE_PREFIX + "_history";
+    public static final String TYPE = TYPE_PREFIX + "controller";
 
     /**
      * The prefix in front of all entity metadata properties.
@@ -43,35 +45,28 @@ public class DocumentHistoryDeleteReplicationMessage
     public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
 
     /**
-     * The name of the metadata containing the lowest version to delete from the document history.
+     * The name of the metadata containing the replication configuration for a given entity.
      */
-    public static final String METADATA_VERSION_FROM = METADATA_PREFIX + "VERSION_FROM";
-
-    /**
-     * The name of the metadata containing the highest version to delete from the document history.
-     */
-    public static final String METADATA_VERSION_TO = METADATA_PREFIX + "VERSION_TO";
-
-    /**
-     * @param documentReference the reference of the document affected by this message
-     * @param from the lowest version to delete
-     * @param to the highest version to delete
-     */
-    public void initialize(DocumentReference documentReference, String from, String to)
-    {
-        initialize(documentReference);
-
-        putMetadata(METADATA_VERSION_FROM, from);
-        putMetadata(METADATA_VERSION_TO, to);
-
-        this.id += '/' + from + '/' + to;
-
-        this.metadata = Collections.unmodifiableMap(this.metadata);
-    }
+    public static final String METADATA_CONFIGURATION = METADATA_PREFIX + "CONFIGURATION";
 
     @Override
     public String getType()
     {
         return TYPE;
+    }
+
+    /**
+     * @param entityReference the reference of the entity to configure
+     * @param configuration the configuration of the entity
+     */
+    public void initialize(EntityReference entityReference, List<DocumentReplicationControllerInstance> configuration)
+    {
+        super.initialize(entityReference);
+
+        // Serialize the configuration
+        this.metadata.put(METADATA_CONFIGURATION,
+            DocumentReplicationControllerInstanceConverter.toStrings(configuration));
+
+        this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 }

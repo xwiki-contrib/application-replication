@@ -43,7 +43,6 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationMessage;
-import org.xwiki.contrib.replication.internal.ReplicationClient;
 import org.xwiki.environment.Environment;
 
 import com.xpn.xwiki.util.Util;
@@ -75,9 +74,6 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
     @Inject
     protected Environment environment;
-
-    @Inject
-    protected ReplicationClient client;
 
     @Inject
     protected Logger logger;
@@ -272,7 +268,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
                 ReplicationInstance source = message.getSource();
                 if (source == null) {
-                    source = this.client.getCurrentInstance();
+                    source = this.instances.getCurrentInstance();
                 }
                 configuration.setProperty(PROPERTY_SOURCE, source.getURI());
 

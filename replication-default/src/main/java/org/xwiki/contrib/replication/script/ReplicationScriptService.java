@@ -27,6 +27,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
@@ -72,5 +73,14 @@ public class ReplicationScriptService implements ScriptService
     {
         return this.instances.getRegisteredInstances().stream().map(i -> new DefaultReplicationInstance(i))
             .collect(Collectors.toList());
+    }
+
+    /**
+     * @return the current instance representation
+     * @throws ReplicationException when failing to resolve the create the current instance
+     */
+    public ReplicationInstance getCurrentInstance() throws ReplicationException
+    {
+        return this.instances.getCurrentInstance();
     }
 }

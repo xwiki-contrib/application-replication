@@ -29,14 +29,15 @@ import javax.inject.Singleton;
 
 import org.apache.commons.lang3.StringUtils;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerInstanceConverter;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationStore;
 import org.xwiki.model.reference.EntityReference;
-import org.xwiki.properties.converter.Converter;
 import org.xwiki.script.service.ScriptService;
 import org.xwiki.security.authorization.AccessDeniedException;
 import org.xwiki.security.authorization.ContextualAuthorizationManager;
@@ -63,9 +64,6 @@ public class ControllerReplicationScriptService implements ScriptService
     @Inject
     private ContextualAuthorizationManager authorization;
 
-    @Inject
-    private Converter<Enum> enumConverter;
-
     /**
      * @param reference the reference of the entity
      * @return the instances directly configured at this entity level
@@ -75,8 +73,6 @@ public class ControllerReplicationScriptService implements ScriptService
     public List<DocumentReplicationControllerInstance> getHibernateEntityReplication(EntityReference reference)
         throws XWikiException, AccessDeniedException
     {
-        this.authorization.checkAccess(Right.PROGRAM);
-
         return this.store.getHibernateEntityReplication(reference);
     }
 
@@ -89,9 +85,20 @@ public class ControllerReplicationScriptService implements ScriptService
     public List<DocumentReplicationControllerInstance> resolveHibernateEntityReplication(EntityReference reference)
         throws XWikiException, AccessDeniedException
     {
-        this.authorization.checkAccess(Right.PROGRAM);
-
         return this.store.resolveHibernateEntityReplication(reference);
+    }
+
+    /**
+     * @param reference the reference of the entity
+     * @param instance the configured instance
+     * @return the configuration of the instance
+     * @throws XWikiException when failing to get the instances
+     * @throws AccessDeniedException if the current script author does not have the right to use this API
+     */
+    public DocumentReplicationControllerInstance resolveHibernateEntityReplication(EntityReference reference,
+        ReplicationInstance instance) throws XWikiException, AccessDeniedException
+    {
+        return this.store.resolveHibernateEntityReplication(reference, instance);
     }
 
     /**
@@ -99,9 +106,10 @@ public class ControllerReplicationScriptService implements ScriptService
      * @param instances the instance and level mapping to update
      * @throws AccessDeniedException if the current script author does not have the right to use this API
      * @throws XWikiException when failing to save the configuration
+     * @throws ReplicationException when failing to get current instance
      */
     public void save(EntityReference reference, Map<String, Object> instances)
-        throws AccessDeniedException, XWikiException
+        throws AccessDeniedException, XWikiException, ReplicationException
     {
         this.authorization.checkAccess(Right.PROGRAM);
 
@@ -114,20 +122,19 @@ public class ControllerReplicationScriptService implements ScriptService
                 ReplicationInstance instance = this.instanceManager.getInstance(entry.getKey());
                 if (StringUtils.isEmpty(entry.getKey())
                     || (instance != null && instance.getStatus() == Status.REGISTERED)) {
-                    configuration.add(new DocumentReplicationControllerInstance(instance, toLevel(entry.getValue())));
+                    configuration.add(new DocumentReplicationControllerInstance(instance,
+                        DocumentReplicationControllerInstanceConverter.toLevel(entry.getValue())));
                 }
+            }
+
+            // Add current instance if not already there
+            ReplicationInstance currentInstance = this.instanceManager.getCurrentInstance();
+            if (!instances.containsKey(currentInstance.getURI())) {
+                configuration
+                    .add(new DocumentReplicationControllerInstance(currentInstance, DocumentReplicationLevel.ALL));
             }
         }
 
         this.store.storeHibernateEntityReplication(reference, configuration);
-    }
-
-    private DocumentReplicationLevel toLevel(Object value)
-    {
-        if (value == null || (value instanceof String && StringUtils.isEmpty((String) value))) {
-            return null;
-        }
-
-        return this.enumConverter.convert(DocumentReplicationLevel.class, value);
     }
 }

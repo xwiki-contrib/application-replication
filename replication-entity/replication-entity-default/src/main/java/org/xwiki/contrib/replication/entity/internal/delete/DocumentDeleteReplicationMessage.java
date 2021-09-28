@@ -24,7 +24,7 @@ import java.util.Collections;
 import javax.inject.Inject;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.refactoring.batch.BatchOperationExecutor;
 
@@ -32,7 +32,7 @@ import org.xwiki.refactoring.batch.BatchOperationExecutor;
  * @version $Id$
  */
 @Component(roles = DocumentDeleteReplicationMessage.class)
-public class DocumentDeleteReplicationMessage extends AbstractNoContentDocumentReplicationMessage
+public class DocumentDeleteReplicationMessage extends AbstractNoContentEntityReplicationMessage<DocumentReference>
 {
     /**
      * The message type for these messages.

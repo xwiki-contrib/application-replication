@@ -81,7 +81,7 @@ public class DocumentReplicationSender
         throws ReplicationException
     {
         List<DocumentReplicationControllerInstance> allInstances =
-            this.controller.getTargetInstances(document.getDocumentReference());
+            this.controller.getDocumentInstances(document.getDocumentReference());
 
         // The message to send to instances allowed to receive full document
         sendDocument(document, complete, DocumentReplicationLevel.ALL, minimumLevel, allInstances);
@@ -200,7 +200,7 @@ public class DocumentReplicationSender
     private List<ReplicationInstance> getInstances(DocumentReference reference, DocumentReplicationLevel minimumLevel)
         throws ReplicationException
     {
-        List<DocumentReplicationControllerInstance> instances = this.controller.getTargetInstances(reference);
+        List<DocumentReplicationControllerInstance> instances = this.controller.getDocumentInstances(reference);
 
         return instances.stream().filter(i -> i.getLevel().ordinal() >= minimumLevel.ordinal())
             .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());

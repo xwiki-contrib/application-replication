@@ -22,10 +22,14 @@ package org.xwiki.contrib.replication.entity.internal;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.xwiki.model.reference.EntityReference;
+
 /**
+ * @param <E> the type of reference
  * @version $Id$
  */
-public abstract class AbstractNoContentDocumentReplicationMessage extends AbstractDocumentReplicationMessage
+public abstract class AbstractNoContentEntityReplicationMessage<E extends EntityReference>
+    extends AbstractEntityReplicationMessage<E>
 {
     @Override
     public void write(OutputStream stream) throws IOException

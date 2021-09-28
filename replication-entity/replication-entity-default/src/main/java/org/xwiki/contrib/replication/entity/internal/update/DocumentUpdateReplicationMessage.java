@@ -29,7 +29,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.AbstractEntityReplicationMessage;
 import org.xwiki.filter.instance.input.DocumentInstanceInputProperties;
 import org.xwiki.filter.output.DefaultOutputStreamOutputTarget;
 import org.xwiki.filter.xar.output.XAROutputProperties;
@@ -44,7 +44,7 @@ import com.xpn.xwiki.doc.XWikiDocument;
  * @version $Id$
  */
 @Component(roles = DocumentUpdateReplicationMessage.class)
-public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicationMessage
+public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationMessage<DocumentReference>
 {
     /**
      * The message type for these messages.
@@ -144,9 +144,9 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
 
         XWikiDocument document;
         try {
-            document = xcontext.getWiki().getDocument(this.documentReference, xcontext);
+            document = xcontext.getWiki().getDocument(this.entityReference, xcontext);
         } catch (XWikiException e) {
-            throw new IOException("Failed to get document to write with reference [" + this.documentReference + "]", e);
+            throw new IOException("Failed to get document to write with reference [" + this.entityReference + "]", e);
         }
 
         if (document.isNew()) {
@@ -156,7 +156,7 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
             try {
                 document = this.revisionProvider.getRevision(document, this.version);
             } catch (XWikiException e) {
-                throw new IOException("Failed to get document with reference [" + this.documentReference
+                throw new IOException("Failed to get document with reference [" + this.entityReference
                     + "] and version [" + this.version + "]", e);
             }
         }
@@ -168,7 +168,7 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
             toXML(document, stream, this.complete);
         } catch (Exception e) {
             throw new IOException(String.format("Failed to serialize the document with reference [%s] and version [%s]",
-                this.documentReference, this.version), e);
+                this.entityReference, this.version), e);
         }
     }
 

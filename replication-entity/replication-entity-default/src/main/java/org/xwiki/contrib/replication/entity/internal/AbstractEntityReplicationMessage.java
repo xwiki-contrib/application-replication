@@ -33,20 +33,22 @@ import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.model.reference.AbstractLocalizedEntityReference;
+import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.EntityReferenceSerializer;
 import org.xwiki.properties.ConverterManager;
 
 /**
+ * @param <E> the type of reference
  * @version $Id$
  */
 @InstantiationStrategy(ComponentInstantiationStrategy.PER_LOOKUP)
-public abstract class AbstractDocumentReplicationMessage implements ReplicationSenderMessage
+public abstract class AbstractEntityReplicationMessage<E extends EntityReference> implements ReplicationSenderMessage
 {
     /**
      * The type of message supported by this receiver.
      */
-    public static final String TYPE_PREFIX = "entity_document_";
+    public static final String TYPE_PREFIX = "entity_";
 
     /**
      * The prefix in front of all entity metadata properties.
@@ -84,27 +86,32 @@ public abstract class AbstractDocumentReplicationMessage implements ReplicationS
 
     protected final Date date = new Date();
 
-    protected DocumentReference documentReference;
+    protected E entityReference;
 
     protected String id;
 
     protected Map<String, Collection<String>> metadata;
 
     /**
-     * @param documentReference the reference of the document affected by this message
+     * @param entityReference the reference of the document affected by this message
      */
-    protected void initialize(DocumentReference documentReference)
+    protected void initialize(E entityReference)
     {
-        this.documentReference = documentReference;
+        this.entityReference = entityReference;
 
         this.metadata = new HashMap<>();
 
-        putMetadata(METADATA_REFERENCE, documentReference);
-        putMetadata(METADATA_LOCALE, documentReference.getLocale());
+        // Make sure to use the EntityReference converter (otherwise it won't unserialize to the right type)
+        putMetadata(METADATA_REFERENCE, entityReference.getClass() == EntityReference.class ? entityReference
+            : new EntityReference(entityReference));
 
-        putMetadata(METADATA_CONTEXT_USER, documentAccessBridge.getCurrentUserReference());
+        if (entityReference instanceof AbstractLocalizedEntityReference) {
+            putMetadata(METADATA_LOCALE, ((AbstractLocalizedEntityReference) entityReference).getLocale());
+        }
 
-        this.id = getType() + '/' + getDate().getTime() + '/' + this.uidSerializer.serialize(documentReference);
+        putMetadata(METADATA_CONTEXT_USER, this.documentAccessBridge.getCurrentUserReference());
+
+        this.id = getType() + '/' + getDate().getTime() + '/' + this.uidSerializer.serialize(entityReference);
     }
 
     /**

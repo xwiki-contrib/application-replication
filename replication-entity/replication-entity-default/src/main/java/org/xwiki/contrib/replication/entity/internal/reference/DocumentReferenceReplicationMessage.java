@@ -22,14 +22,14 @@ package org.xwiki.contrib.replication.entity.internal.reference;
 import java.util.Collections;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
 /**
  * @version $Id$
  */
 @Component(roles = DocumentReferenceReplicationMessage.class)
-public class DocumentReferenceReplicationMessage extends AbstractNoContentDocumentReplicationMessage
+public class DocumentReferenceReplicationMessage extends AbstractNoContentEntityReplicationMessage<DocumentReference>
 {
     /**
      * The message type for these messages.

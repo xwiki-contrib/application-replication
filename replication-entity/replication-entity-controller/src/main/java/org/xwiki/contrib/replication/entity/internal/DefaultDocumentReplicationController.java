@@ -20,12 +20,14 @@
 package org.xwiki.contrib.replication.entity.internal;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.model.reference.DocumentReference;
@@ -45,11 +47,16 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     private EntityReplicationStore store;
 
     @Override
-    public List<DocumentReplicationControllerInstance> getTargetInstances(DocumentReference documentReference)
+    public List<DocumentReplicationControllerInstance> getDocumentInstances(DocumentReference documentReference)
         throws ReplicationException
     {
         try {
-            return this.store.resolveHibernateEntityReplication(documentReference);
+            List<DocumentReplicationControllerInstance> instances =
+                this.store.resolveHibernateEntityReplication(documentReference);
+
+            // Remove current instance
+            return instances.stream().filter(i -> i.getInstance().getStatus() == Status.REGISTERED)
+                .collect(Collectors.toList());
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to retrieve instances from the store", e);
         }

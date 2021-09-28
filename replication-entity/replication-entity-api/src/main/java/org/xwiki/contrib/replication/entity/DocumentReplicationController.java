@@ -38,6 +38,6 @@ public interface DocumentReplicationController
      * @return the registered instances on which to replicate the document
      * @throws ReplicationException when failing to get the instances
      */
-    List<DocumentReplicationControllerInstance> getTargetInstances(DocumentReference documentReference)
+    List<DocumentReplicationControllerInstance> getDocumentInstances(DocumentReference documentReference)
         throws ReplicationException;
 }

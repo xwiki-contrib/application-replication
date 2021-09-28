@@ -56,6 +56,12 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     private final Map<String, ReplicationInstance> instances = new ConcurrentHashMap<>();
 
     @Override
+    public ReplicationInstance getCurrentInstance() throws ReplicationException
+    {
+        return this.client.getCurrentInstance();
+    }
+
+    @Override
     public Collection<ReplicationInstance> getInstances()
     {
         return Collections.unmodifiableCollection(this.instances.values());
@@ -73,8 +79,8 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         ReplicationInstance instance = this.instances.get(cleanURI);
 
         try {
-            if (instance == null && this.client.getCurrentInstance().getURI().equals(cleanURI)) {
-                instance = this.client.getCurrentInstance();
+            if (instance == null && getCurrentInstance().getURI().equals(cleanURI)) {
+                instance = getCurrentInstance();
             }
         } catch (ReplicationException e) {
             this.logger.error("Failed to get the current instance", e);

@@ -206,6 +206,9 @@ public class ReplicationIT extends AbstractTest
         // Enable full replication for the space Replication
         replicationPane.setSpaceLevel(DocumentReplicationLevel.ALL);
 
+        // Save replication configuration
+        replicationPane.save();        
+
         // TODO: make sure the configuration is replicated on instance1
     }
 

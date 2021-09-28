@@ -101,6 +101,7 @@ public class ReplicationClient implements Initializable
      * @return the current instance representation
      * @throws ReplicationException when failing to resolve the create the current instance
      */
+    // TODO: move it to a more generic location
     public ReplicationInstance getCurrentInstance() throws ReplicationException
     {
         if (this.currentInstance == null) {

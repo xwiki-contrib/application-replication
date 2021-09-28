@@ -49,7 +49,7 @@ public class ReplicationDocExtraPane extends BaseElement
 
         // Set the level
         Select levelSelect = new Select(getDriver().findElement(By.id(scope + "_replication_instance_level")));
-        levelSelect.selectByVisibleText(StringUtils.capitalize(level.name().toLowerCase()));
+        levelSelect.selectByValue(StringUtils.capitalize(level.name()));
     }
 
     public void setSpaceLevel(int index, DocumentReplicationLevel level)
@@ -70,5 +70,10 @@ public class ReplicationDocExtraPane extends BaseElement
         // Set the level
         Select levelSelect = new Select(getDriver().findElement(By.id(scope + "_replication_instance_level_" + index)));
         levelSelect.selectByVisibleText(StringUtils.capitalize(level.name().toLowerCase()));
+    }
+
+    public void save()
+    {
+        getDriver().findElement(By.id("replication_save")).click();        
     }
 }

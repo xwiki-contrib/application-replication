@@ -30,6 +30,12 @@ import org.xwiki.component.annotation.Role;
 public interface ReplicationInstanceManager
 {
     /**
+     * @return the current instance representation
+     * @throws ReplicationException when failing to resolve the create the current instance
+     */
+    ReplicationInstance getCurrentInstance() throws ReplicationException;
+
+    /**
      * @return all the instances
      */
     Collection<ReplicationInstance> getInstances();

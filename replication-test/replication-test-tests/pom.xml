@@ -36,6 +36,15 @@
 
     <xwikiDbHbmCommonExtraMappings>instance.hbm.xml</xwikiDbHbmCommonExtraMappings>
     <xwikiCfgSuperadminPassword>pass</xwikiCfgSuperadminPassword>
+    <xwikiCfgPlugins>\
+      com.xpn.xwiki.plugin.skinx.JsSkinExtensionPlugin,\
+      com.xpn.xwiki.plugin.skinx.JsSkinFileExtensionPlugin,\
+      com.xpn.xwiki.plugin.skinx.JsResourceSkinExtensionPlugin,\
+      com.xpn.xwiki.plugin.skinx.CssSkinExtensionPlugin,\
+      com.xpn.xwiki.plugin.skinx.CssSkinFileExtensionPlugin,\
+      com.xpn.xwiki.plugin.skinx.CssResourceSkinExtensionPlugin,\
+      com.xpn.xwiki.plugin.skinx.LinkExtensionPlugin
+    </xwikiCfgPlugins>
 
     <!-- The admin page require programming right -->
     <xwikiPropertiesAdditionalProperties>test.prchecker.excludePattern=.*:XWiki.Replication.Admin</xwikiPropertiesAdditionalProperties>

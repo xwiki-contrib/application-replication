@@ -20,8 +20,11 @@
 package org.xwiki.contrib.replication.entity;
 
 import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerInstanceConverter;
 
 /**
+ * Indicate how much of a document should be replication for a specific instance.
+ * 
  * @version $Id$
  */
 public class DocumentReplicationControllerInstance
@@ -54,5 +57,11 @@ public class DocumentReplicationControllerInstance
     public DocumentReplicationLevel getLevel()
     {
         return this.level;
+    }
+
+    @Override
+    public String toString()
+    {
+        return DocumentReplicationControllerInstanceConverter.toString(this);
     }
 }

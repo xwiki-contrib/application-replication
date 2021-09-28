@@ -48,16 +48,22 @@
     #end
   #end
 #else
-<script src="$xwiki.jsrx.use('resources/replication/docextra.js')" defer="defer"></script>
+$xwiki.jsrx.use('resources/replication/docextra.js')
 
 #macro(resolveReplicationInstances $reference)
-    #set ($resolvedInstances = $services.replication.controller.resolveHibernateEntityReplication($reference))
+    #set ($resolvedInstances = $services.replication.document.getDocumentInstances($reference))
 
     #if ($resolvedInstances.size() > 0)
       <dl>
         #foreach($resolvedInstance in $resolvedInstances)
           <dt>$resolvedInstance.instance.name (<a href="$resolvedInstance.instance.uRI">$resolvedInstance.instance.uRI</a>)</dt>
-          <dd>$escapetool.xml($services.localization.render("replication.entity.level.${resolvedInstance.level}"))</dd>
+          <dd>
+            #if ($resolvedInstance.level)
+              $escapetool.xml($services.localization.render("replication.entity.level.${resolvedInstance.level}"))
+            #else
+              $escapetool.xml($services.localization.render('replication.entity.docextra.notreplicated'))
+            #end
+          </dd>
         #end
       </dl>
     #else
@@ -88,16 +94,23 @@
   #if ($services.security.authorization.hasAccess('ADMIN', $reference))
     #set ($replicatedInstances = $services.replication.controller.getHibernateEntityReplication($reference))
     #set ($replicationInstanceMap = {})
+    #set ($currentInstance = $services.replication.currentInstance)
+    #set ($currentInstanceControl = $NULL)
     #foreach($replicatedInstance in $replicatedInstances)
-      #set ($void = $replicationInstanceMap.put($replicatedInstance.instance.uRI, $replicatedInstance))
+      #if ($replicatedInstance.instance.uRI == $currentInstance.uRI)
+        #set ($currentInstanceControl = $replicatedInstance)
+      #else
+        #set ($void = $replicationInstanceMap.put($replicatedInstance.instance.uRI, $replicatedInstance))
+      #end
     #end
     #if(!$replicatedInstances)
       #set ($replicationType = 'default')
-    #elseif($replicatedInstances.isEmpty() || ($replicatedInstances.size() == 1 && !$replicatedInstances[0].instance))
+    #elseif($replicationInstanceMap.isEmpty() || ($replicationInstanceMap.size() == 1 && !$replicationInstanceMap[$NULL].instance))
       #set ($replicationType = 'all')
     #else
       #set ($replicationType = 'single')
     #end
+    #set ($replicationDisabled = $currentInstanceControl.level.name() == 'REFERENCE')
 
     #set ($inputId = "${namePrefix}_replication_instance_type_default")
     <input type="radio" id="$inputId" name="${namePrefix}_replication_instance_type" value="default" #if($replicationType == 'default')checked#end>
@@ -134,6 +147,7 @@
 
 #set ($instances = $services.replication.getRegisteredInstances())
 #if (!$instances.isEmpty())
+  <div id="replication.document_controllercontent" class="xwikiintracontent">
   <form id="replication_form" action="$xwiki.relativeRequestURL" method="post">
     <input type="hidden" name="form_token" value="$!{services.csrf.getToken()}" />
     <input type="hidden" name="replication_save"/>
@@ -152,9 +166,10 @@
       #replicationInstances('document', $instances, $doc.documentReference)
     </fieldset>
 
-    #if ($services.security.authorization.hasAccess('ADMIN', $doc.documentReference) || $services.security.authorization.hasAccess('ADMIN', $doc.documentReference.parent))
+    #if (!$replicationDisabled && ($services.security.authorization.hasAccess('ADMIN', $doc.documentReference) || $services.security.authorization.hasAccess('ADMIN', $doc.documentReference.parent)))
       <button id="replication_save" name="replication_save">$escapetool.xml($services.localization.render('replication.entity.docextra.button.save'))</button>
     #end
   </form>
+  </div>
 #end
 #end

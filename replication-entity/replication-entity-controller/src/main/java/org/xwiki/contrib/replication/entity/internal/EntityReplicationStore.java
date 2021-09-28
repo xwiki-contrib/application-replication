@@ -33,10 +33,13 @@ import org.hibernate.Session;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.internal.message.EntityReplicationControllerSender;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.wiki.descriptor.WikiDescriptorManager;
 import org.xwiki.wiki.manager.WikiManagerException;
@@ -76,6 +79,12 @@ public class EntityReplicationStore
     private WikiDescriptorManager wikis;
 
     @Inject
+    private EntityReplicationControllerSender sender;
+
+    @Inject
+    private ReplicationContext replicationContext;
+
+    @Inject
     private Logger logger;
 
     /**
@@ -93,6 +102,17 @@ public class EntityReplicationStore
 
         // Clear the cache for this entity
         this.cache.remove(entityId);
+
+        // Synchronize configuration with other instances
+        // TODO: move it to a listener
+        if (!this.replicationContext.isReplicationMessage()) {
+            try {
+                this.sender.send(reference, instances);
+            } catch (Exception e) {
+                // TODO: put this in a retry queue
+                this.logger.error("Failed to notify other instances about the replication configuration change", e);
+            }
+        }
     }
 
     private Object storeHibernateEntityReplication(long entityId, List<DocumentReplicationControllerInstance> instances,
@@ -139,6 +159,32 @@ public class EntityReplicationStore
     }
 
     /**
+     * @param instances the stored instances
+     * @return the resolved instances
+     */
+    public List<DocumentReplicationControllerInstance> resolveControllerInstances(
+        List<DocumentReplicationControllerInstance> instances)
+    {
+        if (instances != null) {
+            List<DocumentReplicationControllerInstance> resolvedInstances = new ArrayList<>(instances.size());
+
+            for (DocumentReplicationControllerInstance instance : instances) {
+                if (instance.getInstance() == null) {
+                    resolvedInstances.addAll(this.instanceManager.getInstances().stream()
+                        .map(i -> new DocumentReplicationControllerInstance(i, instance.getLevel()))
+                        .collect(Collectors.toList()));
+                } else {
+                    resolvedInstances.add(instance);
+                }
+            }
+
+            return resolvedInstances;
+        }
+
+        return null;
+    }
+
+    /**
      * @param reference the reference of the entity
      * @return the instances to send the entity to
      * @throws XWikiException when failing to get the instances
@@ -159,17 +205,8 @@ public class EntityReplicationStore
 
         // If not in the cache, load from the database
         if (instances == null) {
-            instances = getHibernateEntityReplication(reference.getRoot().getName(), entityId, cacheKey);
-
-            // Resolve "all instances" wildcard
-            if (instances != null && instances.size() == 1) {
-                final DocumentReplicationControllerInstance instance = instances.get(0);
-                if (instance.getInstance() == null) {
-                    instances = this.instanceManager.getInstances().stream()
-                        .map(i -> new DocumentReplicationControllerInstance(i, instance.getLevel()))
-                        .collect(Collectors.toList());
-                }
-            }
+            instances = resolveControllerInstances(
+                getHibernateEntityReplication(reference.getRoot().getName(), entityId, cacheKey));
         }
 
         // Fallback on parent if nothing is explicitly set for this reference
@@ -181,6 +218,26 @@ public class EntityReplicationStore
         this.cache.getResolveCache().set(cacheKey, instances);
 
         return instances;
+    }
+
+    /**
+     * @param reference the reference of the entity
+     * @param instance the configured instance
+     * @return the configuration of the instance
+     * @throws XWikiException when failing to get the instances
+     */
+    public DocumentReplicationControllerInstance resolveHibernateEntityReplication(EntityReference reference,
+        ReplicationInstance instance) throws XWikiException
+    {
+        List<DocumentReplicationControllerInstance> configuredInstances = resolveHibernateEntityReplication(reference);
+
+        for (DocumentReplicationControllerInstance configuredInstance : configuredInstances) {
+            if (configuredInstance.getInstance().getStatus() == null) {
+                return configuredInstance;
+            }
+        }
+
+        return new DocumentReplicationControllerInstance(instance, DocumentReplicationLevel.ALL);
     }
 
     /**
@@ -238,26 +295,15 @@ public class EntityReplicationStore
             return null;
         }
 
-        // There is a single entry
-        if (hibernateInstances.size() == 1) {
-            HibernateEntityReplicationInstance hibernateInstance = hibernateInstances.get(0);
-            if (hibernateInstance.getInstance().isEmpty() && hibernateInstance.getLevel() == null) {
-                // Replication is disabled for all instances
-                return Collections.emptyList();
-            }
-        }
-
-        // There is several entries
         List<DocumentReplicationControllerInstance> instances = new ArrayList<>(hibernateInstances.size());
         for (HibernateEntityReplicationInstance hibernateInstance : hibernateInstances) {
             if (hibernateInstance.getInstance().isEmpty()) {
                 // Replication use the same level for all instances
-                return Collections
-                    .singletonList(new DocumentReplicationControllerInstance(null, hibernateInstance.getLevel()));
+                instances.add(new DocumentReplicationControllerInstance(null, hibernateInstance.getLevel()));
             } else {
                 ReplicationInstance instance = this.instanceManager.getInstance(hibernateInstance.getInstance());
 
-                if (instance != null && instance.getStatus() == Status.REGISTERED) {
+                if (instance != null && (instance.getStatus() == Status.REGISTERED || instance.getStatus() == null)) {
                     instances.add(new DocumentReplicationControllerInstance(instance, hibernateInstance.getLevel()));
                 }
             }
