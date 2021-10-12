@@ -45,7 +45,7 @@ public class ReplicationReceiverMessageStore extends AbstractReplicationMessageS
     private final class FileReplicationReceiverMessage extends AbstractFileReplicationMessage
         implements ReplicationReceiverMessage
     {
-        private FileReplicationReceiverMessage(File messageFolder) throws ConfigurationException
+        private FileReplicationReceiverMessage(File messageFolder) throws ConfigurationException, ReplicationException
         {
             super(messageFolder);
         }

@@ -39,6 +39,8 @@ public class HibernateEntityReplicationInstance implements Serializable
 
     private DocumentReplicationLevel level;
 
+    private boolean readonly;
+
     /**
      * Default constructor.
      */
@@ -54,8 +56,11 @@ public class HibernateEntityReplicationInstance implements Serializable
     public HibernateEntityReplicationInstance(long entity, DocumentReplicationControllerInstance instance)
     {
         this.entity = entity;
+
         this.instance = instance.getInstance() != null ? instance.getInstance().getURI() : "";
+
         this.level = instance.getLevel();
+        this.readonly = instance.isReadonly();
     }
 
     @Override
@@ -72,6 +77,7 @@ public class HibernateEntityReplicationInstance implements Serializable
             builder.append(getEntity(), otherInstance.getEntity());
             builder.append(getInstance(), otherInstance.getInstance());
             builder.append(getLevel(), otherInstance.getLevel());
+            builder.append(isReadonly(), otherInstance.isReadonly());
 
             return builder.isEquals();
         }
@@ -86,6 +92,7 @@ public class HibernateEntityReplicationInstance implements Serializable
         builder.append(getEntity());
         builder.append(getInstance());
         builder.append(getLevel());
+        builder.append(isReadonly());
 
         return builder.toHashCode();
     }
@@ -136,5 +143,21 @@ public class HibernateEntityReplicationInstance implements Serializable
     public void setLevel(DocumentReplicationLevel level)
     {
         this.level = level;
+    }
+
+    /**
+     * @return true if the target instance is not allowed to send back modifications
+     */
+    public boolean isReadonly()
+    {
+        return this.readonly;
+    }
+
+    /**
+     * @param readonly true if the target instance is not allowed to send back modifications
+     */
+    public void setReadonly(boolean readonly)
+    {
+        this.readonly = readonly;
     }
 }

@@ -34,6 +34,7 @@ import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationContext;
+import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
@@ -125,7 +126,7 @@ public class EntityReplicationStore
         if (instances != null) {
             if (instances.isEmpty()) {
                 session.save(new HibernateEntityReplicationInstance(entityId,
-                    new DocumentReplicationControllerInstance(null, null)));
+                    new DocumentReplicationControllerInstance(null, null, true)));
             } else {
                 for (DocumentReplicationControllerInstance instance : instances) {
                     session.save(new HibernateEntityReplicationInstance(entityId, instance));
@@ -161,17 +162,18 @@ public class EntityReplicationStore
     /**
      * @param instances the stored instances
      * @return the resolved instances
+     * @throws ReplicationException when failing to access instances
      */
     public List<DocumentReplicationControllerInstance> resolveControllerInstances(
-        List<DocumentReplicationControllerInstance> instances)
+        List<DocumentReplicationControllerInstance> instances) throws ReplicationException
     {
         if (instances != null) {
             List<DocumentReplicationControllerInstance> resolvedInstances = new ArrayList<>(instances.size());
 
             for (DocumentReplicationControllerInstance instance : instances) {
                 if (instance.getInstance() == null) {
-                    resolvedInstances.addAll(this.instanceManager.getInstances().stream()
-                        .map(i -> new DocumentReplicationControllerInstance(i, instance.getLevel()))
+                    resolvedInstances.addAll(this.instanceManager.getInstances().stream().map(
+                        i -> new DocumentReplicationControllerInstance(i, instance.getLevel(), instance.isReadonly()))
                         .collect(Collectors.toList()));
                 } else {
                     resolvedInstances.add(instance);
@@ -188,9 +190,10 @@ public class EntityReplicationStore
      * @param reference the reference of the entity
      * @return the instances to send the entity to
      * @throws XWikiException when failing to get the instances
+     * @throws ReplicationException when failing to access instances
      */
     public List<DocumentReplicationControllerInstance> resolveHibernateEntityReplication(EntityReference reference)
-        throws XWikiException
+        throws XWikiException, ReplicationException
     {
         if (reference == null) {
             // Don't replicate by default
@@ -225,9 +228,10 @@ public class EntityReplicationStore
      * @param instance the configured instance
      * @return the configuration of the instance
      * @throws XWikiException when failing to get the instances
+     * @throws ReplicationException when failing to access instances
      */
     public DocumentReplicationControllerInstance resolveHibernateEntityReplication(EntityReference reference,
-        ReplicationInstance instance) throws XWikiException
+        ReplicationInstance instance) throws XWikiException, ReplicationException
     {
         List<DocumentReplicationControllerInstance> configuredInstances = resolveHibernateEntityReplication(reference);
 
@@ -237,7 +241,7 @@ public class EntityReplicationStore
             }
         }
 
-        return new DocumentReplicationControllerInstance(instance, DocumentReplicationLevel.ALL);
+        return new DocumentReplicationControllerInstance(instance, DocumentReplicationLevel.ALL, false);
     }
 
     /**
@@ -281,6 +285,7 @@ public class EntityReplicationStore
     }
 
     private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(long entityId, Session session)
+        throws XWikiException
     {
         Query<HibernateEntityReplicationInstance> query = session.createQuery(
             "SELECT instance FROM HibernateEntityReplicationInstance AS instance where instance.entity = :entity",
@@ -299,12 +304,19 @@ public class EntityReplicationStore
         for (HibernateEntityReplicationInstance hibernateInstance : hibernateInstances) {
             if (hibernateInstance.getInstance().isEmpty()) {
                 // Replication use the same level for all instances
-                instances.add(new DocumentReplicationControllerInstance(null, hibernateInstance.getLevel()));
+                instances.add(new DocumentReplicationControllerInstance(null, hibernateInstance.getLevel(),
+                    hibernateInstance.isReadonly()));
             } else {
-                ReplicationInstance instance = this.instanceManager.getInstance(hibernateInstance.getInstance());
+                ReplicationInstance instance;
+                try {
+                    instance = this.instanceManager.getInstance(hibernateInstance.getInstance());
+                } catch (ReplicationException e) {
+                    throw new XWikiException("Failed to access instances", e);
+                }
 
                 if (instance != null && (instance.getStatus() == Status.REGISTERED || instance.getStatus() == null)) {
-                    instances.add(new DocumentReplicationControllerInstance(instance, hibernateInstance.getLevel()));
+                    instances.add(new DocumentReplicationControllerInstance(instance, hibernateInstance.getLevel(),
+                        hibernateInstance.isReadonly()));
                 }
             }
         }

@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.internal.enpoint;
 
 import javax.inject.Inject;
 
+import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
@@ -45,7 +46,8 @@ public abstract class AbstractReplicationEndpoint implements ReplicationEndpoint
     @Inject
     protected ReplicationInstanceManager instances;
 
-    protected ReplicationInstance validateInstance(String instanceId) throws ResourceReferenceHandlerException
+    protected ReplicationInstance validateInstance(String instanceId)
+        throws ResourceReferenceHandlerException, ReplicationException
     {
         ReplicationInstance instance = this.instances.getInstance(instanceId);
         

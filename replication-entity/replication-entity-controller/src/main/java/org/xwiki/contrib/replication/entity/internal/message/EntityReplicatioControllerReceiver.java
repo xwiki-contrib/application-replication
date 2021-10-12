@@ -87,17 +87,26 @@ public class EntityReplicatioControllerReceiver extends AbstractEntityReplicatio
 
         // Add current instance if not already there
         if (currentConfiguration == null) {
-            if (allConfiguration == null || allConfiguration.getLevel() == null) {
+            if (allConfiguration == null || allConfiguration.getLevel() == null || allConfiguration.isReadonly()) {
                 // The instance is forbidden from replicating this entity
                 return Collections.singletonList(
-                    new DocumentReplicationControllerInstance(this.instances.getCurrentInstance(), null));
+                    new DocumentReplicationControllerInstance(this.instances.getCurrentInstance(), null, true));
             }
 
             optimizedConfigurations.add(new DocumentReplicationControllerInstance(this.instances.getCurrentInstance(),
-                allConfiguration.getLevel()));
+                allConfiguration.getLevel(), allConfiguration.isReadonly()));
         }
 
         // Optimize the list
+        optimizeConfiguration(configurations, allConfiguration, optimizedConfigurations);
+
+        return optimizedConfigurations;
+    }
+
+    private void optimizeConfiguration(List<DocumentReplicationControllerInstance> configurations,
+        DocumentReplicationControllerInstance allConfiguration,
+        List<DocumentReplicationControllerInstance> optimizedConfigurations)
+    {
         for (DocumentReplicationControllerInstance configuration : configurations) {
             // Keep wildcard configuration
             // Keep current instance configuration
@@ -105,7 +114,8 @@ public class EntityReplicatioControllerReceiver extends AbstractEntityReplicatio
                 // Don't add not replicated instances
                 // No need to keep a specific configuration for an instance having exactly the same as all
                 if (configuration.getLevel() == null
-                    || (allConfiguration != null && configuration.getLevel() == allConfiguration.getLevel())) {
+                    || (allConfiguration != null && configuration.getLevel() == allConfiguration.getLevel()
+                        && configuration.isReadonly() == allConfiguration.isReadonly())) {
                     // Don't add not replicated instances
                     continue;
                 }
@@ -113,8 +123,6 @@ public class EntityReplicatioControllerReceiver extends AbstractEntityReplicatio
 
             optimizedConfigurations.add(configuration);
         }
-
-        return optimizedConfigurations;
     }
 
     private DocumentReplicationControllerInstance getAllConfiguration(

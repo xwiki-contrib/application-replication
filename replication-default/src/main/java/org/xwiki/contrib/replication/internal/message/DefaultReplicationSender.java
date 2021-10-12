@@ -169,8 +169,6 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
                 }
 
                 syncStore(entry.message, entry.targets);
-            } catch (ExecutionContextException e) {
-                this.logger.error("Failed to initialize an ExecutionContext", e);
             } catch (InterruptedException e) {
                 this.logger.warn("The replication storing thread has been interrupted");
 
@@ -179,12 +177,14 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
                 // Stop thread
                 return;
+            } catch (Exception e) {
+                this.logger.error("Failed to store the message", e);
             }
         }
     }
 
     private void syncStore(ReplicationSenderMessage message, Collection<ReplicationInstance> targets)
-        throws ExecutionContextException
+        throws ExecutionContextException, ReplicationException
     {
         // Get the instances to send the data to
         Collection<ReplicationInstance> finalTargets = targets;

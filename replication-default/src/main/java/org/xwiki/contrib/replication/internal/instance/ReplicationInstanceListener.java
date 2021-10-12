@@ -97,14 +97,19 @@ public class ReplicationInstanceListener extends AbstractEventListener
             EntityReference objectReference = ((XObjectEvent) event).getReference();
 
             // Check if an instance has been unregistered
-            ReplicationInstance oldInstance = handleOldInstance(document, objectReference);
+            try {
+                ReplicationInstance oldInstance = handleOldInstance(document, objectReference);
 
-            // Check if an instance has been registered
-            handleNewInstance(document, objectReference, oldInstance);
+                // Check if an instance has been registered
+                handleNewInstance(document, objectReference, oldInstance);
+            } catch (ReplicationException e) {
+                this.logger.error("Failed to update the instances", e);
+            }
         }
     }
 
     private ReplicationInstance handleOldInstance(XWikiDocument document, EntityReference objectReference)
+        throws ReplicationException
     {
         XWikiDocument documentOld = document.getOriginalDocument();
 
@@ -125,14 +130,13 @@ public class ReplicationInstanceListener extends AbstractEventListener
 
                 return oldInstance;
             }
-
         }
 
         return null;
     }
 
     private void handleNewInstance(XWikiDocument document, EntityReference objectReference,
-        ReplicationInstance oldInstance)
+        ReplicationInstance oldInstance) throws ReplicationException
     {
         ReplicationInstanceStore store = this.storeProvider.get();
 
@@ -161,9 +165,6 @@ public class ReplicationInstanceListener extends AbstractEventListener
 
     private void initialize()
     {
-        // Load instances
-        reload();
-
         // Initialize the sender
         this.senderProvider.get();
 

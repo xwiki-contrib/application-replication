@@ -64,7 +64,8 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
     {
         private final Collection<ReplicationInstance> targets;
 
-        private FileReplicationSenderMessage(File messageFolder) throws ConfigurationException, IOException
+        private FileReplicationSenderMessage(File messageFolder)
+            throws ConfigurationException, IOException, ReplicationException
         {
             super(messageFolder);
 
@@ -76,7 +77,7 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
          */
         public Collection<ReplicationInstance> getTargets()
         {
-            return Collections.unmodifiableCollection(this.targets);
+            return this.targets;
         }
 
         @Override
@@ -116,14 +117,14 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
         return new File(dataFolder, FILE_TARGETS);
     }
 
-    private Set<ReplicationInstance> loadTargets(String id) throws IOException
+    private Set<ReplicationInstance> loadTargets(String id) throws IOException, ReplicationException
     {
         File targetsFile = getTargetsFile(id);
 
         return loadTargets(targetsFile);
     }
 
-    private Set<ReplicationInstance> loadTargets(File targetsFile) throws IOException
+    private Set<ReplicationInstance> loadTargets(File targetsFile) throws IOException, ReplicationException
     {
         Set<ReplicationInstance> targets = new HashSet<>();
 
@@ -131,7 +132,11 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
             for (LineIterator it = IOUtils.lineIterator(stream, StandardCharsets.UTF_8); it.hasNext();) {
                 String line = it.next();
                 if (StringUtils.isNotBlank(line)) {
-                    targets.add(this.instances.getInstance(line));
+                    ReplicationInstance target = this.instances.getInstance(line);
+                    if (target != null) {
+                        targets.add(target);
+                    }
+                    // TODO: update the stored targets right away ?
                 }
             }
         }

@@ -37,14 +37,16 @@ public interface ReplicationInstanceManager
 
     /**
      * @return all the instances
+     * @throws ReplicationException when failing to load the instances
      */
-    Collection<ReplicationInstance> getInstances();
+    Collection<ReplicationInstance> getInstances() throws ReplicationException;
 
     /**
      * @param uri the uri of the instance
      * @return the instance
+     * @throws ReplicationException when failing to load the instances
      */
-    ReplicationInstance getInstance(String uri);
+    ReplicationInstance getInstance(String uri) throws ReplicationException;
 
     /**
      * @param instance the instance to add
@@ -62,8 +64,9 @@ public interface ReplicationInstanceManager
 
     /**
      * @return all instances which been validated on both ends
+     * @throws ReplicationException when failing to load the instances
      */
-    Collection<ReplicationInstance> getRegisteredInstances();
+    Collection<ReplicationInstance> getRegisteredInstances() throws ReplicationException;
 
     /**
      * @param uri the base URI of the instance to remove from the list of registered instances
@@ -80,8 +83,9 @@ public interface ReplicationInstanceManager
 
     /**
      * @return all requested instances which have not validated the link yet
+     * @throws ReplicationException when failing to load the instances
      */
-    Collection<ReplicationInstance> getRequestedInstances();
+    Collection<ReplicationInstance> getRequestedInstances() throws ReplicationException;
 
     /**
      * @param uri the base URI of the instance to remove from the list of instance which did not yet accepted the link
@@ -99,8 +103,9 @@ public interface ReplicationInstanceManager
 
     /**
      * @return all instance which requested a link with this instance
+     * @throws ReplicationException when failing to load the instances
      */
-    Collection<ReplicationInstance> getRequestingInstances();
+    Collection<ReplicationInstance> getRequestingInstances() throws ReplicationException;
 
     /**
      * @param uri the uri of the instance to accept
@@ -118,7 +123,7 @@ public interface ReplicationInstanceManager
 
     /**
      * @param uri the uri of the instance to remove
-     * @return <tt>true</tt> if an instance was removed as a result of this call
+     * @return the instance that was removed or null if none could be found matching the URI
      * @throws ReplicationException when failing to remove the instance
      */
     ReplicationInstance removeRequestingInstance(String uri) throws ReplicationException;

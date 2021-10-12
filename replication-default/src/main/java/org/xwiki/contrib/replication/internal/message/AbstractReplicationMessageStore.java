@@ -127,7 +127,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
         protected File dataFile;
 
-        protected AbstractFileReplicationMessage(File messageFolder) throws ConfigurationException
+        protected AbstractFileReplicationMessage(File messageFolder) throws ConfigurationException, ReplicationException
         {
             // Standard metadata
 

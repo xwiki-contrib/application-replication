@@ -40,5 +40,9 @@
         <param name="useNamed">true</param>
       </type>
     </property>
+
+    <property name="readonly" type="boolean">
+      <column name="readonly" not-null="true" default="0"/>
+    </property>
   </class>
 </hibernate-mapping>

@@ -19,6 +19,8 @@
  */
 package org.xwiki.contrib.replication.entity;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerInstanceConverter;
 
@@ -33,18 +35,23 @@ public class DocumentReplicationControllerInstance
 
     private final DocumentReplicationLevel level;
 
+    private final boolean readonly;
+
     /**
-     * @param instance the instance to replicate the document with
+     * @param instance the instance to replicate the document to
      * @param level indicate how much of the document should be replicated
+     * @param readonly true if the target instance is not allowed to send back modifications
      */
-    public DocumentReplicationControllerInstance(ReplicationInstance instance, DocumentReplicationLevel level)
+    public DocumentReplicationControllerInstance(ReplicationInstance instance, DocumentReplicationLevel level,
+        boolean readonly)
     {
         this.instance = instance;
         this.level = level;
+        this.readonly = readonly;
     }
 
     /**
-     * @return the instance to replicate the document with
+     * @return the instance to replicate the document to
      */
     public ReplicationInstance getInstance()
     {
@@ -57,6 +64,48 @@ public class DocumentReplicationControllerInstance
     public DocumentReplicationLevel getLevel()
     {
         return this.level;
+    }
+
+    /**
+     * @return true if the target instance is not allowed to send back modifications
+     */
+    public boolean isReadonly()
+    {
+        return this.readonly;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == this) {
+            return true;
+        }
+
+        if (obj instanceof DocumentReplicationControllerInstance) {
+            DocumentReplicationControllerInstance other = (DocumentReplicationControllerInstance) obj;
+
+            EqualsBuilder builder = new EqualsBuilder();
+
+            builder.append(getInstance(), other.getInstance());
+            builder.append(isReadonly(), other.isReadonly());
+            builder.append(getLevel(), other.getLevel());
+
+            return builder.build();
+        }
+
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        HashCodeBuilder builder = new HashCodeBuilder();
+
+        builder.append(getInstance());
+        builder.append(isReadonly());
+        builder.append(getLevel());
+
+        return builder.build();
     }
 
     @Override

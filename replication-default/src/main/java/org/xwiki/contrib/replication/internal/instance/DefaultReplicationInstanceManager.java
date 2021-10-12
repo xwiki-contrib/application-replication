@@ -53,7 +53,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Inject
     private Logger logger;
 
-    private final Map<String, ReplicationInstance> instances = new ConcurrentHashMap<>();
+    private Map<String, ReplicationInstance> instances;
 
     @Override
     public ReplicationInstance getCurrentInstance() throws ReplicationException
@@ -61,14 +61,23 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         return this.client.getCurrentInstance();
     }
 
-    @Override
-    public Collection<ReplicationInstance> getInstances()
+    private Map<String, ReplicationInstance> getInternalInstances() throws ReplicationException
     {
-        return Collections.unmodifiableCollection(this.instances.values());
+        if (this.instances == null) {
+            reload();
+        }
+
+        return this.instances;
     }
 
     @Override
-    public ReplicationInstance getInstance(String uri)
+    public Collection<ReplicationInstance> getInstances() throws ReplicationException
+    {
+        return Collections.unmodifiableCollection(getInternalInstances().values());
+    }
+
+    @Override
+    public ReplicationInstance getInstance(String uri) throws ReplicationException
     {
         if (uri == null) {
             return null;
@@ -76,7 +85,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
 
         String cleanURI = DefaultReplicationInstance.cleanURI(uri);
 
-        ReplicationInstance instance = this.instances.get(cleanURI);
+        ReplicationInstance instance = getInternalInstances().get(cleanURI);
 
         try {
             if (instance == null && getCurrentInstance().getURI().equals(cleanURI)) {
@@ -92,7 +101,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public boolean addInstance(ReplicationInstance instance) throws ReplicationException
     {
-        if (this.instances.containsKey(instance.getURI())) {
+        if (getInternalInstances().containsKey(instance.getURI())) {
             return false;
         }
 
@@ -111,7 +120,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
 
         String cleanURI = DefaultReplicationInstance.cleanURI(uri);
 
-        ReplicationInstance instance = this.instances.get(cleanURI);
+        ReplicationInstance instance = getInternalInstances().get(cleanURI);
 
         if (instance == null) {
             return null;
@@ -131,9 +140,9 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     }
 
     @Override
-    public Collection<ReplicationInstance> getRegisteredInstances()
+    public Collection<ReplicationInstance> getRegisteredInstances() throws ReplicationException
     {
-        return this.instances.values().stream().filter(i -> i.getStatus() == Status.REGISTERED)
+        return getInternalInstances().values().stream().filter(i -> i.getStatus() == Status.REGISTERED)
             .collect(Collectors.toList());
     }
 
@@ -162,7 +171,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     {
         String cleanURI = DefaultReplicationInstance.cleanURI(uri);
 
-        ReplicationInstance instance = this.instances.get(cleanURI);
+        ReplicationInstance instance = getInternalInstances().get(cleanURI);
 
         if (instance == null || instance.getStatus() != Status.REGISTERED) {
             return false;
@@ -184,9 +193,9 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     }
 
     @Override
-    public Collection<ReplicationInstance> getRequestedInstances()
+    public Collection<ReplicationInstance> getRequestedInstances() throws ReplicationException
     {
-        return this.instances.values().stream().filter(i -> i.getStatus() == Status.REQUESTED)
+        return getInternalInstances().values().stream().filter(i -> i.getStatus() == Status.REQUESTED)
             .collect(Collectors.toList());
     }
 
@@ -195,7 +204,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     {
         String cleanURI = DefaultReplicationInstance.cleanURI(uri);
 
-        ReplicationInstance instance = this.instances.get(cleanURI);
+        ReplicationInstance instance = getInternalInstances().get(cleanURI);
 
         if (instance == null || instance.getStatus() != Status.REQUESTED) {
             return false;
@@ -219,7 +228,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public boolean confirmRequestedInstance(ReplicationInstance newInstance) throws ReplicationException
     {
-        ReplicationInstance existingInstance = this.instances.get(newInstance.getURI());
+        ReplicationInstance existingInstance = getInternalInstances().get(newInstance.getURI());
 
         if (existingInstance == null || existingInstance.getStatus() != Status.REQUESTED) {
             return false;
@@ -232,9 +241,9 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     }
 
     @Override
-    public Collection<ReplicationInstance> getRequestingInstances()
+    public Collection<ReplicationInstance> getRequestingInstances() throws ReplicationException
     {
-        return this.instances.values().stream().filter(i -> i.getStatus() == Status.REQUESTING)
+        return getInternalInstances().values().stream().filter(i -> i.getStatus() == Status.REQUESTING)
             .collect(Collectors.toList());
     }
 
@@ -243,7 +252,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     {
         String cleanURI = DefaultReplicationInstance.cleanURI(uri);
 
-        ReplicationInstance instance = this.instances.get(cleanURI);
+        ReplicationInstance instance = getInternalInstances().get(cleanURI);
 
         if (instance == null || instance.getStatus() != Status.REQUESTING) {
             return false;
@@ -270,7 +279,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     {
         String cleanURI = DefaultReplicationInstance.cleanURI(uri);
 
-        ReplicationInstance instance = this.instances.get(cleanURI);
+        ReplicationInstance instance = getInternalInstances().get(cleanURI);
 
         if (instance == null || instance.getStatus() != Status.REQUESTING) {
             return false;
@@ -292,7 +301,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public ReplicationInstance removeRequestingInstance(String uri) throws ReplicationException
     {
-        ReplicationInstance instance = this.instances.get(uri);
+        ReplicationInstance instance = getInternalInstances().get(uri);
 
         if (instance == null || instance.getStatus() != Status.REQUESTING) {
             return null;
@@ -307,7 +316,10 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public void reload() throws ReplicationException
     {
-        this.instances.clear();
-        this.store.loadInstances().forEach(i -> this.instances.put(i.getURI(), i));
+        Map<String, ReplicationInstance> newInstances = new ConcurrentHashMap<>();
+
+        this.store.loadInstances().forEach(i -> newInstances.put(i.getURI(), i));
+
+        this.instances = newInstances;
     }
 }

@@ -84,13 +84,17 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
         messages.forEach(this.queue::add);
 
         // Notify the other instances that we are ready to receive messages
-        for (ReplicationInstance instance : this.instances.getInstances()) {
-            try {
-                this.client.ping(instance);
-            } catch (Exception e) {
-                this.logger.warn("Failed to send a ping to instance [{}]: {}", instance.getURI(),
-                    ExceptionUtils.getRootCauseMessage(e));
+        try {
+            for (ReplicationInstance instance : this.instances.getInstances()) {
+                try {
+                    this.client.ping(instance);
+                } catch (Exception e) {
+                    this.logger.warn("Failed to send a ping to instance [{}]: {}", instance.getURI(),
+                        ExceptionUtils.getRootCauseMessage(e));
+                }
             }
+        } catch (ReplicationException e) {
+            throw new InitializationException("Failed to get registered istances", e);
         }
     }
 

@@ -26,7 +26,9 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.localization.ContextualLocalizationManager;
 import org.xwiki.rendering.block.Block;
@@ -58,6 +60,9 @@ public class DocumentControllerUIExtension implements UIExtension
     @Inject
     private TemplateManager templates;
 
+    @Inject
+    private Logger logger;
+
     @Override
     public String getId()
     {
@@ -75,7 +80,12 @@ public class DocumentControllerUIExtension implements UIExtension
     {
         Map<String, String> parameters = new HashMap<>();
 
-        parameters.put("show", String.valueOf(!this.instances.getRegisteredInstances().isEmpty()));
+        try {
+            parameters.put("show", String.valueOf(!this.instances.getRegisteredInstances().isEmpty()));
+        } catch (ReplicationException e) {
+            this.logger.error("Failed to get registered instances", e);
+        }
+
         parameters.put("title", translate("replication.entity.docextra.title", "Replication"));
         parameters.put("itemnumber", "-1");
         parameters.put("name", "replication");

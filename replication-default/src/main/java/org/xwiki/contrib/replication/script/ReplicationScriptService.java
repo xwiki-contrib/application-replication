@@ -68,8 +68,9 @@ public class ReplicationScriptService implements ScriptService
 
     /**
      * @return all instances which been validated on both ends
+     * @throws ReplicationException when failing to access instances
      */
-    public Collection<ReplicationInstance> getRegisteredInstances()
+    public Collection<ReplicationInstance> getRegisteredInstances() throws ReplicationException
     {
         return this.instances.getRegisteredInstances().stream().map(i -> new DefaultReplicationInstance(i))
             .collect(Collectors.toList());

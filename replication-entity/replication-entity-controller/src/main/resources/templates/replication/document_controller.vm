@@ -24,9 +24,12 @@
       #if ($replicationType == 'default')
         #set ($instances = $NULL)
       #elseif ($replicationType == 'all')
-        #set ($instances = {$NULL : $request.get("${namePrefix}_replication_instance_level")})
+        #set ($instances = [{
+                "level" : $request.get("${namePrefix}_replication_instance_level"),
+                "readonly" : false
+              }])
       #elseif ($replicationType == 'single')
-        #set ($instances = {})
+        #set ($instances = [])
         #set ($parameterPrefix = "${namePrefix}_replication_instance_uri_")  
         #foreach($parameterName in $request.parameterNames)
           #if ($parameterName.startsWith($parameterPrefix))
@@ -34,7 +37,12 @@
             #set ($instanceIndex = $parameterName.substring($parameterPrefix.length()))
             #set ($instanceLevel = $request.getParameter("${namePrefix}_replication_instance_level_$instanceIndex"))
             #if ($!instanceLevel != '')
-              #set ($void = $instances.put($instanceURI, $instanceLevel))
+              ## TODO: add support for readonly in the UI
+              #set ($void = $instances.add({
+                "instance" : $instanceURI,
+                "level" : $instanceLevel,
+                "readonly" : false
+              }))
             #end
           #end
         #end

@@ -27,7 +27,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.apache.commons.lang3.StringUtils;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
@@ -81,9 +80,10 @@ public class ControllerReplicationScriptService implements ScriptService
      * @return the instances to send the entity to
      * @throws XWikiException when failing to get the instances
      * @throws AccessDeniedException if the current script author does not have the right to use this API
+     * @throws ReplicationException when failing to access instances
      */
     public List<DocumentReplicationControllerInstance> resolveHibernateEntityReplication(EntityReference reference)
-        throws XWikiException, AccessDeniedException
+        throws XWikiException, AccessDeniedException, ReplicationException
     {
         return this.store.resolveHibernateEntityReplication(reference);
     }
@@ -94,21 +94,22 @@ public class ControllerReplicationScriptService implements ScriptService
      * @return the configuration of the instance
      * @throws XWikiException when failing to get the instances
      * @throws AccessDeniedException if the current script author does not have the right to use this API
+     * @throws ReplicationException when failing to access instances
      */
     public DocumentReplicationControllerInstance resolveHibernateEntityReplication(EntityReference reference,
-        ReplicationInstance instance) throws XWikiException, AccessDeniedException
+        ReplicationInstance instance) throws XWikiException, AccessDeniedException, ReplicationException
     {
         return this.store.resolveHibernateEntityReplication(reference, instance);
     }
 
     /**
      * @param reference the reference of the entity associated with the configuration
-     * @param instances the instance and level mapping to update
+     * @param instances the instance configuration to update
      * @throws AccessDeniedException if the current script author does not have the right to use this API
      * @throws XWikiException when failing to save the configuration
      * @throws ReplicationException when failing to get current instance
      */
-    public void save(EntityReference reference, Map<String, Object> instances)
+    public void save(EntityReference reference, List<Map<String, Object>> instances)
         throws AccessDeniedException, XWikiException, ReplicationException
     {
         this.authorization.checkAccess(Right.PROGRAM);
@@ -118,20 +119,25 @@ public class ControllerReplicationScriptService implements ScriptService
             configuration = null;
         } else {
             configuration = new ArrayList<>(instances.size());
-            for (Map.Entry<String, Object> entry : instances.entrySet()) {
-                ReplicationInstance instance = this.instanceManager.getInstance(entry.getKey());
-                if (StringUtils.isEmpty(entry.getKey())
-                    || (instance != null && instance.getStatus() == Status.REGISTERED)) {
-                    configuration.add(new DocumentReplicationControllerInstance(instance,
-                        DocumentReplicationControllerInstanceConverter.toLevel(entry.getValue())));
+            ReplicationInstance currentInstance = this.instanceManager.getCurrentInstance();
+            boolean currentInstanceFound = false;
+            for (Map<String, Object> entry : instances) {
+                DocumentReplicationControllerInstance instance =
+                    DocumentReplicationControllerInstanceConverter.toControllerInstance(entry, this.instanceManager);
+                if (instance != null
+                    && (instance.getInstance() == null || instance.getInstance().getStatus() == Status.REGISTERED)) {
+                    configuration.add(instance);
+
+                    if (instance.getInstance() == this.instanceManager.getCurrentInstance()) {
+                        currentInstanceFound = true;
+                    }
                 }
             }
 
             // Add current instance if not already there
-            ReplicationInstance currentInstance = this.instanceManager.getCurrentInstance();
-            if (!instances.containsKey(currentInstance.getURI())) {
-                configuration
-                    .add(new DocumentReplicationControllerInstance(currentInstance, DocumentReplicationLevel.ALL));
+            if (!currentInstanceFound) {
+                configuration.add(
+                    new DocumentReplicationControllerInstance(currentInstance, DocumentReplicationLevel.ALL, false));
             }
         }
 
