@@ -258,6 +258,43 @@ public class EntityReplicationStore
         return getHibernateEntityReplication(reference.getRoot().getName(), entityId, cacheKey);
     }
 
+    /**
+     * @param reference the reference of the entity
+     * @param instance the configured instance
+     * @return the instances directly configured at this entity level
+     * @throws XWikiException when failing to get the instances
+     */
+    public DocumentReplicationControllerInstance getHibernateEntityReplication(EntityReference reference,
+        ReplicationInstance instance) throws XWikiException
+    {
+        List<DocumentReplicationControllerInstance> configuredInstances = getHibernateEntityReplication(reference);
+
+        if (configuredInstances == null) {
+            // Nothing is set at this level
+            return null;
+        }
+
+        // Check if the instance is explicitly set
+        DocumentReplicationControllerInstance allConfiguredInstance = null;
+        for (DocumentReplicationControllerInstance configuredInstance : configuredInstances) {
+            if (configuredInstance.getInstance() == instance) {
+                return configuredInstance;
+            }
+
+            if (configuredInstance.getInstance() == null) {
+                allConfiguredInstance = configuredInstance;
+            }
+        }
+
+        // Check whildcard configuration
+        if (allConfiguredInstance != null) {
+            return allConfiguredInstance;
+        }
+
+        // This is not replicated
+        return new DocumentReplicationControllerInstance(instance, null, false);
+    }
+
     private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(String wiki, long entityId,
         String cacheKey) throws XWikiException
     {
