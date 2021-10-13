@@ -34,7 +34,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
-import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
@@ -79,8 +78,6 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
 
     private HttpServletRequest request;
 
-    private ReplicationInstance source;
-
     /**
      * @param date the date to convert to {@link String}
      * @return the {@link String} version of the date in the context of a message request
@@ -102,17 +99,20 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
     /**
      * @param instance the last instance which sent the message
      * @param request the request to read
-     * @throws ReplicationException when failing to access instances
      */
-    public void initialize(ReplicationInstance instance, HttpServletRequest request) throws ReplicationException
+    public void initialize(ReplicationInstance instance, HttpServletRequest request)
     {
         this.instance = instance;
         this.request = request;
+    }
 
-        String sourceString = this.request.getParameter(PARAMETER_SOURCE);
-        if (sourceString != null) {
-            this.source = this.instances.getInstance(sourceString);
-        }
+    /**
+     * @return the instance the last instance which sent the message
+     */
+    @Override
+    public ReplicationInstance getInstance()
+    {
+        return this.instance;
     }
 
     @Override
@@ -130,9 +130,9 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
     }
 
     @Override
-    public ReplicationInstance getSource()
+    public String getSource()
     {
-        return this.source;
+        return this.request.getParameter(PARAMETER_SOURCE);
     }
 
     @Override

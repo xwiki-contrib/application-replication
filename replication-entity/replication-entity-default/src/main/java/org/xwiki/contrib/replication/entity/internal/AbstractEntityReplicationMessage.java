@@ -31,7 +31,6 @@ import javax.inject.Named;
 import org.xwiki.bridge.DocumentAccessBridge;
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
-import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.model.reference.AbstractLocalizedEntityReference;
 import org.xwiki.model.reference.EntityReference;
@@ -145,7 +144,7 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
     }
 
     @Override
-    public ReplicationInstance getSource()
+    public String getSource()
     {
         // Will be filled by the sender
         return null;

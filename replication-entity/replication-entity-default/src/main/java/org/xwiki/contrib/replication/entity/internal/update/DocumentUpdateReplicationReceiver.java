@@ -90,50 +90,56 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         if (complete) {
             completeUpdate(document, xcontext);
         } else {
-            String previousVersion =
-                getMetadata(message, DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION, false);
-            Date previousVersionDate =
-                getMetadata(message, DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION_DATE, false, Date.class);
-
-            // Load the current document
-            XWikiDocument currentDocument;
-            try {
-                // Clone the document to not be disturbed by modifications made by other threads
-                currentDocument = xcontext.getWiki().getDocument(documentReference, xcontext).clone();
-            } catch (XWikiException e) {
-                throw new ReplicationException("Failed to load document to update", e);
-            }
-
-            // Keep a copy of the current document for later
-            XWikiDocument newDocument = currentDocument.clone();
-
-            // Update the document
-            newDocument.apply(document, true);
-            // Also copy some revision related properties
-            newDocument.setAuthorReference(document.getAuthorReference());
-            newDocument.setContentAuthorReference(document.getContentAuthorReference());
-            newDocument.setCreatorReference(document.getCreatorReference());
-            newDocument.setDate(document.getDate());
-            newDocument.setContentUpdateDate(document.getContentUpdateDate());
-
-            // Save the updated document
-            try {
-                xcontext.getWiki().saveDocument(newDocument, document.getComment(), document.isMinorEdit(), xcontext);
-            } catch (XWikiException e) {
-                throw new ReplicationException("Failed to save document update", e);
-            }
-
-            // Get previous database version
-            String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
-            Date currentVersionDate = currentDocument.isNew() ? null : currentDocument.getDate();
-
-            // Check if the previous version is the expected one
-            if (!Objects.equal(currentVersion, previousVersion)
-                || !Objects.equal(currentVersionDate, previousVersionDate)) {
-                // If not create and save a merged version of the document
-                merge(previousVersion, currentDocument, newDocument, xcontext);
-            }
+            update(message, documentReference, document, xcontext);
         }
+    }
+
+    private void update(ReplicationReceiverMessage message, DocumentReference documentReference, XWikiDocument document,
+        XWikiContext xcontext) throws ReplicationException
+    {
+        String previousVersion = getMetadata(message, DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION, false);
+        Date previousVersionDate =
+            getMetadata(message, DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION_DATE, false, Date.class);
+
+        // Load the current document
+        XWikiDocument currentDocument;
+        try {
+            // Clone the document to not be disturbed by modifications made by other threads
+            currentDocument = xcontext.getWiki().getDocument(documentReference, xcontext).clone();
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to load document to update", e);
+        }
+
+        // Keep a copy of the current document for later
+        XWikiDocument newDocument = currentDocument.clone();
+
+        // Update the document
+        newDocument.apply(document, true);
+        // Also copy some revision related properties
+        newDocument.setAuthorReference(document.getAuthorReference());
+        newDocument.setContentAuthorReference(document.getContentAuthorReference());
+        newDocument.setCreatorReference(document.getCreatorReference());
+        newDocument.setDate(document.getDate());
+        newDocument.setContentUpdateDate(document.getContentUpdateDate());
+
+        // Save the updated document
+        try {
+            xcontext.getWiki().saveDocument(newDocument, document.getComment(), document.isMinorEdit(), xcontext);
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to save document update", e);
+        }
+
+        // Get previous database version
+        String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
+        Date currentVersionDate = currentDocument.isNew() ? null : currentDocument.getDate();
+
+        // Check if the previous version is the expected one
+        if (!Objects.equal(currentVersion, previousVersion)
+            || !Objects.equal(currentVersionDate, previousVersionDate)) {
+            // If not create and save a merged version of the document
+            merge(previousVersion, currentDocument, newDocument, xcontext);
+        }
+
     }
 
     private void completeUpdate(XWikiDocument document, XWikiContext xcontext) throws ReplicationException

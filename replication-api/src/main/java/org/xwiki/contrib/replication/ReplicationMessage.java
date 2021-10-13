@@ -39,9 +39,9 @@ public interface ReplicationMessage
     Date getDate();
 
     /**
-     * @return the instance from which the message is coming
+     * @return the instance from which the message is originally coming
      */
-    ReplicationInstance getSource();
+    String getSource();
 
     /**
      * @return the identifier of the handler associated with the data

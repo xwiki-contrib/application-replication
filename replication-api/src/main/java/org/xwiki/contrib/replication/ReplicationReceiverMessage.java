@@ -28,6 +28,11 @@ import java.io.InputStream;
 public interface ReplicationReceiverMessage extends ReplicationMessage
 {
     /**
+     * @return the instance the last instance which sent the message
+     */
+    ReplicationInstance getInstance();
+
+    /**
      * Get the stream to read the entire state of the data.
      * 
      * @return the data

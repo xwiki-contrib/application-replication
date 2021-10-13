@@ -31,6 +31,7 @@ import org.xwiki.component.phase.Initializable;
 import org.xwiki.component.phase.InitializationException;
 import org.xwiki.context.ExecutionContext;
 import org.xwiki.context.ExecutionContextManager;
+import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
@@ -130,6 +131,8 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
         try {
             // Execute the receiver
             replicationReceiver.receive(message);
+        } catch (InvalidReplicationMessageException e) {
+            this.logger.error("Message with id [{}] is invalid and is not going to be tried again", message.getId(), e);
         } finally {
             this.executionContextManager.popContext();
         }

@@ -40,7 +40,6 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.environment.Environment;
@@ -115,13 +114,13 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
     protected abstract class AbstractFileReplicationMessage
         implements ReplicationMessage, Comparable<ReplicationMessage>
     {
-        protected final String id;
+        protected String id;
 
-        protected final Date date;
+        protected Date date;
 
-        protected final String type;
+        protected String type;
 
-        protected final ReplicationInstance source;
+        protected String source;
 
         protected Map<String, Collection<String>> custom;
 
@@ -132,16 +131,8 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
             // Standard metadata
 
             File metadataFile = getMetadataFile(messageFolder);
-            PropertiesConfiguration metadata = new Configurations().properties(metadataFile);
 
-            this.id = (String) metadata.getProperty(PROPERTY_ID);
-            this.type = (String) metadata.getProperty(PROPERTY_TYPE);
-
-            String sourceURI = (String) metadata.getProperty(PROPERTY_SOURCE);
-            this.source = instances.getInstance(sourceURI);
-
-            String dateString = (String) metadata.getProperty(PROPERTY_DATE);
-            this.date = new Date(Long.parseLong(dateString));
+            loadMetadata(new Configurations().properties(metadataFile));
 
             // Custom metadata
 
@@ -169,6 +160,17 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
             this.dataFile = getDataFile(messageFolder);
         }
 
+        protected void loadMetadata(PropertiesConfiguration metadata) throws ReplicationException
+        {
+            this.id = (String) metadata.getProperty(PROPERTY_ID);
+            this.type = (String) metadata.getProperty(PROPERTY_TYPE);
+            this.source = (String) metadata.getProperty(PROPERTY_SOURCE);
+
+            String dateString = (String) metadata.getProperty(PROPERTY_DATE);
+            this.date = new Date(Long.parseLong(dateString));
+
+        }
+
         @Override
         public String getId()
         {
@@ -182,7 +184,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
         }
 
         @Override
-        public ReplicationInstance getSource()
+        public String getSource()
         {
             return this.source;
         }
@@ -262,15 +264,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
                         .configure(new Parameters().properties().setFile(getMetadataFile(messageFolder)));
 
                 PropertiesConfiguration configuration = builder.getConfiguration();
-                configuration.setProperty(PROPERTY_ID, message.getId());
-                configuration.setProperty(PROPERTY_TYPE, message.getType());
-                configuration.setProperty(PROPERTY_DATE, String.valueOf(message.getDate().getTime()));
-
-                ReplicationInstance source = message.getSource();
-                if (source == null) {
-                    source = this.instances.getCurrentInstance();
-                }
-                configuration.setProperty(PROPERTY_SOURCE, source.getURI());
+                setMessageMetadata(message, configuration);
 
                 builder.save();
             } catch (ConfigurationException e) {
@@ -303,6 +297,14 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
         }
 
         return messageFolder;
+    }
+
+    protected void setMessageMetadata(M message, PropertiesConfiguration configuration) throws ReplicationException
+    {
+        configuration.setProperty(PROPERTY_ID, message.getId());
+        configuration.setProperty(PROPERTY_TYPE, message.getType());
+        configuration.setProperty(PROPERTY_DATE, String.valueOf(message.getDate().getTime()));
+        configuration.setProperty(PROPERTY_SOURCE, message.getSource());
     }
 
     protected abstract void storeData(M message, File file) throws IOException;

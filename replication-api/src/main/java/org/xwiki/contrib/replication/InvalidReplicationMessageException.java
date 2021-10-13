@@ -20,6 +20,8 @@
 package org.xwiki.contrib.replication;
 
 /**
+ * Exception thrown when a message is wrong and should be ignored.
+ * 
  * @version $Id$
  */
 public class InvalidReplicationMessageException extends ReplicationException

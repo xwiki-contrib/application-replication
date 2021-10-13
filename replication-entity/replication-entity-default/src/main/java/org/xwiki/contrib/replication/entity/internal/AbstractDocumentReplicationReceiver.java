@@ -21,9 +21,14 @@ package org.xwiki.contrib.replication.entity.internal;
 
 import java.util.Locale;
 
+import javax.inject.Inject;
+
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
@@ -34,11 +39,19 @@ import com.xpn.xwiki.XWikiContext;
  */
 public abstract class AbstractDocumentReplicationReceiver extends AbstractEntityReplicationReceiver
 {
+    @Inject
+    protected DocumentReplicationController controller;
+
     @Override
     protected void receiveEntity(ReplicationReceiverMessage message, EntityReference entityReference,
         XWikiContext xcontext) throws ReplicationException
     {
-        receiveDocument(message, getDocumentReference(message, entityReference), xcontext);
+        DocumentReference documentReference = getDocumentReference(message, entityReference);
+
+        // Check if this instance is allowed to replicate this document
+        checkMessageInstance(message, documentReference);
+
+        receiveDocument(message, documentReference, xcontext);
     }
 
     protected abstract void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
@@ -50,5 +63,17 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
         Locale locale = getMetadata(message, AbstractEntityReplicationMessage.METADATA_LOCALE, true, Locale.class);
 
         return new DocumentReference(reference, locale);
+    }
+
+    protected void checkMessageInstance(ReplicationReceiverMessage message, DocumentReference documentReference)
+        throws ReplicationException
+    {
+        for (DocumentReplicationControllerInstance instance : this.controller.getDocumentInstances(documentReference)) {
+            if (instance.getInstance() == message.getInstance()
+                && (instance.isReadonly() || instance.getLevel() == DocumentReplicationLevel.REFERENCE)) {
+                throw new InvalidReplicationMessageException("The instance [" + message.getInstance()
+                    + "] is not allowed to send modifications for document [" + documentReference + "]");
+            }
+        }
     }
 }

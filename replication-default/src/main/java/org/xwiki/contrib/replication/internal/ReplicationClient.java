@@ -149,11 +149,11 @@ public class ReplicationClient implements Initializable
         builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_DATE,
             HttpServletRequestReplicationReceiverMessage.fromDate(message.getDate()));
 
-        ReplicationInstance source = message.getSource();
+        String source = message.getSource();
         if (source == null) {
-            source = getCurrentInstance();
+            source = getCurrentInstance().getURI();
         }
-        builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_SOURCE, source.getURI());
+        builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_SOURCE, source);
 
         HttpPut httpPut = new HttpPut(builder.build());
 

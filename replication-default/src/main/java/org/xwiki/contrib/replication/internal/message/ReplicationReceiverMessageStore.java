@@ -26,12 +26,14 @@ import java.io.InputStream;
 
 import javax.inject.Singleton;
 
+import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.phase.Initializable;
 import org.xwiki.component.phase.InitializationException;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 
 /**
@@ -42,12 +44,31 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 public class ReplicationReceiverMessageStore extends AbstractReplicationMessageStore<ReplicationReceiverMessage>
     implements Initializable
 {
+    private static final String PROPERTY_INSTANCE = "instance";
+
     private final class FileReplicationReceiverMessage extends AbstractFileReplicationMessage
         implements ReplicationReceiverMessage
     {
+        protected ReplicationInstance instance;
+
         private FileReplicationReceiverMessage(File messageFolder) throws ConfigurationException, ReplicationException
         {
             super(messageFolder);
+        }
+
+        @Override
+        protected void loadMetadata(PropertiesConfiguration metadata) throws ReplicationException
+        {
+            super.loadMetadata(metadata);
+
+            String instanceURI = (String) metadata.getProperty(PROPERTY_INSTANCE);
+            this.instance = instances.getInstance(instanceURI);
+        }
+
+        @Override
+        public ReplicationInstance getInstance()
+        {
+            return this.instance;
         }
 
         @Override
@@ -81,6 +102,15 @@ public class ReplicationReceiverMessageStore extends AbstractReplicationMessageS
         try (InputStream stream = message.open()) {
             FileUtils.copyInputStreamToFile(stream, dataFile);
         }
+    }
+
+    @Override
+    protected void setMessageMetadata(ReplicationReceiverMessage message, PropertiesConfiguration configuration)
+        throws ReplicationException
+    {
+        super.setMessageMetadata(message, configuration);
+
+        configuration.setProperty(PROPERTY_INSTANCE, message.getInstance().getURI());
     }
 
     @Override
