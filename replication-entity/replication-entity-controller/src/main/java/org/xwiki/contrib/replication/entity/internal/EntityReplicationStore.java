@@ -236,7 +236,7 @@ public class EntityReplicationStore
         List<DocumentReplicationControllerInstance> configuredInstances = resolveHibernateEntityReplication(reference);
 
         for (DocumentReplicationControllerInstance configuredInstance : configuredInstances) {
-            if (configuredInstance.getInstance().getStatus() == null) {
+            if (configuredInstance.getInstance() == instance) {
                 return configuredInstance;
             }
         }
