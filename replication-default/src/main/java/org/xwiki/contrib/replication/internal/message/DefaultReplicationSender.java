@@ -143,17 +143,31 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
     private ReplicationSenderMessageQueue createSendQueue(ReplicationInstance instance)
     {
-        ReplicationSenderMessageQueue queue = this.sendQueues.get(instance.getURI());
+        synchronized (instance) {
+            ReplicationSenderMessageQueue queue = this.sendQueues.get(instance.getURI());
 
-        if (queue != null) {
+            if (queue != null) {
+                return queue;
+            }
+
+            // Create the queue
+            queue = this.sendQueueProvider.get();
+            queue.start(instance);
+
+            // Put the new queue in the map
+            this.sendQueues.put(instance.getURI(), queue);
+
             return queue;
         }
+    }
 
-        // Create the queue
-        queue = this.sendQueueProvider.get();
-        queue.start(instance);
-
-        return queue;
+    /**
+     * @param instance the instance
+     * @return the queue associated to the provided instance
+     */
+    public ReplicationSenderMessageQueue getQueue(ReplicationInstance instance)
+    {
+        return this.sendQueues.get(instance.getURI());
     }
 
     private void store()

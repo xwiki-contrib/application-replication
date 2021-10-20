@@ -17,20 +17,16 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal;
+package org.xwiki.contrib.replication.entity.internal.ui;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationInstanceManager;
-import org.xwiki.localization.ContextualLocalizationManager;
 import org.xwiki.rendering.block.Block;
 import org.xwiki.template.TemplateManager;
 import org.xwiki.uiextension.UIExtension;
@@ -43,25 +39,15 @@ import org.xwiki.uiextension.UIExtension;
 @Component
 @Named(DocumentControllerUIExtension.ID)
 @Singleton
-// TODO: move the Replication entry point to replication-default and inject in it the entity controller part
 public class DocumentControllerUIExtension implements UIExtension
 {
     /**
      * The id of the UI extension.
      */
-    public static final String ID = "replication.document_controller";
-
-    @Inject
-    private ContextualLocalizationManager localization;
-
-    @Inject
-    private ReplicationInstanceManager instances;
+    public static final String ID = "replication.docextra_controller";
 
     @Inject
     private TemplateManager templates;
-
-    @Inject
-    private Logger logger;
 
     @Override
     public String getId()
@@ -72,39 +58,18 @@ public class DocumentControllerUIExtension implements UIExtension
     @Override
     public String getExtensionPointId()
     {
-        return "org.xwiki.plaftorm.template.docextra";
+        return "org.xwiki.plaftorm.template.docextra.replication";
     }
 
     @Override
     public Map<String, String> getParameters()
     {
-        Map<String, String> parameters = new HashMap<>();
-
-        try {
-            parameters.put("show", String.valueOf(!this.instances.getRegisteredInstances().isEmpty()));
-        } catch (ReplicationException e) {
-            this.logger.error("Failed to get registered instances", e);
-        }
-
-        parameters.put("title", translate("replication.entity.docextra.title", "Replication"));
-        parameters.put("itemnumber", "-1");
-        parameters.put("name", "replication");
-        // parameters.put("shortcut", "");
-        // parameters.put("order", "");
-
-        return parameters;
-    }
-
-    private String translate(String key, String def)
-    {
-        String translation = this.localization.getTranslationPlain(key);
-
-        return translation != null ? translation : def;
+        return Collections.emptyMap();
     }
 
     @Override
     public Block execute()
     {
-        return this.templates.executeNoException("replication/document_controller.vm");
+        return this.templates.executeNoException("replication/docextra_controller.vm");
     }
 }

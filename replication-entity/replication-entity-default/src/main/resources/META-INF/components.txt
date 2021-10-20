@@ -6,5 +6,7 @@ org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteRepli
 org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage
 org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationReceiver
+org.xwiki.contrib.replication.entity.internal.ui.DocumentReplicationUIExtension
 org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage
 org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationReceiver
+org.xwiki.contrib.replication.entity.script.DocumentReplicationScriptService

@@ -23,14 +23,21 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.internal.DocumentReplicationSender;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.script.service.ScriptService;
+
+import com.xpn.xwiki.XWikiContext;
+import com.xpn.xwiki.XWikiException;
+import com.xpn.xwiki.doc.XWikiDocument;
 
 /**
  * Expose some document replication related APIs.
@@ -45,6 +52,12 @@ public class DocumentReplicationScriptService implements ScriptService
     @Inject
     private DocumentReplicationController controller;
 
+    @Inject
+    private DocumentReplicationSender sender;
+
+    @Inject
+    private Provider<XWikiContext> xcontextProvider;
+
     /**
      * Indicate the list of registered instances this document should be replicated to.
      * 
@@ -56,5 +69,22 @@ public class DocumentReplicationScriptService implements ScriptService
         throws ReplicationException
     {
         return this.controller.getDocumentInstances(documentReference);
+    }
+
+    /**
+     * Force doing a full replication of a given document.
+     * 
+     * @param documentReference the reference of the document to replicate
+     * @throws XWikiException when failing to load the document
+     * @throws ReplicationException when failing to send the document
+     */
+    public void replicateCompleteDocument(DocumentReference documentReference)
+        throws XWikiException, ReplicationException
+    {
+        XWikiContext xcontext = this.xcontextProvider.get();
+
+        XWikiDocument document = xcontext.getWiki().getDocument(documentReference, xcontext);
+
+        this.sender.sendDocument(document, true, DocumentReplicationLevel.ALL);
     }
 }

@@ -31,8 +31,8 @@ public class ReplicationPage extends ViewPage
 {
     public ReplicationDocExtraPane openReplicationDocExtraPane()
     {
-        getDriver().findElement(By.id("replication.document_controllerlink")).click();
-        waitForDocExtraPaneActive("replication.document_controller");
+        getDriver().findElement(By.id("replication.docextralink")).click();
+        waitForDocExtraPaneActive("replication.docextra");
         return new ReplicationDocExtraPane();
     }
 }

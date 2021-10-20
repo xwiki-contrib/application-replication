@@ -1,5 +1,4 @@
 org.xwiki.contrib.replication.entity.internal.DefaultDocumentReplicationController
-org.xwiki.contrib.replication.entity.internal.DocumentControllerUIExtension
 org.xwiki.contrib.replication.entity.internal.EntityReplicationCache
 org.xwiki.contrib.replication.entity.internal.EntityReplicationCleanupListener
 org.xwiki.contrib.replication.entity.internal.EntityReplicationInitializer
@@ -7,4 +6,5 @@ org.xwiki.contrib.replication.entity.internal.EntityReplicationStore
 org.xwiki.contrib.replication.entity.internal.message.EntityReplicatioControllerMessage
 org.xwiki.contrib.replication.entity.internal.message.EntityReplicatioControllerReceiver
 org.xwiki.contrib.replication.entity.internal.message.EntityReplicationControllerSender
+org.xwiki.contrib.replication.entity.internal.ui.DocumentControllerUIExtension
 org.xwiki.contrib.replication.entity.script.ControllerReplicationScriptService

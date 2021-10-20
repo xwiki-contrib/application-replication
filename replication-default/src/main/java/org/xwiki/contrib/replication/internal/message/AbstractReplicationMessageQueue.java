@@ -19,6 +19,9 @@
  */
 package org.xwiki.contrib.replication.internal.message;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -45,6 +48,8 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
     @Inject
     protected Logger logger;
 
+    protected M currentMessage;
+
     protected void initializeQueue()
     {
         // Initialize handling thread
@@ -64,20 +69,54 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
         this.disposed = true;
     }
 
+    /**
+     * @return the message currently being handled
+     */
+    public M getCurrentMessage()
+    {
+        return this.currentMessage;
+    }
+
+    /**
+     * @return the queue of messages plus the currently handled one to send
+     */
+    public List<M> getMessages()
+    {
+        int size = this.queue.size() + (this.currentMessage != null ? 1 : 0);
+
+        if (size > 0) {
+            List<M> messages = new ArrayList<>(size);
+
+            if (this.currentMessage != null) {
+                messages.add(this.currentMessage);
+            }
+
+            messages.addAll(this.queue);
+
+            return messages;
+        }
+
+        return Collections.emptyList();
+    }
+
     @Override
     public void run()
     {
         while (!this.disposed) {
-            M message = null;
+            this.currentMessage = null;
+
             try {
-                message = this.queue.take();
+                this.currentMessage = this.queue.take();
 
                 // Handle the message
-                handle(message);
+                handle(this.currentMessage);
 
                 // Remove the message from the store
                 // TODO: put the remove in an async queue
-                removeFromStore(message);
+                removeFromStore(this.currentMessage);
+
+                // Reset the current message
+                this.currentMessage = null;
             } catch (InterruptedException e) {
                 this.logger.warn("The replication sending thread has been interrupted");
 
@@ -89,9 +128,9 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
             } catch (Throwable t) {
                 this.logger.error("An unexpected throwable was thrown while handling a replication message", t);
 
-                if (message != null) {
+                if (this.currentMessage != null) {
                     // Put back the message in the queue
-                    this.queue.add(message);
+                    this.queue.add(this.currentMessage);
                 }
             }
         }

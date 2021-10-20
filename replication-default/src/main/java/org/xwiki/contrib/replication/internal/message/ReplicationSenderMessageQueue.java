@@ -19,7 +19,8 @@
  */
 package org.xwiki.contrib.replication.internal.message;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -66,7 +67,11 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
 
     private ReplicationInstance instance;
 
-    private long wait;
+    private int wait;
+
+    private Throwable lastError;
+
+    private Date nextTry;
 
     /**
      * @return the instance to send messages to
@@ -114,6 +119,9 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
                 // Stop the loop
                 break;
             } catch (Exception e) {
+                // Remember the last error
+                this.lastError = e;
+
                 // Wait before trying to send the message again
 
                 if (this.wait < 60) {
@@ -125,13 +133,18 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
                     this.wait = 120;
                 }
 
+                // Calculate next try date
+                Calendar calendar = Calendar.getInstance();
+                calendar.add(Calendar.MINUTE, this.wait);
+                this.nextTry = calendar.getTime();
+
                 this.logger.warn("Failed to send relication message to instance [{}], retrying in [{}] minutes: {}",
                     this.instance.getURI(), this.wait, ExceptionUtils.getRootCauseMessage(e));
 
                 // Wait
                 this.pingLock.lockInterruptibly();
                 try {
-                    this.pingCondition.await(this.wait, TimeUnit.MINUTES);
+                    this.pingCondition.awaitUntil(this.nextTry);
                 } finally {
                     this.pingLock.unlock();
                 }
@@ -140,6 +153,25 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
 
         // Reset the wait
         this.wait = 0;
+        this.nextTry = null;
+        // Reset the last error
+        this.lastError = null;
+    }
+
+    /**
+     * @return the last error catched when trying to send a message
+     */
+    public Throwable getLastError()
+    {
+        return this.lastError;
+    }
+
+    /**
+     * @return the date when to try again the last failing message
+     */
+    public Date getNextTry()
+    {
+        return this.nextTry;
     }
 
     @Override
@@ -164,6 +196,11 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
         this.pingLock.lock();
 
         try {
+            // Reset the wait
+            this.wait = 0;
+            this.nextTry = null;
+
+            // Wake up the queue
             this.pingCondition.signal();
         } finally {
             this.pingLock.unlock();

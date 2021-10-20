@@ -18,16 +18,21 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
  require(['jquery'], function ($) {
-  $('#replication_form').submit(function() {
-    // Disable the button
-    $('#replication_save').prop('disabled', true);
+  $('div[id="replication.docextracontent"] form').each(function(index, element) {
+    $(element).submit(function(event) {
+      // Get the form button
+      var formButton = $(this).find("button");
 
-    $.post($(this).attr('action'), $(this).serialize(), function(res) {
-        // Re-enable the button
-        $('#replication_save').prop('disabled', false);
+      // Disable the button
+      formButton.prop('disabled', true);
+
+      $.post($(this).attr('action'), $(this).serialize(), function(res) {
+          // Re-enable the button
+          formButton.prop('disabled', false);
+      });
+
+      // Cancel default button clicking action
+      return false;
     });
-
-    // Cancel default button clicking action
-    return false;
   });
 });

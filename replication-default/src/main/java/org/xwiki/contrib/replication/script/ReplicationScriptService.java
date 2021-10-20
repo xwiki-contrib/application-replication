@@ -19,7 +19,10 @@
  */
 package org.xwiki.contrib.replication.script;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -30,7 +33,11 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
+import org.xwiki.contrib.replication.ReplicationSender;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
+import org.xwiki.contrib.replication.internal.message.DefaultReplicationSender;
+import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageQueue;
 import org.xwiki.script.service.ScriptService;
 import org.xwiki.script.service.ScriptServiceManager;
 
@@ -54,6 +61,9 @@ public class ReplicationScriptService implements ScriptService
 
     @Inject
     private ReplicationInstanceManager instances;
+
+    @Inject
+    private ReplicationSender sender;
 
     /**
      * @param <S> the type of the {@link ScriptService}
@@ -83,5 +93,83 @@ public class ReplicationScriptService implements ScriptService
     public ReplicationInstance getCurrentInstance() throws ReplicationException
     {
         return this.instances.getCurrentInstance();
+    }
+
+    private ReplicationSenderMessageQueue getQueue(ReplicationInstance instance)
+    {
+        if (this.sender instanceof DefaultReplicationSender) {
+            return ((DefaultReplicationSender) this.sender).getQueue(instance);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param instance the replication instance
+     * @return the messages queued to be sent to the provided instance
+     */
+    public List<ReplicationSenderMessage> getQueueMessages(ReplicationInstance instance)
+    {
+        List<ReplicationSenderMessage> messages = new ArrayList<>();
+
+        ReplicationSenderMessageQueue queue = getQueue(instance);
+        if (queue != null) {
+            messages.addAll(queue.getMessages());
+        }
+
+        return messages;
+    }
+
+    /**
+     * @param instance the replication instance
+     * @return the message currently being handled
+     */
+    public ReplicationSenderMessage getQueueMessage(ReplicationInstance instance)
+    {
+        ReplicationSenderMessageQueue queue = getQueue(instance);
+        if (queue != null) {
+            return queue.getCurrentMessage();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param instance the replication instance
+     * @return the last error thrown while trying to send the last message
+     */
+    public Throwable getQueueError(ReplicationInstance instance)
+    {
+        ReplicationSenderMessageQueue queue = getQueue(instance);
+        if (queue != null) {
+            return queue.getLastError();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param instance the replication instance
+     * @return the next date when to try to send the last erroring message
+     */
+    public Date getQueueNextTry(ReplicationInstance instance)
+    {
+        ReplicationSenderMessageQueue queue = getQueue(instance);
+        if (queue != null) {
+            return queue.getNextTry();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param instance the replication instance
+     */
+    public void wakeUpQueue(ReplicationInstance instance)
+    {
+        ReplicationSenderMessageQueue queue = getQueue(instance);
+        if (queue != null) {
+            queue.wakeUp();
+        }
     }
 }
