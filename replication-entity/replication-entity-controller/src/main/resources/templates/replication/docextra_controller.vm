@@ -95,7 +95,7 @@
   #end
 
   #macro(replicationInstances $namePrefix, $instances, $reference)
-    #if ($services.security.authorization.hasAccess('ADMIN', $reference))
+    #if (!$replicationDisabled && $services.security.authorization.hasAccess('ADMIN', $reference))
       #set ($replicatedInstances = $services.replication.controller.getHibernateEntityReplication($reference))
       #set ($replicationInstanceMap = {})
       #set ($currentInstance = $services.replication.currentInstance)
@@ -131,8 +131,8 @@
 
       <br/>
       #set ($inputId = "${namePrefix}_replication_instance_type_single")
-      <input type="radio" id="$id" name="${namePrefix}_replication_instance_type" value="single" #if($replicationType == 'single')checked#end>
-      <label for="$id">$escapetool.xml($services.localization.render('replication.entity.docextra.type.single'))</label>
+      <input type="radio" id="$inputId" name="${namePrefix}_replication_instance_type" value="single" #if($replicationType == 'single')checked#end>
+      <label for="$inputId">$escapetool.xml($services.localization.render('replication.entity.docextra.type.single'))</label>
 
       <dl>
         #foreach($instance in $instances)

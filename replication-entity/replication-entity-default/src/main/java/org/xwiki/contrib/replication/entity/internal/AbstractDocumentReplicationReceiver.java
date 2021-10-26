@@ -28,7 +28,6 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
@@ -69,8 +68,7 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
         throws ReplicationException
     {
         for (DocumentReplicationControllerInstance instance : this.controller.getDocumentInstances(documentReference)) {
-            if (instance.getInstance() == message.getInstance()
-                && (instance.isReadonly() || instance.getLevel() == DocumentReplicationLevel.REFERENCE)) {
+            if (instance.getInstance() == message.getInstance() && instance.isReadonly()) {
                 throw new InvalidReplicationMessageException("The instance [" + message.getInstance()
                     + "] is not allowed to send modifications for document [" + documentReference + "]");
             }

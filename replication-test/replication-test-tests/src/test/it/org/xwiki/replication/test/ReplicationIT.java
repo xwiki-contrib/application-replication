@@ -44,6 +44,7 @@ import org.xwiki.test.ui.TestUtils;
 import com.google.common.base.Objects;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
 /**
@@ -53,6 +54,12 @@ import static org.junit.Assert.fail;
  */
 public class ReplicationIT extends AbstractTest
 {
+    private static final LocalDocumentReference REPLICATION_FULL =
+        new LocalDocumentReference("ReplicationFULL", "WebHome");
+
+    private static final LocalDocumentReference REPLICATION_EMPTY =
+        new LocalDocumentReference("ReplicationREFERENCE", "WebHome");
+
     private <T> void assertEqualsWithTimeout(T expected, Supplier<T> supplier) throws InterruptedException
     {
         long t2;
@@ -136,8 +143,11 @@ public class ReplicationIT extends AbstractTest
         // Configure replication
         controller();
 
-        // Replicate a page between the 2 registered instances
-        replicate();
+        // Full replication a page between the 2 registered instances
+        replicateFull();
+
+        // Reference replication
+        replicateEmpty();
     }
 
     private void instances()
@@ -196,10 +206,16 @@ public class ReplicationIT extends AbstractTest
         assertEquals(uri1, registeredInstances.get(0).getURI());
     }
 
-    private void controller()
+    private void controller() throws Exception
     {
+        ////////////////////////
+        // FULL replication
+
         // Create Replication space on instance0
-        getUtil().createPage(new LocalDocumentReference("Replication", "WebHome"), "");
+        getUtil().switchExecutor(0);
+        getUtil().gotoPage(REPLICATION_FULL);
+        getUtil().recacheSecretToken();
+        getUtil().createPage(REPLICATION_FULL, "");
         ReplicationPage page = new ReplicationPage();
         ReplicationDocExtraPane replicationPane = page.openReplicationDocExtraPane();
 
@@ -207,23 +223,49 @@ public class ReplicationIT extends AbstractTest
         replicationPane.setSpaceLevel(DocumentReplicationLevel.ALL);
 
         // Save replication configuration
-        replicationPane.save();        
+        replicationPane.save();
 
-        // TODO: make sure the configuration is replicated on instance1
+        // Make sure the configuration is replicated on instance1
+        getUtil().switchExecutor(1);
+        getUtil().gotoPage(REPLICATION_FULL);
+        getUtil().recacheSecretToken();
+        // FIXME: create the page on XWiki 1 because of https://jira.xwiki.org/browse/REPLICAT-34
+        getUtil().createPage(REPLICATION_FULL, "");
+        page = new ReplicationPage();
+        replicationPane = page.openReplicationDocExtraPane();
+        assertEquals("all", replicationPane.getMode("space"));
+        assertSame(DocumentReplicationLevel.ALL, replicationPane.getSpaceLevel());
+
+        ////////////////////////
+        // REFERENCE replication
+
+        // Create Replication space on instance0
+        getUtil().switchExecutor(0);
+        getUtil().recacheSecretToken();
+        getUtil().createPage(REPLICATION_EMPTY, "");
+        page = new ReplicationPage();
+        replicationPane = page.openReplicationDocExtraPane();
+
+        // Enable full replication for the space Replication
+        replicationPane.setSpaceLevel(DocumentReplicationLevel.REFERENCE);
+
+        // Save replication configuration
+        replicationPane.save();
     }
 
-    private void replicate() throws Exception
+    private void replicateFull() throws Exception
     {
         Page page = new Page();
-        page.setSpace("Replication");
+        page.setSpace(REPLICATION_FULL.getParent().getName());
         page.setName("ReplicatedPage");
 
         LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
 
+        // Clean any pre-existing
         getUtil().rest().delete(documentReference);
 
         ////////////////////////////////////
-        // Major edit on XWiki 0
+        // Page creation on XWiki 0
         ////////////////////////////////////
 
         // Edit a page on XWiki 0
@@ -309,6 +351,7 @@ public class ReplicationIT extends AbstractTest
 
         // Delete a page history version on XWiki 1
         getUtil().switchExecutor(1);
+        getUtil().gotoPage(page.getSpace(), page.getName());
         getUtil().recacheSecretToken();
         getUtil().deleteVersion(page.getSpace(), page.getName(), "2.1");
 
@@ -323,6 +366,66 @@ public class ReplicationIT extends AbstractTest
         history = getHistory(documentReference);
         historySummary = history.getHistorySummaries().get(0);
         assertEquals("1.1", historySummary.getVersion());
+
+        ////////////////////////////////////
+        // Delete document on XWiki 0
+        ////////////////////////////////////
+
+        getUtil().switchExecutor(0);
+        getUtil().rest().delete(documentReference);
+
+        // TODO: ASSERT) Get the deleted document id
+
+        // ASSERT) The document should not exist anymore on XWiki 1
+        getUtil().switchExecutor(1);
+        // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
+        assertDoesNotExistWithTimeout(documentReference);
+
+        // TODO: ASSERT) The deleted document has the expected id
+    }
+
+    private void replicateEmpty() throws Exception
+    {
+        Page page = new Page();
+        page.setSpace(REPLICATION_EMPTY.getParent().getName());
+        page.setName("ReplicatedPage");
+
+        LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
+
+        // Clean any pre-existing
+        getUtil().rest().delete(documentReference);
+
+        ////////////////////////////////////
+        // Page creation on XWiki 0
+        ////////////////////////////////////
+
+        // Edit a page on XWiki 0
+        getUtil().switchExecutor(0);
+        page.setContent("content");
+        getUtil().rest().save(page);
+        assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
+
+        // ASSERT) The page should exist but be empty on XWiki 1
+        getUtil().switchExecutor(1);
+        assertEqualsContentWithTimeout(documentReference, "");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+
+        ////////////////////////////////////
+        // Edit on XWiki 0
+        ////////////////////////////////////
+
+        // Edit a page on XWiki 0
+        getUtil().switchExecutor(0);
+        page.setContent("modified content");
+        getUtil().rest().save(page);
+        assertEquals("modified content", getUtil().rest().<Page>get(documentReference).getContent());
+
+        // ASSERT) That should not have any kind of impact on XWiki 1
+        getUtil().switchExecutor(1);
+        assertEqualsContentWithTimeout(documentReference, "");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
 
         ////////////////////////////////////
         // Delete document on XWiki 0

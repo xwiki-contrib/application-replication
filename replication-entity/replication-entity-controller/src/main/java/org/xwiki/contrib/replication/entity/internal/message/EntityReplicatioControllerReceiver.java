@@ -33,6 +33,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractEntityReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerInstanceConverter;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationStore;
@@ -87,10 +88,13 @@ public class EntityReplicatioControllerReceiver extends AbstractEntityReplicatio
 
         // Add current instance if not already there
         if (currentConfiguration == null) {
-            if (allConfiguration == null || allConfiguration.getLevel() == null || allConfiguration.isReadonly()) {
-                // The instance is forbidden from replicating this entity
-                return Collections.singletonList(
-                    new DocumentReplicationControllerInstance(this.instances.getCurrentInstance(), null, true));
+            if (allConfiguration == null) {
+                return Collections.emptyList();
+            } else if (allConfiguration.getLevel() == null
+                || allConfiguration.getLevel() == DocumentReplicationLevel.REFERENCE || allConfiguration.isReadonly()) {
+                // The instance is explicitly forbidden from replicating this entity
+                return Collections.singletonList(new DocumentReplicationControllerInstance(
+                    this.instances.getCurrentInstance(), allConfiguration.getLevel(), allConfiguration.isReadonly()));
             }
 
             optimizedConfigurations.add(new DocumentReplicationControllerInstance(this.instances.getCurrentInstance(),
