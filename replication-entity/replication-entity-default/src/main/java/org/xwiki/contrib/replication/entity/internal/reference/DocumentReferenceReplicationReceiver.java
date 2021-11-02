@@ -27,6 +27,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.rendering.syntax.Syntax;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
@@ -53,6 +54,12 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
         document.setCreatorReference(creatorReference);
         document.setAuthorReference(creatorReference);
         document.setContentAuthorReference(creatorReference);
+        // Those place holders should be hidden
+        document.setHidden(true);
+        // Set a message explaining what this document is
+        document.setSyntax(Syntax.XWIKI_2_1);
+        document.setContent("{{warning}}This page is a placeholder for a page which exist on another replication"
+            + " instance, but for which the current instance is not allowed to access the content.{{/warning}}");
 
         // Save the document
         try {
