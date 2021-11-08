@@ -60,8 +60,9 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
         document.setHidden(true);
         // Set a message explaining what this document is
         document.setSyntax(Syntax.XWIKI_2_1);
-        document.setContent("{{warning}}This page is a placeholder for a page which exist on another replication"
-            + " instance, but for which the current instance is not allowed to access the content.{{/warning}}");
+        document.setContent(
+            // TODO: go through an xobject and a sheet instead to keep an empty document content (less impacting)
+            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
 
         // Save the document
         try {

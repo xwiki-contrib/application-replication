@@ -542,7 +542,8 @@ public class ReplicationIT extends AbstractTest
 
         // ASSERT) The page should exist but be empty on XWiki 1
         getUtil().switchExecutor(1);
-        assertEqualsContentWithTimeout(documentReference, "");
+        assertEqualsContentWithTimeout(documentReference,
+            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
 
@@ -558,7 +559,8 @@ public class ReplicationIT extends AbstractTest
 
         // ASSERT) That should not have any kind of impact on XWiki 1
         getUtil().switchExecutor(1);
-        assertEqualsContentWithTimeout(documentReference, "");
+        assertEqualsContentWithTimeout(documentReference,
+            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
 
