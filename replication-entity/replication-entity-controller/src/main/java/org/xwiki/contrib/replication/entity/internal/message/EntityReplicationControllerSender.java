@@ -20,7 +20,9 @@
 package org.xwiki.contrib.replication.entity.internal.message;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -30,8 +32,10 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.internal.RelayReplicationSender;
 import org.xwiki.model.reference.EntityReference;
 
 /**
@@ -52,6 +56,9 @@ public class EntityReplicationControllerSender
     @Inject
     private ReplicationSender sender;
 
+    @Inject
+    private RelayReplicationSender relay;
+
     /**
      * @param reference the reference of the configured entity
      * @param configuration the replication configuration of the entity
@@ -71,6 +78,29 @@ public class EntityReplicationControllerSender
             message.initialize(reference, configuration);
 
             this.sender.send(message, instances);
+        }
+    }
+
+    /**
+     * @param message the message to relay
+     * @param configurations the configuration to send with the relayed message
+     * @throws ReplicationException when failing to send replication configuration to other instances
+     */
+    public void relay(ReplicationReceiverMessage message, List<DocumentReplicationControllerInstance> configurations)
+        throws ReplicationException
+    {
+        // Send the configuration to everyone, each instance will decide what to do with it (including when they are not
+        // or not anymore supposed to be part of the replication)
+        // TODO: cut this in two different messaging for adding new instance and removing instances ?
+        Collection<ReplicationInstance> instances = this.instanceManager.getRegisteredInstances();
+
+        if (!instances.isEmpty()) {
+            // Change the configuration in the message
+            Map<String, Collection<String>> metadata = new HashMap<>(message.getCustomMetadata());
+            EntityReplicatioControllerMessage.setConfiguration(metadata, configurations);
+
+            // Send the new message
+            this.relay.relay(message, metadata, instances);
         }
     }
 }

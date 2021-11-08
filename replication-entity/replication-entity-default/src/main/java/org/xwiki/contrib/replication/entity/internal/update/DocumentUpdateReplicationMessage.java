@@ -71,6 +71,11 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
      */
     public static final String METADATA_COMPLETE = METADATA_PREFIX + "COMPLETE";
 
+    /**
+     * The name of the metadata containing the creator of the document.
+     */
+    public static final String METADATA_CREATOR = METADATA_PREFIX + "CREATOR";
+
     @Inject
     private Provider<XWikiContext> xcontextProvider;
 
@@ -110,10 +115,13 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
      * 
      * @param documentReference the reference of the document affected by this message
      * @param version the version of the document
+     * @param creator the user who created the document
      */
-    public void initialize(DocumentReference documentReference, String version)
+    public void initialize(DocumentReference documentReference, DocumentReference creator, String version)
     {
         initialize(documentReference, version, true);
+
+        putMetadata(METADATA_CREATOR, creator);
 
         this.metadata = Collections.unmodifiableMap(this.metadata);
     }
@@ -127,8 +135,6 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
         this.version = version;
 
         putMetadata(METADATA_COMPLETE, this.complete);
-
-        this.id += '/' + this.version;
     }
 
     @Override

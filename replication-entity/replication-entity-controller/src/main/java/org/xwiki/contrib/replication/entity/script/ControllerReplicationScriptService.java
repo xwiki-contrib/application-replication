@@ -20,6 +20,7 @@
 package org.xwiki.contrib.replication.entity.script;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -69,7 +70,7 @@ public class ControllerReplicationScriptService implements ScriptService
      * @throws XWikiException when failing to get the instances
      * @throws AccessDeniedException if the current script author does not have the right to use this API
      */
-    public List<DocumentReplicationControllerInstance> getHibernateEntityReplication(EntityReference reference)
+    public Collection<DocumentReplicationControllerInstance> getHibernateEntityReplication(EntityReference reference)
         throws XWikiException, AccessDeniedException
     {
         return this.store.getHibernateEntityReplication(reference);
@@ -82,8 +83,8 @@ public class ControllerReplicationScriptService implements ScriptService
      * @throws AccessDeniedException if the current script author does not have the right to use this API
      * @throws ReplicationException when failing to access instances
      */
-    public List<DocumentReplicationControllerInstance> resolveHibernateEntityReplication(EntityReference reference)
-        throws XWikiException, AccessDeniedException, ReplicationException
+    public Collection<DocumentReplicationControllerInstance> resolveHibernateEntityReplication(
+        EntityReference reference) throws XWikiException, AccessDeniedException, ReplicationException
     {
         return this.store.resolveHibernateEntityReplication(reference);
     }

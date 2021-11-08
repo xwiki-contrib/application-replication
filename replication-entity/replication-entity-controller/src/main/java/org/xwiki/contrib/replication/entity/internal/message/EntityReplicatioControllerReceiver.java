@@ -33,7 +33,6 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractEntityReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerInstanceConverter;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationStore;
@@ -56,9 +55,25 @@ public class EntityReplicatioControllerReceiver extends AbstractEntityReplicatio
     @Inject
     private ReplicationInstanceManager instances;
 
+    @Inject
+    private EntityReplicationControllerSender controlSender;
+
     @Override
     protected void receiveEntity(ReplicationReceiverMessage message, EntityReference entityReference,
         XWikiContext xcontext) throws ReplicationException
+    {
+        List<DocumentReplicationControllerInstance> configurations = optimizeConfiguration(message);
+
+        try {
+            this.store.storeHibernateEntityReplication(entityReference, configurations);
+        } catch (XWikiException e) {
+            throw new ReplicationException(
+                "Failed to store replication configuration for entity [" + entityReference + "]", e);
+        }
+    }
+
+    private List<DocumentReplicationControllerInstance> optimizeConfiguration(ReplicationReceiverMessage message)
+        throws ReplicationException
     {
         Collection<String> values =
             message.getCustomMetadata().get(EntityReplicatioControllerMessage.METADATA_CONFIGURATION);
@@ -70,12 +85,7 @@ public class EntityReplicatioControllerReceiver extends AbstractEntityReplicatio
             configurations = optimizeConfiguration(configurations);
         }
 
-        try {
-            this.store.storeHibernateEntityReplication(entityReference, configurations);
-        } catch (XWikiException e) {
-            throw new ReplicationException(
-                "Failed to store replication configuration for entity [" + entityReference + "]", e);
-        }
+        return configurations;
     }
 
     private List<DocumentReplicationControllerInstance> optimizeConfiguration(
@@ -90,11 +100,6 @@ public class EntityReplicatioControllerReceiver extends AbstractEntityReplicatio
         if (currentConfiguration == null) {
             if (allConfiguration == null) {
                 return Collections.emptyList();
-            } else if (allConfiguration.getLevel() == null
-                || allConfiguration.getLevel() == DocumentReplicationLevel.REFERENCE || allConfiguration.isReadonly()) {
-                // The instance is explicitly forbidden from replicating this entity
-                return Collections.singletonList(new DocumentReplicationControllerInstance(
-                    this.instances.getCurrentInstance(), allConfiguration.getLevel(), allConfiguration.isReadonly()));
             }
 
             optimizedConfigurations.add(new DocumentReplicationControllerInstance(this.instances.getCurrentInstance(),
@@ -152,5 +157,15 @@ public class EntityReplicatioControllerReceiver extends AbstractEntityReplicatio
         }
 
         return null;
+    }
+
+    @Override
+    public void relay(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        // We relay the optimized configuration instead of the source configuration
+        List<DocumentReplicationControllerInstance> configurations = optimizeConfiguration(message);
+
+        // Relay the configuration
+        this.controlSender.relay(message, configurations);
     }
 }

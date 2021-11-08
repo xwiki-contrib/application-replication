@@ -19,8 +19,6 @@
  */
 package org.xwiki.contrib.replication.entity.internal;
 
-import java.util.List;
-
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -34,7 +32,6 @@ import org.xwiki.component.manager.ComponentLifecycleException;
 import org.xwiki.component.phase.Disposable;
 import org.xwiki.component.phase.Initializable;
 import org.xwiki.component.phase.InitializationException;
-import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.EntityReferenceSerializer;
@@ -57,9 +54,9 @@ public class EntityReplicationCache implements Initializable, Disposable
     @Inject
     private CacheManager cacheManager;
 
-    private Cache<List<DocumentReplicationControllerInstance>> dataCache;
+    private Cache<EntityReplicationCacheEntry> dataCache;
 
-    private Cache<List<DocumentReplicationControllerInstance>> resolveCache;
+    private Cache<EntityReplicationCacheEntry> resolveCache;
 
     @Override
     public void initialize() throws InitializationException
@@ -84,7 +81,7 @@ public class EntityReplicationCache implements Initializable, Disposable
     /**
      * @return the data cache
      */
-    public Cache<List<DocumentReplicationControllerInstance>> getDataCache()
+    public Cache<EntityReplicationCacheEntry> getDataCache()
     {
         return this.dataCache;
     }
@@ -92,7 +89,7 @@ public class EntityReplicationCache implements Initializable, Disposable
     /**
      * @return the resolve cache
      */
-    public Cache<List<DocumentReplicationControllerInstance>> getResolveCache()
+    public Cache<EntityReplicationCacheEntry> getResolveCache()
     {
         return this.resolveCache;
     }

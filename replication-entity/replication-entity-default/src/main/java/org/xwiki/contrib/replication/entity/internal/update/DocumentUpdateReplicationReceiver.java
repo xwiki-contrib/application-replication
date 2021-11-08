@@ -27,7 +27,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.apache.commons.lang3.BooleanUtils;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.contrib.replication.ReplicationException;
@@ -76,8 +75,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
     {
-        boolean complete =
-            BooleanUtils.toBoolean(getMetadata(message, DocumentUpdateReplicationMessage.METADATA_COMPLETE, false));
+        boolean complete = this.documentMessageTool.isComplete(message);
 
         // Load the document
         XWikiDocument document = new XWikiDocument(documentReference, documentReference.getLocale());
@@ -97,9 +95,10 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     private void update(ReplicationReceiverMessage message, DocumentReference documentReference, XWikiDocument document,
         XWikiContext xcontext) throws ReplicationException
     {
-        String previousVersion = getMetadata(message, DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION, false);
-        Date previousVersionDate =
-            getMetadata(message, DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION_DATE, false, Date.class);
+        String previousVersion = this.documentMessageTool.getMetadata(message,
+            DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION, false);
+        Date previousVersionDate = this.documentMessageTool.getMetadata(message,
+            DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION_DATE, false, Date.class);
 
         // Load the current document
         XWikiDocument currentDocument;
@@ -219,5 +218,11 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
 
         this.importer.importEntity(XWikiDocument.class, document, new DefaultInputStreamInputSource(stream),
             xarProperties, documentProperties);
+    }
+
+    @Override
+    public void relay(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        this.documentSender.relayDocumentUpdate(message);
     }
 }

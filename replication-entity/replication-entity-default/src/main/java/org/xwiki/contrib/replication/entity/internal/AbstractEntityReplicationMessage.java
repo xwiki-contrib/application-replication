@@ -24,9 +24,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
 import org.xwiki.bridge.DocumentAccessBridge;
 import org.xwiki.component.annotation.InstantiationStrategy;
@@ -34,7 +34,6 @@ import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.model.reference.AbstractLocalizedEntityReference;
 import org.xwiki.model.reference.EntityReference;
-import org.xwiki.model.reference.EntityReferenceSerializer;
 import org.xwiki.properties.ConverterManager;
 
 /**
@@ -70,24 +69,18 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
     public static final String METADATA_CONTEXT_USER = METADATA_PREFIX + "CONTEXT_USER";
 
     @Inject
-    @Named("local")
-    protected EntityReferenceSerializer<String> localSerializer;
-
-    @Inject
-    @Named("uid")
-    protected EntityReferenceSerializer<String> uidSerializer;
-
-    @Inject
     protected ConverterManager converter;
 
     @Inject
     protected DocumentAccessBridge documentAccessBridge;
 
-    protected final Date date = new Date();
+    protected String id;
+
+    protected String source;
+
+    protected Date date = new Date();
 
     protected E entityReference;
-
-    protected String id;
 
     protected Map<String, Collection<String>> metadata;
 
@@ -110,7 +103,8 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
 
         putMetadata(METADATA_CONTEXT_USER, this.documentAccessBridge.getCurrentUserReference());
 
-        this.id = getType() + '/' + getDate().getTime() + '/' + this.uidSerializer.serialize(entityReference);
+        // Make sure the id is unique but not too big
+        this.id = getType() + '-' + UUID.randomUUID().toString();
     }
 
     /**
@@ -146,8 +140,7 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
     @Override
     public String getSource()
     {
-        // Will be filled by the sender
-        return null;
+        return this.source;
     }
 
     @Override

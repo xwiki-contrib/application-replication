@@ -34,11 +34,11 @@ import org.xwiki.administration.test.po.AdministrationSectionPage;
  */
 public class ReplicationAdministrationSectionPage extends AdministrationSectionPage
 {
-    @FindBy(name = "uri")
-    private WebElement uriInput;
+    @FindBy(id = "requested_uri")
+    private WebElement requestedInput;
 
     @FindBy(name = "requested_add")
-    private WebElement addButton;
+    private WebElement requestedAddButton;
 
     public ReplicationAdministrationSectionPage()
     {
@@ -56,7 +56,7 @@ public class ReplicationAdministrationSectionPage extends AdministrationSectionP
 
     public void setRequestedURI(String uri)
     {
-        this.uriInput.sendKeys(uri);
+        this.requestedInput.sendKeys(uri);
     }
 
     private List<WebElement> getInstances(String buttonName)
@@ -88,7 +88,7 @@ public class ReplicationAdministrationSectionPage extends AdministrationSectionP
 
     public ReplicationAdministrationSectionPage requestInstance()
     {
-        this.addButton.click();
+        this.requestedAddButton.click();
 
         return new ReplicationAdministrationSectionPage();
     }

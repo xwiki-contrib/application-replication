@@ -62,7 +62,8 @@ public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicati
         if (!document.isNew()) {
             try {
                 // Set the batch id if any is provided
-                String batchId = getMetadata(message, DocumentDeleteReplicationMessage.METADATA_BATCH, false);
+                String batchId = this.documentMessageTool.getMetadata(message,
+                    DocumentDeleteReplicationMessage.METADATA_BATCH, false);
                 if (batchId != null) {
                     this.batchOperation.execute(() -> xcontext.getWiki().deleteDocument(document, xcontext), batchId);
                 } else {
@@ -72,5 +73,11 @@ public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicati
                 throw new ReplicationException("Failed to delete the document", e);
             }
         }
+    }
+
+    @Override
+    public void relay(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        this.documentSender.relayDocumentDelete(message);
     }
 }

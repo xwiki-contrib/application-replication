@@ -21,8 +21,14 @@ package org.xwiki.contrib.replication.entity.internal.reference;
 
 import java.util.Collections;
 
+import javax.inject.Inject;
+
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.InvalidReplicationMessageException;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.DocumentReplicationMessageTool;
+import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
 /**
@@ -41,10 +47,8 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
      */
     public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
 
-    /**
-     * The name of the metadata containing the creator of the document.
-     */
-    public static final String METADATA_CREATOR = METADATA_PREFIX + "CREATOR";
+    @Inject
+    private DocumentReplicationMessageTool documentMessageTool;
 
     @Override
     public String getType()
@@ -60,8 +64,23 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
     {
         super.initialize(documentReference);
 
-        putMetadata(METADATA_CREATOR, creatorReference);
+        putMetadata(DocumentUpdateReplicationMessage.METADATA_CREATOR, creatorReference);
 
         this.metadata = Collections.unmodifiableMap(this.metadata);
+    }
+
+    /**
+     * @param message the document update message to convert
+     * @throws InvalidReplicationMessageException when the document update message is invalid
+     */
+    public void initialize(ReplicationReceiverMessage message) throws InvalidReplicationMessageException
+    {
+        initialize(this.documentMessageTool.getDocumentReference(message), this.documentMessageTool.getMetadata(message,
+            DocumentUpdateReplicationMessage.METADATA_CREATOR, true, DocumentReference.class));
+
+        // Relay the source information
+        this.id = message.getId();
+        this.source = message.getSource();
+        this.date = message.getDate();
     }
 }

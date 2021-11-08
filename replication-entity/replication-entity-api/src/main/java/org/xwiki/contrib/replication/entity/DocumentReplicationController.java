@@ -38,6 +38,16 @@ public interface DocumentReplicationController
      * @return the registered instances on which to replicate the document
      * @throws ReplicationException when failing to get the instances
      */
-    List<DocumentReplicationControllerInstance> getDocumentInstances(DocumentReference documentReference)
+    List<DocumentReplicationControllerInstance> getReplicationConfiguration(DocumentReference documentReference)
+        throws ReplicationException;
+
+    /**
+     * Indicate the list of registered instances this document's messages should be relayed to.
+     * 
+     * @param documentReference the reference of the document about to be replicated
+     * @return the registered instances on which to replicate the document
+     * @throws ReplicationException when failing to get the instances
+     */
+    List<DocumentReplicationControllerInstance> getRelayConfiguration(DocumentReference documentReference)
         throws ReplicationException;
 }

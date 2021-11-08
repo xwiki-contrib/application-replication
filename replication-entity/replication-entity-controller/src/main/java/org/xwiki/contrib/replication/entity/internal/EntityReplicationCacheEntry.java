@@ -17,25 +17,39 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication;
+package org.xwiki.contrib.replication.entity.internal;
 
-import org.xwiki.component.annotation.Role;
+import java.util.Collection;
+
+import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 
 /**
+ * An entry of the cache.
+ * 
  * @version $Id$
  */
-@Role
-public interface ReplicationReceiver
+public class EntityReplicationCacheEntry
 {
     /**
-     * @param message the message received
-     * @throws ReplicationException when failing to manipulate the received data
+     * An unset configuration.
      */
-    void receive(ReplicationReceiverMessage message) throws ReplicationException;
+    public static final EntityReplicationCacheEntry UNSET = new EntityReplicationCacheEntry(null);
+
+    private final Collection<DocumentReplicationControllerInstance> configuration;
 
     /**
-     * @param message the message received
-     * @throws ReplicationException when failing to relay the received data
+     * @param configuration the replication configuration
      */
-    void relay(ReplicationReceiverMessage message) throws ReplicationException;
+    public EntityReplicationCacheEntry(Collection<DocumentReplicationControllerInstance> configuration)
+    {
+        this.configuration = configuration;
+    }
+
+    /**
+     * @return the configuration the replication configuration
+     */
+    public Collection<DocumentReplicationControllerInstance> getConfiguration()
+    {
+        return this.configuration;
+    }
 }

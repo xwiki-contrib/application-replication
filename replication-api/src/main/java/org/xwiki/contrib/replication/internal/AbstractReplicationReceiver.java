@@ -17,18 +17,25 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.replication.test;
+package org.xwiki.contrib.replication.internal;
 
-import org.junit.runner.RunWith;
-import org.xwiki.test.ui.PageObjectSuite;
+import javax.inject.Inject;
+
+import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationReceiver;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 
 /**
- * Runs all functional tests found in the classpath.
- * 
- * @version $Id: 11a75bb6173a87e719b5af67bd16b664a8ff23a7 $
+ * @version $Id$
  */
-@RunWith(PageObjectSuite.class)
-@PageObjectSuite.Executors(3)
-public class AllITs
+public abstract class AbstractReplicationReceiver implements ReplicationReceiver
 {
+    @Inject
+    protected RelayReplicationSender relay;
+
+    @Override
+    public void relay(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        this.relay.relay(message);
+    }
 }

@@ -64,8 +64,6 @@ public class DocumentHistoryDeleteReplicationMessage
         putMetadata(METADATA_VERSION_FROM, from);
         putMetadata(METADATA_VERSION_TO, to);
 
-        this.id += '/' + from + '/' + to;
-
         this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 

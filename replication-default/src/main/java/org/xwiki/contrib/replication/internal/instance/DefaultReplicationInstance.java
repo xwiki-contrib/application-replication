@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.internal.instance;
 
 import org.apache.commons.lang3.StringUtils;
 import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.text.XWikiToStringBuilder;
 
 /**
  * @version $Id$
@@ -91,5 +92,17 @@ public class DefaultReplicationInstance implements ReplicationInstance
     public void setStatus(Status status)
     {
         this.status = status;
+    }
+
+    @Override
+    public String toString()
+    {
+        XWikiToStringBuilder builder = new XWikiToStringBuilder(this);
+
+        builder.append(getName());
+        builder.append(getURI());
+        builder.append(getStatus());
+
+        return builder.build();
     }
 }

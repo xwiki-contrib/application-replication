@@ -96,7 +96,7 @@
 
 {{html}}
 &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-  &lt;input type="text" name="uri"/&gt;
+  &lt;input id="requested_uri" type="text" name="uri"/&gt;
   &lt;button class="btn btn-primary" name="requested_add"&gt;Add&lt;/button&gt;
 &lt;/form&gt;
 {{/html}}

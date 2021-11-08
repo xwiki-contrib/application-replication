@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal;
+package org.xwiki.contrib.replication.internal.message.log;
 
 import java.io.InputStream;
 
@@ -39,9 +39,9 @@ import com.xpn.xwiki.util.Util;
  * @version $Id: f9ed06c92322e4b3ba6505fc7b87ea7a142d246d $
  */
 @Component
-@Named("EntityReplicationInitializer")
+@Named("ReplicationMessageLogInitializer")
 @Singleton
-public class EntityReplicationInitializer extends AbstractEventListener
+public class ReplicationMessageLogInitializer extends AbstractEventListener
 {
     @Inject
     private HibernateSessionFactory sessionFactory;
@@ -49,15 +49,15 @@ public class EntityReplicationInitializer extends AbstractEventListener
     /**
      * Setup the listener.
      */
-    public EntityReplicationInitializer()
+    public ReplicationMessageLogInitializer()
     {
-        super("EntityReplicationInitializer", new ApplicationStartedEvent());
+        super("ReplicationMessageLogInitializer", new ApplicationStartedEvent());
     }
 
     @Override
     public void onEvent(Event event, Object source, Object data)
     {
-        this.sessionFactory.getConfiguration().addInputStream(getMappingFile("replication/entityreplication.hbm.xml"));
+        this.sessionFactory.getConfiguration().addInputStream(getMappingFile("replication/messages.hbm.xml"));
     }
 
     private InputStream getMappingFile(String mappingFileName)

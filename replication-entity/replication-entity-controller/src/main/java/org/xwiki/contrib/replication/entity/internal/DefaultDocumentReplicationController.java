@@ -19,17 +19,22 @@
  */
 package org.xwiki.contrib.replication.entity.internal;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.XWikiException;
@@ -46,19 +51,67 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     @Inject
     private EntityReplicationStore store;
 
+    @Inject
+    private ReplicationInstanceManager instanceManager;
+
     @Override
-    public List<DocumentReplicationControllerInstance> getDocumentInstances(DocumentReference documentReference)
+    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(DocumentReference documentReference)
         throws ReplicationException
     {
-        try {
-            List<DocumentReplicationControllerInstance> instances =
-                this.store.resolveHibernateEntityReplication(documentReference);
+        return getConfiguration(documentReference, false);
+    }
 
-            // Remove current instance
-            return instances.stream().filter(i -> i.getInstance().getStatus() == Status.REGISTERED)
-                .collect(Collectors.toList());
+    @Override
+    public List<DocumentReplicationControllerInstance> getRelayConfiguration(DocumentReference documentReference)
+        throws ReplicationException
+    {
+        return getConfiguration(documentReference, true);
+    }
+
+    private DocumentReplicationControllerInstance getConfiguration(DocumentReference documentReference,
+        ReplicationInstance instance) throws ReplicationException
+    {
+        try {
+            return this.store.resolveHibernateEntityReplication(documentReference, instance);
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to retrieve configuration for instance [" + instance.getURI() + "]",
+                e);
+        }
+    }
+
+    private List<DocumentReplicationControllerInstance> getConfiguration(DocumentReference documentReference,
+        boolean relay) throws ReplicationException
+    {
+        // Get current instance configuration
+        DocumentReplicationControllerInstance currentInstance =
+            getConfiguration(documentReference, this.instanceManager.getCurrentInstance());
+
+        // Don't replicate anything if the instance is not a relay and is forbidden from modifying the
+        // document
+        if (!relay
+            && (currentInstance.isReadonly() || currentInstance.getLevel() == DocumentReplicationLevel.REFERENCE)) {
+            return Collections.emptyList();
+        }
+
+        // Get full configuration
+        Collection<DocumentReplicationControllerInstance> instances;
+        try {
+            instances = this.store.resolveHibernateEntityReplication(documentReference);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to retrieve instances from the store", e);
         }
+
+        // Filter the instances
+        List<DocumentReplicationControllerInstance> filteredInstances = new ArrayList<>(instances.size());
+        for (DocumentReplicationControllerInstance instance : instances) {
+            // Make sure to select only registered instances (in case the configuration is out of sync)
+            // Don't relay messages to an instance with higher replication level
+            if (instance.getInstance().getStatus() == Status.REGISTERED
+                && currentInstance.getLevel().ordinal() >= instance.getLevel().ordinal()) {
+                filteredInstances.add(instance);
+            }
+        }
+
+        return filteredInstances;
     }
 }

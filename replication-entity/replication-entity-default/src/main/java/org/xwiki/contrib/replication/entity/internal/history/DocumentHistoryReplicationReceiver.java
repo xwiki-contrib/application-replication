@@ -25,6 +25,7 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
 
@@ -44,8 +45,10 @@ public class DocumentHistoryReplicationReceiver extends AbstractDocumentReplicat
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
     {
-        String fromVersion = getMetadata(message, DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_FROM, true);
-        String toVersion = getMetadata(message, DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_TO, true);
+        String fromVersion = this.documentMessageTool.getMetadata(message,
+            DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_FROM, true);
+        String toVersion = this.documentMessageTool.getMetadata(message,
+            DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_TO, true);
 
         XWikiDocument document;
         try {
@@ -59,5 +62,11 @@ public class DocumentHistoryReplicationReceiver extends AbstractDocumentReplicat
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to delete document versions", e);
         }
+    }
+
+    @Override
+    public void relay(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        relay(message, DocumentReplicationLevel.ALL);
     }
 }

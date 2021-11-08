@@ -20,9 +20,11 @@
 package org.xwiki.contrib.replication.entity.internal;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -159,30 +161,38 @@ public class EntityReplicationStore
         return null;
     }
 
-    /**
-     * @param instances the stored instances
-     * @return the resolved instances
-     * @throws ReplicationException when failing to access instances
-     */
-    public List<DocumentReplicationControllerInstance> resolveControllerInstances(
-        List<DocumentReplicationControllerInstance> instances) throws ReplicationException
+    private Collection<DocumentReplicationControllerInstance> resolveControllerInstances(
+        Collection<DocumentReplicationControllerInstance> instances) throws ReplicationException
     {
         if (instances != null) {
-            List<DocumentReplicationControllerInstance> resolvedInstances = new ArrayList<>(instances.size());
+            Map<String, DocumentReplicationControllerInstance> resolvedInstances =
+                new HashMap<>(this.instanceManager.getRegisteredInstances().size() + 1);
 
+            DocumentReplicationControllerInstance allConfiguration = null;
+
+            // Add direct configuration
             for (DocumentReplicationControllerInstance instance : instances) {
-                if (instance.getInstance() == null) {
-                    resolvedInstances.addAll(this.instanceManager.getInstances().stream().map(
-                        i -> new DocumentReplicationControllerInstance(i, instance.getLevel(), instance.isReadonly()))
-                        .collect(Collectors.toList()));
+                if (instance.getInstance() != null) {
+                    resolvedInstances.put(instance.getInstance().getURI(), instance);
                 } else {
-                    resolvedInstances.add(instance);
+                    allConfiguration = instance;
                 }
             }
 
-            return resolvedInstances;
+            // Add whildcard configuration
+            if (allConfiguration != null) {
+                for (ReplicationInstance replicationInstance : this.instanceManager.getInstances()) {
+                    if (!resolvedInstances.containsKey(replicationInstance.getURI())) {
+                        resolvedInstances.put(replicationInstance.getURI(), new DocumentReplicationControllerInstance(
+                            replicationInstance, allConfiguration.getLevel(), allConfiguration.isReadonly()));
+                    }
+                }
+            }
+
+            return resolvedInstances.values();
         }
 
+        // Not configured at this level
         return null;
     }
 
@@ -192,8 +202,8 @@ public class EntityReplicationStore
      * @throws XWikiException when failing to get the instances
      * @throws ReplicationException when failing to access instances
      */
-    public List<DocumentReplicationControllerInstance> resolveHibernateEntityReplication(EntityReference reference)
-        throws XWikiException, ReplicationException
+    public Collection<DocumentReplicationControllerInstance> resolveHibernateEntityReplication(
+        EntityReference reference) throws XWikiException, ReplicationException
     {
         if (reference == null) {
             // Don't replicate by default
@@ -204,13 +214,15 @@ public class EntityReplicationStore
         String cacheKey = this.cache.toCacheKey(entityId);
 
         // Try the cache
-        List<DocumentReplicationControllerInstance> instances = this.cache.getResolveCache().get(cacheKey);
+        EntityReplicationCacheEntry cacheEntry = this.cache.getResolveCache().get(cacheKey);
 
-        // If not in the cache, load from the database
-        if (instances == null) {
-            instances = resolveControllerInstances(
-                getHibernateEntityReplication(reference.getRoot().getName(), entityId, cacheKey));
+        if (cacheEntry != null) {
+            return cacheEntry.getConfiguration();
         }
+
+        // Load from the database
+        Collection<DocumentReplicationControllerInstance> instances = resolveControllerInstances(
+            getHibernateEntityReplication(reference.getRoot().getName(), entityId, cacheKey));
 
         // Fallback on parent if nothing is explicitly set for this reference
         if (instances == null) {
@@ -218,7 +230,7 @@ public class EntityReplicationStore
         }
 
         // Update the cache
-        this.cache.getResolveCache().set(cacheKey, instances);
+        this.cache.getResolveCache().set(cacheKey, new EntityReplicationCacheEntry(instances));
 
         return instances;
     }
@@ -233,7 +245,8 @@ public class EntityReplicationStore
     public DocumentReplicationControllerInstance resolveHibernateEntityReplication(EntityReference reference,
         ReplicationInstance instance) throws XWikiException, ReplicationException
     {
-        List<DocumentReplicationControllerInstance> configuredInstances = resolveHibernateEntityReplication(reference);
+        Collection<DocumentReplicationControllerInstance> configuredInstances =
+            resolveHibernateEntityReplication(reference);
 
         for (DocumentReplicationControllerInstance configuredInstance : configuredInstances) {
             if (configuredInstance.getInstance() == instance) {
@@ -249,7 +262,7 @@ public class EntityReplicationStore
      * @return the instances directly configured at this entity level
      * @throws XWikiException when failing to get the instances
      */
-    public List<DocumentReplicationControllerInstance> getHibernateEntityReplication(EntityReference reference)
+    public Collection<DocumentReplicationControllerInstance> getHibernateEntityReplication(EntityReference reference)
         throws XWikiException
     {
         long entityId = this.cache.toEntityId(reference);
@@ -258,13 +271,13 @@ public class EntityReplicationStore
         return getHibernateEntityReplication(reference.getRoot().getName(), entityId, cacheKey);
     }
 
-    private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(String wiki, long entityId,
+    private Collection<DocumentReplicationControllerInstance> getHibernateEntityReplication(String wiki, long entityId,
         String cacheKey) throws XWikiException
     {
-        List<DocumentReplicationControllerInstance> instances = this.cache.getDataCache().get(cacheKey);
+        EntityReplicationCacheEntry cacheEntry = this.cache.getDataCache().get(cacheKey);
 
-        if (instances != null) {
-            return instances;
+        if (cacheEntry != null) {
+            return cacheEntry.getConfiguration();
         }
 
         XWikiContext xcontext = this.xcontextProvider.get();
@@ -274,14 +287,15 @@ public class EntityReplicationStore
         try {
             xcontext.setWikiId(wiki);
 
-            instances = store.executeRead(xcontext, session -> getHibernateEntityReplication(entityId, session));
+            Collection<DocumentReplicationControllerInstance> instances =
+                store.executeRead(xcontext, session -> getHibernateEntityReplication(entityId, session));
+
+            this.cache.getDataCache().set(cacheKey, new EntityReplicationCacheEntry(instances));
+
+            return instances;
         } finally {
             xcontext.setWikiId(currentWiki);
         }
-
-        this.cache.getDataCache().set(cacheKey, instances);
-
-        return instances;
     }
 
     private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(long entityId, Session session)

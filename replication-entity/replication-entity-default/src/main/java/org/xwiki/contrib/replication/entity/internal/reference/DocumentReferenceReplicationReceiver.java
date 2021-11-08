@@ -25,7 +25,9 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
+import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.rendering.syntax.Syntax;
 
@@ -49,8 +51,8 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
         XWikiDocument document = new XWikiDocument(documentReference);
 
         // Just indicate who created it
-        DocumentReference creatorReference =
-            getMetadata(message, DocumentReferenceReplicationMessage.METADATA_CREATOR, true, DocumentReference.class);
+        DocumentReference creatorReference = this.documentMessageTool.getMetadata(message,
+            DocumentUpdateReplicationMessage.METADATA_CREATOR, true, DocumentReference.class);
         document.setCreatorReference(creatorReference);
         document.setAuthorReference(creatorReference);
         document.setContentAuthorReference(creatorReference);
@@ -67,5 +69,11 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to save the document", e);
         }
+    }
+
+    @Override
+    public void relay(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        relay(message, DocumentReplicationLevel.REFERENCE);
     }
 }

@@ -119,6 +119,16 @@
               <outputPackageDirectory>${xwiki.instance.directory}-1</outputPackageDirectory>
             </configuration>
           </execution>
+          <execution>
+            <id>xwiki-2</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>package</goal>
+            </goals>
+            <configuration>
+              <outputPackageDirectory>${xwiki.instance.directory}-2</outputPackageDirectory>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
 

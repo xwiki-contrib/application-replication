@@ -41,7 +41,7 @@ public interface ReplicationSender
      * Asynchronously send a message to passed instances.
      * 
      * @param message the data to send
-     * @param targets the instances to send data to
+     * @param targets the instances to send message to
      * @throws ReplicationException when failing to queue the replication message
      */
     void send(ReplicationSenderMessage message, Collection<ReplicationInstance> targets) throws ReplicationException;
@@ -51,7 +51,6 @@ public interface ReplicationSender
      * waking up the queue if it has messages to send.
      * 
      * @param instance the instance which sent a ping
-     * @since 0.3
      */
     void ping(ReplicationInstance instance);
 }

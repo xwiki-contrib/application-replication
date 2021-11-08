@@ -98,6 +98,14 @@ public class ReplicationClient implements Initializable
     }
 
     /**
+     * Remove the cached current instance so that it can be recalculated.
+     */
+    public void resetCurrentInstance()
+    {
+        this.currentInstance = null;
+    }
+
+    /**
      * @return the current instance representation
      * @throws ReplicationException when failing to resolve the create the current instance
      */
@@ -106,8 +114,11 @@ public class ReplicationClient implements Initializable
     {
         if (this.currentInstance == null) {
             try {
-                // We want the reference URI and not the current one
                 XWikiContext xcontext = this.xcontextProvider.get();
+
+                // We want the reference URI and not the current one
+                // TODO: force getting the main wiki URI for now but it might be interesting to support replication
+                // between subwikis of the same instance
                 URL url = xcontext.getWiki().getServerURL(xcontext.getMainXWiki(), xcontext);
                 String webapp = xcontext.getWiki().getWebAppPath(xcontext);
 

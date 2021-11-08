@@ -26,14 +26,19 @@ import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationReceiver;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
 import org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageQueue;
+import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
 import org.xwiki.resource.ResourceReferenceHandlerException;
+
+import com.xpn.xwiki.XWikiException;
 
 /**
  * @version $Id$
@@ -60,7 +65,13 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
     private ReplicationReceiverMessageQueue queue;
 
     @Inject
+    private ReplicationMessageLogStore messageLog;
+
+    @Inject
     private Provider<HttpServletRequestReplicationReceiverMessage> messageProvider;
+
+    @Inject
+    private Logger logger;
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, ReplicationResourceReference reference)
@@ -79,11 +90,37 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
         HttpServletRequestReplicationReceiverMessage message = this.messageProvider.get();
         message.initialize(instance, request);
 
+        // Check if the message is already known
+        if (this.messageLog.exist(message.getId())) {
+            // Ignore the message since we already received it
+            return;
+        }
+
+        // Remember the message
+        rememberMessage(message);
+
         // Add the data to the queue
         try {
             this.queue.add(message);
         } catch (Exception e) {
+            // Forget the message if it could not be stored
+            forgetMessage(message);
+
             throw new ResourceReferenceHandlerException("Could not handle the replication data", e);
+        }
+    }
+
+    private void rememberMessage(ReplicationReceiverMessage message) throws XWikiException
+    {
+        this.messageLog.save(message);
+    }
+
+    private void forgetMessage(ReplicationReceiverMessage message)
+    {
+        try {
+            this.messageLog.delete(message.getId());
+        } catch (XWikiException e) {
+            this.logger.error("Failed to remove message with if [{}] from the log", message.getId(), e);
         }
     }
 }

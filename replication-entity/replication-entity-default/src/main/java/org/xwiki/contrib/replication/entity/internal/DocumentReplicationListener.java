@@ -99,8 +99,7 @@ public class DocumentReplicationListener extends AbstractEventListener
                     ((DocumentVersionRangeDeletedEvent) event).getFrom(),
                     ((DocumentVersionRangeDeletedEvent) event).getTo());
             } else if (event instanceof DocumentDeletedEvent) {
-                this.senderProvider.get().sendDocumentDelete(document.getDocumentReferenceWithLocale(),
-                    DocumentReplicationLevel.REFERENCE);
+                this.senderProvider.get().sendDocumentDelete(document.getDocumentReferenceWithLocale());
             } else {
                 // Don't send document update which are the result of an history modification
                 if (!this.observationcontext.isIn(HISTORY_DELETING)) {

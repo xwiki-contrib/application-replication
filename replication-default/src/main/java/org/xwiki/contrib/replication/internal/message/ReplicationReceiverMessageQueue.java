@@ -129,6 +129,9 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
         ((DefaultReplicationContext) this.replicationContext).setReplicationMessage(true);
 
         try {
+            // Relay the message
+            replicationReceiver.relay(message);
+
             // Execute the receiver
             replicationReceiver.receive(message);
         } catch (InvalidReplicationMessageException e) {
