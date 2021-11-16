@@ -21,13 +21,11 @@ package org.xwiki.contrib.replication.internal;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.apache.hc.client5.http.classic.methods.HttpPost;
@@ -52,10 +50,7 @@ import org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstan
 import org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstanceUnregisterEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.message.HttpServletRequestReplicationReceiverMessage;
 import org.xwiki.contrib.replication.internal.enpoint.message.ReplicationMessageEndpoint;
-import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
-import org.xwiki.instance.InstanceIdManager;
-
-import com.xpn.xwiki.XWikiContext;
+import org.xwiki.contrib.replication.internal.instance.ReplicationInstanceStore;
 
 /**
  * @version $Id$
@@ -66,15 +61,10 @@ public class ReplicationClient implements Initializable
 {
     private static final String UNKNWON_ERROR = "Unknown server error";
 
+    @Inject
+    private ReplicationInstanceStore instances;
+
     private CloseableHttpClient client;
-
-    @Inject
-    private Provider<XWikiContext> xcontextProvider;
-
-    @Inject
-    private InstanceIdManager instanceId;
-
-    private ReplicationInstance currentInstance;
 
     @Override
     public void initialize() throws InitializationException
@@ -82,62 +72,13 @@ public class ReplicationClient implements Initializable
         this.client = HttpClients.createSystem();
     }
 
-    private URIBuilder createURIBuilder(String uri) throws URISyntaxException
-    {
-        // Cleanup trailing / to avoid empty path element
-        return new URIBuilder(DefaultReplicationInstance.cleanURI(uri));
-    }
-
     private URIBuilder createURIBuilder(String uri, String endpoint) throws URISyntaxException
     {
-        URIBuilder builder = createURIBuilder(uri);
+        URIBuilder builder = ReplicationInstanceStore.createURIBuilder(uri);
         builder.appendPath(ReplicationResourceReferenceHandler.HINT);
         builder.appendPath(endpoint);
 
         return builder;
-    }
-
-    /**
-     * Remove the cached current instance so that it can be recalculated.
-     */
-    public void resetCurrentInstance()
-    {
-        this.currentInstance = null;
-    }
-
-    /**
-     * @return the current instance representation
-     * @throws ReplicationException when failing to resolve the create the current instance
-     */
-    // TODO: move it to a more generic location
-    public ReplicationInstance getCurrentInstance() throws ReplicationException
-    {
-        if (this.currentInstance == null) {
-            try {
-                XWikiContext xcontext = this.xcontextProvider.get();
-
-                // We want the reference URI and not the current one
-                // TODO: force getting the main wiki URI for now but it might be interesting to support replication
-                // between subwikis of the same instance
-                URL url = xcontext.getWiki().getServerURL(xcontext.getMainXWiki(), xcontext);
-                String webapp = xcontext.getWiki().getWebAppPath(xcontext);
-
-                URIBuilder builder = createURIBuilder(url.toURI().toString());
-                if (webapp != null) {
-                    builder.appendPath(webapp);
-                }
-                String currentURI = builder.build().toString();
-
-                // TODO: introduce a configuration for the instance name
-                String currentName = this.instanceId.getInstanceId().getInstanceId();
-
-                this.currentInstance = new DefaultReplicationInstance(currentName, currentURI, null);
-            } catch (Exception e) {
-                throw new ReplicationException("Failed to get the current instance URI", e);
-            }
-        }
-
-        return this.currentInstance;
     }
 
     /**
@@ -152,7 +93,8 @@ public class ReplicationClient implements Initializable
     {
         URIBuilder builder = createURIBuilder(target.getURI(), ReplicationMessageEndpoint.PATH);
 
-        builder.addParameter(ReplicationMessageEndpoint.PARAMETER_INSTANCE, getCurrentInstance().getURI());
+        builder.addParameter(ReplicationMessageEndpoint.PARAMETER_INSTANCE,
+            this.instances.getCurrentInstance().getURI());
         // TODO: send a key
 
         builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_ID, message.getId());
@@ -162,13 +104,13 @@ public class ReplicationClient implements Initializable
 
         String source = message.getSource();
         if (source == null) {
-            source = getCurrentInstance().getURI();
+            source = this.instances.getCurrentInstance().getURI();
         }
         builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_SOURCE, source);
 
         HttpPut httpPut = new HttpPut(builder.build());
 
-        httpPut.setEntity(new EntityTemplate(-1, ContentType.DEFAULT_BINARY, null, s -> message.write(s)));
+        httpPut.setEntity(new EntityTemplate(-1, ContentType.DEFAULT_BINARY, null, message::write));
 
         // Add custom headers
         for (Map.Entry<String, Collection<String>> entry : message.getCustomMetadata().entrySet()) {
@@ -203,7 +145,8 @@ public class ReplicationClient implements Initializable
     public void unregister(ReplicationInstance instance) throws ReplicationException, URISyntaxException, IOException
     {
         URIBuilder builder = createURIBuilder(instance.getURI(), ReplicationInstanceUnregisterEndpoint.PATH);
-        builder.addParameter(ReplicationInstanceUnregisterEndpoint.PARAMETER_URI, getCurrentInstance().getURI());
+        builder.addParameter(ReplicationInstanceUnregisterEndpoint.PARAMETER_URI,
+            this.instances.getCurrentInstance().getURI());
         // TODO: send a key
 
         HttpPut httpPut = new HttpPut(builder.build());
@@ -236,7 +179,8 @@ public class ReplicationClient implements Initializable
     public void ping(ReplicationInstance instance) throws ReplicationException, URISyntaxException, IOException
     {
         URIBuilder builder = createURIBuilder(instance.getURI(), ReplicationInstancePingEndpoint.PATH);
-        builder.addParameter(ReplicationInstancePingEndpoint.PARAMETER_URI, getCurrentInstance().getURI());
+        builder.addParameter(ReplicationInstancePingEndpoint.PARAMETER_URI,
+            this.instances.getCurrentInstance().getURI());
         // TODO: send a key
 
         HttpPost httpPost = new HttpPost(builder.build());
@@ -270,8 +214,10 @@ public class ReplicationClient implements Initializable
     public Status register(String uri) throws ReplicationException, IOException, URISyntaxException
     {
         URIBuilder builder = createURIBuilder(uri, ReplicationInstanceRegisterEndpoint.PATH);
-        builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_URI, getCurrentInstance().getURI());
-        builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_NAME, getCurrentInstance().getName());
+        builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_URI,
+            this.instances.getCurrentInstance().getURI());
+        builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_NAME,
+            this.instances.getCurrentInstance().getName());
         // TODO: send a key
 
         HttpPut httpPut = new HttpPut(builder.build());

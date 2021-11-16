@@ -1,6 +1,5 @@
 org.xwiki.contrib.replication.internal.DefaultReplicationContext
 org.xwiki.contrib.replication.internal.ReplicationClient
-org.xwiki.contrib.replication.internal.WikiDescriptorListener
 org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferenceHandler
 org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferenceResolver
 org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstancePingEndpoint
@@ -12,6 +11,7 @@ org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstanceManage
 org.xwiki.contrib.replication.internal.instance.ReplicationInstanceClassInitializer
 org.xwiki.contrib.replication.internal.instance.ReplicationInstanceListener
 org.xwiki.contrib.replication.internal.instance.ReplicationInstanceStore
+org.xwiki.contrib.replication.internal.instance.WikiDescriptorListener
 org.xwiki.contrib.replication.internal.message.DefaultReplicationSender
 org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageQueue
 org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageStore

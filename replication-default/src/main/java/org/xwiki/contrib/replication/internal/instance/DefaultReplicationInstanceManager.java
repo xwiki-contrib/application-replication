@@ -58,7 +58,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public ReplicationInstance getCurrentInstance() throws ReplicationException
     {
-        return this.client.getCurrentInstance();
+        return store.getCurrentInstance();
     }
 
     private Map<String, ReplicationInstance> getInternalInstances() throws ReplicationException
@@ -311,6 +311,12 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         removeInstanceInternal(instance);
 
         return instance;
+    }
+
+    @Override
+    public void saveCurrentInstance(String name, String uri) throws ReplicationException
+    {
+        this.store.saveCurrentInstance(name, uri);
     }
 
     @Override

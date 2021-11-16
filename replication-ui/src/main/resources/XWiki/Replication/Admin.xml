@@ -36,7 +36,7 @@
   <minorEdit>false</minorEdit>
   <syntaxId>xwiki/2.1</syntaxId>
   <hidden>true</hidden>
-  <content>{{velocity}}
+  <content>{{velocity output="false"}}
 #macro(displayInstance $instance)
   ((({{html}}&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;$instance.name (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;) &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;&lt;button class="btn btn-danger" name="remove"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.remove'))&lt;/button&gt;&lt;/form&gt;{{/html}})))
 #end
@@ -48,11 +48,9 @@
 #macro(displayRequestedInstance $instance)
   ((({{html}}&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt; &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;&lt;button class="btn btn-danger" name="requested_cancel"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.cancel'))&lt;/button&gt;&lt;/form&gt;{{/html}})))
 #end
-{{/velocity}}
 
-{{velocity}}
 #set($instanceManager = $services.component.getInstance('org.xwiki.contrib.replication.ReplicationInstanceManager'))
-##
+
 #if ($request.reload)
   #set($void = $instanceManager.reload())
 #elseif ($request.remove)
@@ -65,7 +63,11 @@
   #set($void = $instanceManager.cancelRequestedInstance($request.uri))
 #elseif ($request.requested_add)
   #set($void = $instanceManager.requestInstance($request.uri))
+#elseif ($request.current_save)
+  #set($void = $instanceManager.saveCurrentInstance($request.name, $request.uri))
 #end
+
+#set ($currentInstance = $instanceManager.currentInstance)
 {{/velocity}}
 
 {{velocity}}
@@ -76,7 +78,25 @@
 &lt;/form&gt;
 {{/html}}
 
+=== {{translation key="replication.admin.instance.CURRENT"/}}
+
+{{translation key="replication.admin.instance.CURRENT.description"/}}
+
+{{html}}
+&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
+  &lt;dl&gt;
+    &lt;dt&gt;&lt;label for="current_name"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.form.name'))&lt;/label&gt;&lt;/dt&gt;
+    &lt;dd&gt;&lt;input id="current_name" type="text" name="name" value="$escapetool.xml($currentInstance.name)" size="60"/&gt;&lt;/dd&gt;
+    &lt;dt&gt;&lt;label for="current_uri"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.form.uri'))&lt;/label&gt;&lt;/dt&gt;
+    &lt;dd&gt;&lt;input id="current_uri" type="text" name="uri" value="$escapetool.xml($currentInstance.uRI)" size="60"/&gt;&lt;/dd&gt;
+  &lt;/dl&gt;
+  &lt;button class="btn" name="current_save"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.save'))&lt;/button&gt;
+&lt;/form&gt;
+{{/html}}
+
 === {{translation key="replication.admin.instance.REGISTERED"/}}
+
+{{translation key="replication.admin.instance.REGISTERED.description"/}}
 
 #foreach($instance in $instanceManager.getInstances())
   #if ($instance.status.name() == 'REGISTERED')
@@ -86,6 +106,8 @@
 
 === {{translation key="replication.admin.instance.REQUESTING"/}}
 
+{{translation key="replication.admin.instance.REQUESTING.description"/}}
+
 #foreach($instance in $instanceManager.getInstances())
   #if ($instance.status.name() == 'REQUESTING')
     * #displayRequestingInstance($instance)
@@ -94,10 +116,13 @@
 
 === {{translation key="replication.admin.instance.REQUESTED"/}}
 
+{{translation key="replication.admin.instance.REQUESTED.description"/}}
+
 {{html}}
 &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-  &lt;input id="requested_uri" type="text" name="uri"/&gt;
-  &lt;button class="btn btn-primary" name="requested_add"&gt;Add&lt;/button&gt;
+  &lt;input type="text" name="uri" size="60"/&gt;
+  &lt;br/&gt;
+  &lt;button class="btn btn-primary" name="requested_add"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.add'))&lt;/button&gt;
 &lt;/form&gt;
 {{/html}}
 
@@ -183,21 +208,6 @@
         <valueField/>
         <classType>com.xpn.xwiki.objects.classes.PageClass</classType>
       </configurationClass>
-      <configureGlobally>
-        <customDisplay/>
-        <defaultValue/>
-        <disabled>0</disabled>
-        <displayFormType>checkbox</displayFormType>
-        <displayType/>
-        <hint/>
-        <name>configureGlobally</name>
-        <number>4</number>
-        <prettyName>configureGlobally</prettyName>
-        <unmodifiable>0</unmodifiable>
-        <validationMessage/>
-        <validationRegExp/>
-        <classType>com.xpn.xwiki.objects.classes.BooleanClass</classType>
-      </configureGlobally>
       <displayBeforeCategory>
         <customDisplay/>
         <disabled>0</disabled>
@@ -307,6 +317,31 @@
         <values/>
         <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
       </propertiesToShow>
+      <scope>
+        <cache>0</cache>
+        <customDisplay/>
+        <defaultValue/>
+        <disabled>0</disabled>
+        <displayType>select</displayType>
+        <freeText/>
+        <hint/>
+        <largeStorage>0</largeStorage>
+        <multiSelect>0</multiSelect>
+        <name>scope</name>
+        <number>12</number>
+        <picker>1</picker>
+        <prettyName>scope</prettyName>
+        <relationalStorage>0</relationalStorage>
+        <separator> </separator>
+        <separators>|, </separators>
+        <size>1</size>
+        <sort/>
+        <unmodifiable>0</unmodifiable>
+        <validationMessage/>
+        <validationRegExp/>
+        <values>WIKI|SPACE|ALL_SPACES|WIKI+ALL_SPACES</values>
+        <classType>com.xpn.xwiki.objects.classes.StaticListClass</classType>
+      </scope>
       <sectionOrder>
         <customDisplay/>
         <disabled>0</disabled>
@@ -354,6 +389,9 @@
     </property>
     <property>
       <propertiesToShow/>
+    </property>
+    <property>
+      <scope/>
     </property>
     <property>
       <sectionOrder/>

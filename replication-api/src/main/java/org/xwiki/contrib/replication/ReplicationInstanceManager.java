@@ -134,4 +134,11 @@ public interface ReplicationInstanceManager
      * @throws ReplicationException when failing to reload the instances from the store
      */
     void reload() throws ReplicationException;
+
+    /**
+     * @param name the custom name of the current instance
+     * @param uri the custom uri of the custom instance
+     * @throws ReplicationException when failing to update the current instance
+     */
+    void saveCurrentInstance(String name, String uri) throws ReplicationException;
 }

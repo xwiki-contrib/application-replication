@@ -19,6 +19,9 @@
  */
 package org.xwiki.contrib.replication.internal.instance;
 
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,10 +29,14 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.core5.net.URIBuilder;
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
+import org.xwiki.instance.InstanceIdManager;
 import org.xwiki.model.EntityType;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.LocalDocumentReference;
@@ -68,10 +75,80 @@ public class ReplicationInstanceStore
     @Inject
     private Provider<XWikiContext> xcontextProvider;
 
+    @Inject
+    private InstanceIdManager instanceId;
+
+    @Inject
+    private Logger logger;
+
+    private ReplicationInstance currentInstance;
+
+    /**
+     * @param uri the uri as String
+     * @return the clean {@link URIBuilder} instance
+     * @throws URISyntaxException if the input is not a valid URI
+     */
+    public static URIBuilder createURIBuilder(String uri) throws URISyntaxException
+    {
+        // Cleanup trailing / to avoid empty path element
+        return new URIBuilder(DefaultReplicationInstance.cleanURI(uri));
+    }
+
+    /**
+     * Remove the cached current instance so that it can be recalculated.
+     */
+    public void resetCurrentInstance()
+    {
+        this.currentInstance = null;
+    }
+
+    /**
+     * @return the current instance representation
+     * @throws ReplicationException when failing to resolve the create the current instance
+     */
+    public ReplicationInstance getCurrentInstance() throws ReplicationException
+    {
+        if (this.currentInstance == null) {
+            try {
+                String currentURI = getDefaultCurrentURI();
+                String currentName = getDefaultCurrentName();
+
+                this.currentInstance = new DefaultReplicationInstance(currentName, currentURI, null);
+            } catch (Exception e) {
+                throw new ReplicationException("Failed to get the current instance URI", e);
+            }
+        }
+
+        return this.currentInstance;
+    }
+
+    private String getDefaultCurrentURI() throws MalformedURLException, URISyntaxException
+    {
+        XWikiContext xcontext = this.xcontextProvider.get();
+
+        // We want the reference URI and not the current one
+        // TODO: force getting the main wiki URI for now but it might be interesting to support replication
+        // between subwikis of the same instance
+        URL url = xcontext.getWiki().getServerURL(xcontext.getMainXWiki(), xcontext);
+        String webapp = xcontext.getWiki().getWebAppPath(xcontext);
+
+        URIBuilder builder = createURIBuilder(url.toURI().toString());
+        if (webapp != null) {
+            builder.appendPath(webapp);
+        }
+
+        return builder.build().toString();
+    }
+
+    private String getDefaultCurrentName()
+    {
+        return this.instanceId.getInstanceId().getInstanceId();
+    }
+
     @FunctionalInterface
     private interface InstanceDocumentExecutor<T>
     {
-        T execute(XWikiDocument instancesDocument, XWikiContext xcontext) throws XWikiException;
+        T execute(XWikiDocument instancesDocument, XWikiContext xcontext) throws XWikiException, ReplicationException;
     }
 
     private <T> T executeInstanceDocument(InstanceDocumentExecutor<T> executor) throws ReplicationException
@@ -120,8 +197,9 @@ public class ReplicationInstanceStore
      */
     public Status getStatus(BaseObject instanceObject)
     {
-        return Enum.valueOf(Status.class,
-            instanceObject.getStringValue(ReplicationInstanceClassInitializer.FIELD_STATUS));
+        String statusString = instanceObject.getStringValue(ReplicationInstanceClassInitializer.FIELD_STATUS);
+
+        return StringUtils.isEmpty(statusString) ? null : Enum.valueOf(Status.class, statusString);
     }
 
     private void setStatus(BaseObject instanceObject, Status status)
@@ -141,10 +219,16 @@ public class ReplicationInstanceStore
 
     private void setReplicationInstance(ReplicationInstance instance, BaseObject instanceObject)
     {
-        instanceObject.setStringValue(ReplicationInstanceClassInitializer.FIELD_NAME, instance.getName());
-        instanceObject.setStringValue(ReplicationInstanceClassInitializer.FIELD_URI, instance.getURI());
+        setReplicationInstance(instance.getName(), instance.getURI(), instance.getStatus(), instanceObject);
+    }
 
-        instanceObject.setStringValue(ReplicationInstanceClassInitializer.FIELD_STATUS, instance.getStatus().name());
+    private void setReplicationInstance(String name, String uri, Status status, BaseObject instanceObject)
+    {
+        instanceObject.setStringValue(ReplicationInstanceClassInitializer.FIELD_NAME, name);
+        instanceObject.setStringValue(ReplicationInstanceClassInitializer.FIELD_URI, uri);
+
+        instanceObject.setStringValue(ReplicationInstanceClassInitializer.FIELD_STATUS,
+            status != null ? status.name() : "");
     }
 
     /**
@@ -160,9 +244,29 @@ public class ReplicationInstanceStore
             List<ReplicationInstance> instances = new ArrayList<>(instanceObjects.size());
             for (BaseObject instanceObject : instanceObjects) {
                 if (instanceObject != null) {
-                    ReplicationInstance instance = toReplicationInstance(instanceObject);
+                    // Current instance
+                    if (getStatus(instanceObject) == null) {
+                        try {
+                            String name = getName(instanceObject);
+                            if (StringUtils.isBlank(name)) {
+                                name = getDefaultCurrentName();
+                            }
+                            String uri = getURI(instanceObject);
+                            if (StringUtils.isBlank(uri)) {
 
-                    instances.add(instance);
+                                uri = getDefaultCurrentURI();
+                            }
+
+                            this.currentInstance = new DefaultReplicationInstance(name, uri, null);
+                        } catch (Exception e) {
+                            // Skip invalid instance
+                            this.logger.error("Failed to load instance from xobject with reference [{}]",
+                                instanceObject.getReference(), e);
+                        }
+                    } else {
+                        // Remote instance
+                        instances.add(toReplicationInstance(instanceObject));
+                    }
                 }
             }
 
@@ -245,9 +349,38 @@ public class ReplicationInstanceStore
                 instancesDocument.getXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE,
                     ReplicationInstanceClassInitializer.FIELD_URI, instance.getURI(), false);
 
+            if (instanceObject == null) {
+                throw new ReplicationException("The instance with URI [" + instance.getURI() + "] does not exist");
+            }
+
             setReplicationInstance(instance, instanceObject);
 
             xcontext.getWiki().saveDocument(instancesDocument, "Update instance " + instance.getURI(), xcontext);
+
+            return null;
+        });
+    }
+
+    /**
+     * @param name the custom name of the current instance
+     * @param uri the custom uri of the custom instance
+     * @throws ReplicationException when failing to update the current instance
+     */
+    public void saveCurrentInstance(String name, String uri) throws ReplicationException
+    {
+        executeInstanceDocument((instancesDocument, xcontext) -> {
+            BaseObject instanceObject =
+                instancesDocument.getXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE,
+                    ReplicationInstanceClassInitializer.FIELD_STATUS, "", false);
+
+            if (instanceObject == null) {
+                instanceObject =
+                    instancesDocument.newXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE, xcontext);
+            }
+
+            setReplicationInstance(name, uri, null, instanceObject);
+
+            xcontext.getWiki().saveDocument(instancesDocument, "Update current instance", xcontext);
 
             return null;
         });
