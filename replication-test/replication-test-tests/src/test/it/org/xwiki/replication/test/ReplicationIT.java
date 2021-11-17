@@ -22,6 +22,7 @@ package org.xwiki.replication.test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
@@ -40,8 +41,6 @@ import org.xwiki.rest.model.jaxb.Page;
 import org.xwiki.rest.resources.pages.PageResource;
 import org.xwiki.test.ui.AbstractTest;
 import org.xwiki.test.ui.TestUtils;
-
-import com.google.common.base.Objects;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -65,7 +64,7 @@ public class ReplicationIT extends AbstractTest
         long t2;
         long t1 = System.currentTimeMillis();
         T result;
-        while (!Objects.equal((result = supplier.get()), expected)) {
+        while (!Objects.equals((result = supplier.get()), expected)) {
             t2 = System.currentTimeMillis();
             if (t2 - t1 > 10000L) {
                 fail(String.format("Should have been [%s] but was [%s]", expected, result));
