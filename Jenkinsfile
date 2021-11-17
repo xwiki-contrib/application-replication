@@ -26,6 +26,6 @@
 
 node() {
   xwikiBuild {
-    mavenOpts: '-Xmx512m -Xms256m'
+    mavenOpts = '-Xmx512m -Xms256m'
   }
 }
