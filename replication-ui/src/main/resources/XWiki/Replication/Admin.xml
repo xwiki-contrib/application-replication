@@ -120,7 +120,7 @@
 
 {{html}}
 &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-  &lt;input type="text" name="uri" size="60"/&gt;
+  &lt;input id="requested_uri" type="text" name="uri" size="60"/&gt;
   &lt;br/&gt;
   &lt;button class="btn btn-primary" name="requested_add"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.add'))&lt;/button&gt;
 &lt;/form&gt;
