@@ -109,6 +109,11 @@ public class DocumentReplicationSender
 
         List<ReplicationInstance> instances = getInstances(level, configurations);
 
+        if (instances.isEmpty()) {
+            // No instance to send the message to
+            return;
+        }
+
         ReplicationSenderMessage message;
 
         if (level == DocumentReplicationLevel.REFERENCE) {
