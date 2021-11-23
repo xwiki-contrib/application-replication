@@ -256,36 +256,22 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////
         // FULL replication
 
-        // Create Replication space on instance0
+        // Configure ReplicationFULL space replication on instance0
         getUtil().switchExecutor(0);
-        getUtil().gotoPage(REPLICATION_FULL);
-        getUtil().recacheSecretToken();
-        getUtil().createPage(REPLICATION_FULL, "");
         PageReplicationAdministrationSectionPage replicationPageAdmin =
             PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_FULL);
-
-        // Enable full replication for the space Replication
         replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.ALL);
-
         // Save replication configuration
         replicationPageAdmin.save();
 
         // Make sure the configuration is replicated on instance1
         getUtil().switchExecutor(1);
-        getUtil().gotoPage(REPLICATION_FULL);
-        getUtil().recacheSecretToken();
-        // FIXME: create the page on XWiki 1 because of https://jira.xwiki.org/browse/REPLICAT-34
-        getUtil().createPage(REPLICATION_FULL, "");
         replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_FULL);
         assertEquals("all", replicationPageAdmin.getMode("space"));
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
 
         // Make sure the configuration is replicated on instance2
         getUtil().switchExecutor(2);
-        getUtil().gotoPage(REPLICATION_FULL);
-        getUtil().recacheSecretToken();
-        // FIXME: create the page on XWiki 1 because of https://jira.xwiki.org/browse/REPLICAT-34
-        getUtil().createPage(REPLICATION_FULL, "");
         replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_FULL);
         assertEquals("all", replicationPageAdmin.getMode("space"));
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
@@ -293,15 +279,10 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////
         // REFERENCE replication
 
-        // Create Replication space on instance0
+        // Configure ReplicationREFERENCE space replication on instance0
         getUtil().switchExecutor(0);
-        getUtil().recacheSecretToken();
-        getUtil().createPage(REPLICATION_EMPTY, "");
         replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_EMPTY);
-
-        // Enable full replication for the space Replication
         replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.REFERENCE);
-
         // Save replication configuration
         replicationPageAdmin.save();
     }
