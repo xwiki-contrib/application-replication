@@ -19,86 +19,24 @@
 ## ---------------------------------------------------------------------------
 #set ($instances = $services.replication.getRegisteredInstances())
 #if (!$instances.isEmpty())
-  #if ($request.replication_action)
-    #if ($services.csrf.isTokenValid($request.form_token))
-      #if ($request.replication_send)
-        ## TODO: send all translations too
-        #set ($void = $services.replication.document.replicateCompleteDocument($doc.documentReference))
-      #elseif ($request.instance)
-        #set ($instance = $services.replication.getRegisteredInstances($request.instance))
-        #if ($instance)
-          #if ($request.replication_wakeup)
-            #set ($void = $services.replication.wakeUpQueue($instance))
-          #end
+  <div id="replication.docextracontent" class="xwikiintracontent">
+    #set ($resolvedInstances = $services.replication.document.getDocumentInstances($doc.documentReference))
+
+    #if ($resolvedInstances.size() > 0)
+      <dl>
+        #foreach($resolvedInstance in $resolvedInstances)
+          <dt>$resolvedInstance.instance.name (<a href="$resolvedInstance.instance.uRI">$resolvedInstance.instance.uRI</a>)</dt>
+          <dd>
+            #if ($resolvedInstance.level)
+              $escapetool.xml($services.localization.render("replication.entity.level.${resolvedInstance.level}.description"))
+            #else
+              $escapetool.xml($services.localization.render('replication.entity.docextra.notreplicated'))
+            #end
+          </dd>
         #end
-      #else
-        #foreach ($uix in $services.uix.getExtensions('org.xwiki.plaftorm.template.docextra.replication'))
-          $services.rendering.render($uix.execute(), 'html/5.0')
-        #end
-      #end
+      </dl>
+    #else
+      $escapetool.xml($services.localization.render("replication.entity.docextra.notreplicated"))
     #end
-  #else
-    $xwiki.jsrx.use('replication/docextra.js')
-
-    <div id="replication.docextracontent" class="xwikiintracontent">
-      #set ($resolvedInstances = $services.replication.document.getDocumentInstances($doc.documentReference))
-
-      #if ($resolvedInstances.size() > 0)
-        #if ($services.security.authorization.hasAccess('ADMIN', $reference))
-          <form action="$xwiki.relativeRequestURL" method="post">
-            <input type="hidden" name="replication_action"/>
-            <input type="hidden" name="replication_send"/>
-            <input type="hidden" name="form_token" value="$!{services.csrf.getToken()}" />
-
-            <button name="replication_send">$escapetool.xml($services.localization.render('replication.entity.docextra.button.send'))</button>
-          </form>
-        #end
-
-        <dl>
-          #foreach($resolvedInstance in $resolvedInstances)
-            <dt>$resolvedInstance.instance.name (<a href="$resolvedInstance.instance.uRI">$resolvedInstance.instance.uRI</a>)</dt>
-            <dd>
-              #if ($resolvedInstance.level)
-                #set ($queueMessages = $services.replication.getQueueMessages($resolvedInstance.instance))
-                #if ($queueMessages.size() > 0)
-                  <span class="box warningmessage">$escapetool.xml($services.localization.render("replication.send.queue.size", [$queueMessages.size()]))</span>
-                  <br/>
-                #end
-                $escapetool.xml($services.localization.render("replication.entity.level.${resolvedInstance.level}.description"))
-                #set ($messageQueueSize = $services.replication.document.getQueueMessages($resolvedInstance.instance))
-                #set ($nextTry = $services.replication.getQueueNextTry($resolvedInstance.instance))
-                #if ($nextTry)
-                  #set ($instanceError = $services.replication.getQueueError($resolvedInstance.instance))
-                  #if ($instanceError)
-                    <form action="$xwiki.relativeRequestURL" method="post">
-                      #set ($currentMessage = $services.replication.getQueueMessage($resolvedInstance.instance))
-                      #set ($errorTitle = "${services.localization.render('replication.send.queue.failed', [$xwiki.formatDate($nextTry)])} <button name=""replication_retry"">$escapetool.xml(${services.localization.render('replication.docextra.button.wakeup')})</button>")
-                      #displayException($errorTitle, $instanceError)
-
-                      <input type="hidden" name="form_token" value="$!{services.csrf.getToken()}" />
-                      <input type="hidden" name="replication_action"/>
-                      <input type="hidden" name="replication_wakeup"/>
-                      <input type="hidden" name="instance" value="$escapetool.xml($resolvedInstance.instance.uRI)"/>
-                    </form>
-                  #end
-                #end
-              #else
-                $escapetool.xml($services.localization.render('replication.entity.docextra.notreplicated'))
-              #end
-            </dd>
-          #end
-        </dl>
-      #else
-        $escapetool.xml($services.localization.render("replication.entity.docextra.notreplicated"))
-        <br/>
-      #end
-
-      ## More
-      <hr/>
-
-      #foreach ($uix in $services.uix.getExtensions('org.xwiki.plaftorm.template.docextra.replication'))
-        $services.rendering.render($uix.execute(), 'html/5.0')
-      #end
-    </div>
-  #end
+  </div>
 #end

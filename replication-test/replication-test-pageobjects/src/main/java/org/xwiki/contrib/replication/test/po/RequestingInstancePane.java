@@ -52,21 +52,21 @@ public class RequestingInstancePane extends BaseElement
         return uriElement.getText();
     }
 
-    public ReplicationAdministrationSectionPage accept()
+    public WikiReplicationAdministrationSectionPage accept()
     {
         WebElement acceptButton = this.container.findElement(By.name("requesting_accept"));
 
         acceptButton.click();
 
-        return new ReplicationAdministrationSectionPage();
+        return new WikiReplicationAdministrationSectionPage();
     }
 
-    public ReplicationAdministrationSectionPage decline()
+    public WikiReplicationAdministrationSectionPage decline()
     {
         WebElement declineButton = this.container.findElement(By.name("requesting_decline"));
 
         declineButton.click();
 
-        return new ReplicationAdministrationSectionPage();
+        return new WikiReplicationAdministrationSectionPage();
     }
 }

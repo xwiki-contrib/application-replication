@@ -44,7 +44,7 @@ public class DocumentControllerUIExtension implements UIExtension
     /**
      * The id of the UI extension.
      */
-    public static final String ID = "replication.docextra_controller";
+    public static final String ID = "replication.admin.page.controller";
 
     @Inject
     private TemplateManager templates;
@@ -58,7 +58,7 @@ public class DocumentControllerUIExtension implements UIExtension
     @Override
     public String getExtensionPointId()
     {
-        return "org.xwiki.plaftorm.template.docextra.replication";
+        return "replication.admin.page";
     }
 
     @Override
@@ -70,6 +70,6 @@ public class DocumentControllerUIExtension implements UIExtension
     @Override
     public Block execute()
     {
-        return this.templates.executeNoException("replication/docextra_controller.vm");
+        return this.templates.executeNoException("replication/admin/page/controller.vm");
     }
 }

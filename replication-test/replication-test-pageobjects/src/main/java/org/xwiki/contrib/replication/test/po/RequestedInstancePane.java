@@ -52,12 +52,12 @@ public class RequestedInstancePane extends BaseElement
         return uriElement.getText();
     }
 
-    public ReplicationAdministrationSectionPage cancel()
+    public WikiReplicationAdministrationSectionPage cancel()
     {
         WebElement cancelButton = this.container.findElement(By.name("requested_cancel"));
 
         cancelButton.click();
 
-        return new ReplicationAdministrationSectionPage();
+        return new WikiReplicationAdministrationSectionPage();
     }
 }

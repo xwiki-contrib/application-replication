@@ -28,11 +28,11 @@ import org.openqa.selenium.support.FindBy;
 import org.xwiki.administration.test.po.AdministrationSectionPage;
 
 /**
- * Represents the actions possible on the Replication Administration Page.
+ * Represents the actions possible on the Replication Administration at wiki level.
  *
  * @version $Id: a9d09c8b6af7f1411760636950fa485cc241efd1 $
  */
-public class ReplicationAdministrationSectionPage extends AdministrationSectionPage
+public class WikiReplicationAdministrationSectionPage extends AdministrationSectionPage
 {
     @FindBy(id = "requested_uri")
     private WebElement requestedInput;
@@ -40,18 +40,18 @@ public class ReplicationAdministrationSectionPage extends AdministrationSectionP
     @FindBy(name = "requested_add")
     private WebElement requestedAddButton;
 
-    public ReplicationAdministrationSectionPage()
+    public WikiReplicationAdministrationSectionPage()
     {
         super("Replication");
 
         waitUntilActionButtonIsLoaded();
     }
 
-    public static ReplicationAdministrationSectionPage gotoPage()
+    public static WikiReplicationAdministrationSectionPage gotoPage()
     {
         getUtil().gotoPage("XWiki", "XWikiPreferences", "admin", "section=Replication");
 
-        return new ReplicationAdministrationSectionPage();
+        return new WikiReplicationAdministrationSectionPage();
     }
 
     public void setRequestedURI(String uri)
@@ -86,10 +86,10 @@ public class ReplicationAdministrationSectionPage extends AdministrationSectionP
         return elements.stream().map(RegisteredInstancePane::new).collect(Collectors.toList());
     }
 
-    public ReplicationAdministrationSectionPage requestInstance()
+    public WikiReplicationAdministrationSectionPage requestInstance()
     {
         this.requestedAddButton.click();
 
-        return new ReplicationAdministrationSectionPage();
+        return new WikiReplicationAdministrationSectionPage();
     }
 }

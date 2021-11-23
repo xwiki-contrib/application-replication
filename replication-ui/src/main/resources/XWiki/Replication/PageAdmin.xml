@@ -20,9 +20,9 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 -->
 
-<xwikidoc version="1.4" reference="XWiki.Replication.Admin" locale="">
+<xwikidoc version="1.4" reference="XWiki.Replication.PageAdmin" locale="">
   <web>XWiki.Replication</web>
-  <name>Admin</name>
+  <name>PageAdmin</name>
   <language/>
   <defaultLanguage/>
   <translation>0</translation>
@@ -31,158 +31,51 @@
   <author>xwiki:XWiki.Admin</author>
   <contentAuthor>xwiki:XWiki.Admin</contentAuthor>
   <version>1.1</version>
-  <title>Admin</title>
+  <title/>
   <comment/>
   <minorEdit>false</minorEdit>
   <syntaxId>xwiki/2.1</syntaxId>
   <hidden>true</hidden>
-  <content>{{velocity output="false"}}
-#macro(displayInstance $instance)
-  (((
-    {{html}}
-      &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-        $instance.name (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;)
-        &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;
-        &lt;button class="btn btn-danger" name="remove"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.remove'))&lt;/button&gt;
-      &lt;/form&gt;
-      #set ($queueMessages = $services.replication.getQueueMessages($instance))
-      #if ($queueMessages.size() &gt; 0)
-        &lt;span class="box warningmessage"&gt;$escapetool.xml($services.localization.render("replication.send.queue.size", [$queueMessages.size()]))&lt;/span&gt;
-        &lt;br/&gt;
-      #end
-      #set ($nextTry = $services.replication.getQueueNextTry($instance))
-      #if ($nextTry)
-        #set ($instanceError = $services.replication.getQueueError($instance))
-        #if ($instanceError)
-          &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-            #set ($currentMessage = $services.replication.getQueueMessage($instance))
-            #set ($errorTitle = "${services.localization.render('replication.send.queue.failed', [$xwiki.formatDate($nextTry)])} &lt;button name=""replication_wakeup""&gt;$escapetool.xml(${services.localization.render('replication.admin.instance.button.wakeup')})&lt;/button&gt;")
-            #displayException($errorTitle, $instanceError)
+  <content>{{velocity}}
+#set ($instances = $services.replication.getRegisteredInstances())
+#if (!$instances.isEmpty())
+  #if ($request.replication_send)
+    ## TODO: send all translations too
+    #set ($void = $services.replication.document.replicateCompleteDocument($replicationDocument.documentReferenceWithLocale))
+    {{success}}
+      Page pushed to other instances.
+    {{/success}}
+  #end
+  #set ($resolvedInstances = $services.replication.document.getDocumentInstances($replicationDocument.documentReference))
+  #if ($resolvedInstances.size() &gt; 0)
+    #if ($services.security.authorization.hasAccess('ADMIN', $replicationDocument))
+      {{translation key="replication.admin.page.push.description"/}}
 
-            &lt;input type="hidden" name="instance" value="$escapetool.xml($instance.uRI)"/&gt;
-          &lt;/form&gt;
-        #end
-      #end
-    {{/html}}
-  )))
-#end
-
-#macro(displayRequestingInstance $instance)
-  (((
-    {{html}}
-      &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-        $instance.name (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;)
-        &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;
-        &lt;button class="btn btn-success" name="requesting_accept"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.accept'))&lt;/button&gt;
-        &lt;button class="btn btn-danger" name="requesting_decline"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.decline'))&lt;/button&gt;
-      &lt;/form&gt;
-    {{/html}}
-  )))
-#end
-
-#macro(displayRequestedInstance $instance)
-  (((
-    {{html}}
-      &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-        &lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt; &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;
-        &lt;button class="btn btn-danger" name="requested_cancel"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.cancel'))&lt;/button&gt;
-      &lt;/form&gt;
-    {{/html}}
-  )))
-#end
-
-#set($instanceManager = $services.component.getInstance('org.xwiki.contrib.replication.ReplicationInstanceManager'))
-
-#if ($request.reload)
-  #set($void = $instanceManager.reload())
-#elseif ($request.remove)
-  #set($void = $instanceManager.removeRegisteredInstance($request.uri))
-#elseif ($request.requesting_accept)
-  #set($void = $instanceManager.acceptRequestingInstance($request.uri))
-#elseif ($request.requesting_decline)
-  #set($void = $instanceManager.declineRequestingInstance($request.uri))
-#elseif ($request.requested_cancel)
-  #set($void = $instanceManager.cancelRequestedInstance($request.uri))
-#elseif ($request.requested_add)
-  #set($void = $instanceManager.requestInstance($request.uri))
-#elseif ($request.current_save)
-  #set($void = $instanceManager.saveCurrentInstance($request.name, $request.uri))
-#elseif ($request.instance)
-  #set ($instance = $services.replication.getRegisteredInstances($request.instance))
-  #if ($instance)
-    #if ($request.replication_wakeup)
-      #set ($void = $services.replication.wakeUpQueue($instance))
+      {{html}}
+        &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
+          &lt;button name="replication_send"&gt;$escapetool.xml($services.localization.render('replication.admin.page.push.button'))&lt;/button&gt;
+        &lt;/form&gt;
+      {{/html}}
     #end
   #end
-#end
+  ## More
+  #set ($uixs = $services.uix.getExtensions('replication.admin.page'))
+  #if (!$uixs.isEmpty())
+    ----
 
-#set ($currentInstance = $instanceManager.currentInstance)
-{{/velocity}}
-
-{{velocity}}
-#if ($hasProgramming)
-=== {{translation key="replication.admin.instance.CURRENT"/}}
-
-{{translation key="replication.admin.instance.CURRENT.description"/}}
-
-{{html}}
-&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-  &lt;dl&gt;
-    &lt;dt&gt;&lt;label for="current_name"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.form.name'))&lt;/label&gt;&lt;/dt&gt;
-    &lt;dd&gt;&lt;input id="current_name" type="text" name="name" value="$escapetool.xml($currentInstance.name)" size="60"/&gt;&lt;/dd&gt;
-    &lt;dt&gt;&lt;label for="current_uri"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.form.uri'))&lt;/label&gt;&lt;/dt&gt;
-    &lt;dd&gt;&lt;input id="current_uri" type="text" name="uri" value="$escapetool.xml($currentInstance.uRI)" size="60"/&gt;&lt;/dd&gt;
-  &lt;/dl&gt;
-  &lt;button class="btn" name="current_save"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.save'))&lt;/button&gt;
-&lt;/form&gt;
-{{/html}}
-
-=== {{translation key="replication.admin.instance.REGISTERED"/}}
-
-{{translation key="replication.admin.instance.REGISTERED.description"/}}
-
-#foreach($instance in $instanceManager.getInstances())
-  #if ($instance.status.name() == 'REGISTERED')
-    * #displayInstance($instance)
+    {{html}}
+      #foreach ($uix in $uixs)
+        $services.rendering.render($uix.execute(), 'html/5.0')
+      #end
+    {{/html}}
   #end
-#end
-
-=== {{translation key="replication.admin.instance.REQUESTING"/}}
-
-{{translation key="replication.admin.instance.REQUESTING.description"/}}
-
-#foreach($instance in $instanceManager.getInstances())
-  #if ($instance.status.name() == 'REQUESTING')
-    * #displayRequestingInstance($instance)
-  #end
-#end
-
-=== {{translation key="replication.admin.instance.REQUESTED"/}}
-
-{{translation key="replication.admin.instance.REQUESTED.description"/}}
-
-{{html}}
-&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-  &lt;input type="text" id="requested_uri" name="uri" size="60"/&gt;
-  &lt;br/&gt;
-  &lt;button class="btn btn-primary" name="requested_add"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.add'))&lt;/button&gt;
-&lt;/form&gt;
-{{/html}}
-
-#foreach($instance in $instanceManager.getInstances())
-  #if ($instance.status.name() == 'REQUESTED')
-    * #displayRequestedInstance($instance)
-  #end
-#end
-#else
-  {{error}}{{translation key="replication.admin.instance.pr"/}}{{/error}}
 #end
 {{/velocity}}</content>
   <object>
-    <name>XWiki.Replication.Admin</name>
+    <name>XWiki.Replication.PageAdmin</name>
     <number>0</number>
     <className>XWiki.ConfigurableClass</className>
-    <guid>5e8cf4f0-8404-4e92-bde8-b195b03a782e</guid>
+    <guid>4664dfc5-581e-42dc-bc3b-95ed2a431370</guid>
     <class>
       <name>XWiki.ConfigurableClass</name>
       <customClass/>
@@ -404,7 +297,15 @@
       <categoryIcon/>
     </property>
     <property>
-      <codeToExecute>{{display reference="XWiki.Replication.Admin"/}}</codeToExecute>
+      <codeToExecute>{{velocity}}
+  #if ($xcontext.action == 'admin')
+    #set ($replicationDocument = $xwiki.getDocument($doc.documentReference.parent))
+  #else
+    #set ($replicationDocument = $doc)
+  #end
+{{/velocity}}
+
+{{display reference="XWiki.Replication.PageAdmin"/}}</codeToExecute>
     </property>
     <property>
       <configurationClass/>
@@ -431,7 +332,7 @@
       <propertiesToShow/>
     </property>
     <property>
-      <scope>WIKI</scope>
+      <scope>ALL_SPACES</scope>
     </property>
     <property>
       <sectionOrder/>

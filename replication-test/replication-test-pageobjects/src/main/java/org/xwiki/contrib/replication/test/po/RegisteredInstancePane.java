@@ -52,12 +52,12 @@ public class RegisteredInstancePane extends BaseElement
         return uriElement.getText();
     }
 
-    public ReplicationAdministrationSectionPage remove()
+    public WikiReplicationAdministrationSectionPage remove()
     {
         WebElement removeButton = this.container.findElement(By.name("requesting_remove"));
 
         removeButton.click();
 
-        return new ReplicationAdministrationSectionPage();
+        return new WikiReplicationAdministrationSectionPage();
     }
 }

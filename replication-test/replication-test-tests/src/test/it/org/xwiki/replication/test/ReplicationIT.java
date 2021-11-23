@@ -28,12 +28,11 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.test.po.PageReplicationAdministrationSectionPage;
 import org.xwiki.contrib.replication.test.po.RegisteredInstancePane;
-import org.xwiki.contrib.replication.test.po.ReplicationAdministrationSectionPage;
-import org.xwiki.contrib.replication.test.po.ReplicationDocExtraPane;
-import org.xwiki.contrib.replication.test.po.ReplicationPage;
 import org.xwiki.contrib.replication.test.po.RequestedInstancePane;
 import org.xwiki.contrib.replication.test.po.RequestingInstancePane;
+import org.xwiki.contrib.replication.test.po.WikiReplicationAdministrationSectionPage;
 import org.xwiki.model.reference.LocalDocumentReference;
 import org.xwiki.rest.model.jaxb.History;
 import org.xwiki.rest.model.jaxb.HistorySummary;
@@ -110,12 +109,12 @@ public class ReplicationIT extends AbstractTest
         });
     }
 
-    private ReplicationAdministrationSectionPage assertEqualsRequestingInstancesWithTimeout(int requestingInstances)
+    private WikiReplicationAdministrationSectionPage assertEqualsRequestingInstancesWithTimeout(int requestingInstances)
         throws InterruptedException
     {
         assertEqualsWithTimeout(requestingInstances, () -> {
             try {
-                ReplicationAdministrationSectionPage admin = ReplicationAdministrationSectionPage.gotoPage();
+                WikiReplicationAdministrationSectionPage admin = WikiReplicationAdministrationSectionPage.gotoPage();
 
                 return admin.getRequestingInstances().size();
             } catch (Exception e) {
@@ -123,15 +122,15 @@ public class ReplicationIT extends AbstractTest
             }
         });
 
-        return new ReplicationAdministrationSectionPage();
+        return new WikiReplicationAdministrationSectionPage();
     }
 
-    private ReplicationAdministrationSectionPage assertEqualsRequestedInstancesWithTimeout(int requestedInstances)
+    private WikiReplicationAdministrationSectionPage assertEqualsRequestedInstancesWithTimeout(int requestedInstances)
         throws InterruptedException
     {
         assertEqualsWithTimeout(requestedInstances, () -> {
             try {
-                ReplicationAdministrationSectionPage admin = ReplicationAdministrationSectionPage.gotoPage();
+                WikiReplicationAdministrationSectionPage admin = WikiReplicationAdministrationSectionPage.gotoPage();
 
                 return admin.getRequestedInstances().size();
             } catch (Exception e) {
@@ -139,7 +138,7 @@ public class ReplicationIT extends AbstractTest
             }
         });
 
-        return new ReplicationAdministrationSectionPage();
+        return new WikiReplicationAdministrationSectionPage();
     }
 
     private void saveMinor(Page page) throws Exception
@@ -195,7 +194,7 @@ public class ReplicationIT extends AbstractTest
 
         // Login on instance0
         getUtil().switchExecutor(0);
-        ReplicationAdministrationSectionPage admin0 = ReplicationAdministrationSectionPage.gotoPage();
+        WikiReplicationAdministrationSectionPage admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
 
         // Link to instance1
         admin0.setRequestedURI(uri1);
@@ -209,7 +208,7 @@ public class ReplicationIT extends AbstractTest
         // Go to instance1
         getUtil().switchExecutor(1);
         // Check if the instance has been added to requesting instances
-        ReplicationAdministrationSectionPage admin1 = assertEqualsRequestingInstancesWithTimeout(1);
+        WikiReplicationAdministrationSectionPage admin1 = assertEqualsRequestingInstancesWithTimeout(1);
         List<RequestingInstancePane> requestingInstances = admin1.getRequestingInstances();
         RequestingInstancePane requestingInstance = requestingInstances.get(0);
         assertEquals(uri0, requestingInstance.getURI());
@@ -243,7 +242,7 @@ public class ReplicationIT extends AbstractTest
         // Go to instance2
         getUtil().switchExecutor(2);
         // Check if the instance has been added to requesting instances
-        ReplicationAdministrationSectionPage admin2 = assertEqualsRequestingInstancesWithTimeout(1);
+        WikiReplicationAdministrationSectionPage admin2 = assertEqualsRequestingInstancesWithTimeout(1);
         requestingInstances = admin2.getRequestingInstances();
         requestingInstance = requestingInstances.get(0);
         assertEquals(uri1, requestingInstance.getURI());
@@ -262,14 +261,14 @@ public class ReplicationIT extends AbstractTest
         getUtil().gotoPage(REPLICATION_FULL);
         getUtil().recacheSecretToken();
         getUtil().createPage(REPLICATION_FULL, "");
-        ReplicationPage page = new ReplicationPage();
-        ReplicationDocExtraPane replicationPane = page.openReplicationDocExtraPane();
+        PageReplicationAdministrationSectionPage replicationPageAdmin =
+            PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_FULL);
 
         // Enable full replication for the space Replication
-        replicationPane.setSpaceLevel(DocumentReplicationLevel.ALL);
+        replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.ALL);
 
         // Save replication configuration
-        replicationPane.save();
+        replicationPageAdmin.save();
 
         // Make sure the configuration is replicated on instance1
         getUtil().switchExecutor(1);
@@ -277,10 +276,9 @@ public class ReplicationIT extends AbstractTest
         getUtil().recacheSecretToken();
         // FIXME: create the page on XWiki 1 because of https://jira.xwiki.org/browse/REPLICAT-34
         getUtil().createPage(REPLICATION_FULL, "");
-        page = new ReplicationPage();
-        replicationPane = page.openReplicationDocExtraPane();
-        assertEquals("all", replicationPane.getMode("space"));
-        assertSame(DocumentReplicationLevel.ALL, replicationPane.getSpaceLevel());
+        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_FULL);
+        assertEquals("all", replicationPageAdmin.getMode("space"));
+        assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
 
         // Make sure the configuration is replicated on instance2
         getUtil().switchExecutor(2);
@@ -288,10 +286,9 @@ public class ReplicationIT extends AbstractTest
         getUtil().recacheSecretToken();
         // FIXME: create the page on XWiki 1 because of https://jira.xwiki.org/browse/REPLICAT-34
         getUtil().createPage(REPLICATION_FULL, "");
-        page = new ReplicationPage();
-        replicationPane = page.openReplicationDocExtraPane();
-        assertEquals("all", replicationPane.getMode("space"));
-        assertSame(DocumentReplicationLevel.ALL, replicationPane.getSpaceLevel());
+        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_FULL);
+        assertEquals("all", replicationPageAdmin.getMode("space"));
+        assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
 
         ////////////////////////
         // REFERENCE replication
@@ -300,14 +297,13 @@ public class ReplicationIT extends AbstractTest
         getUtil().switchExecutor(0);
         getUtil().recacheSecretToken();
         getUtil().createPage(REPLICATION_EMPTY, "");
-        page = new ReplicationPage();
-        replicationPane = page.openReplicationDocExtraPane();
+        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_EMPTY);
 
         // Enable full replication for the space Replication
-        replicationPane.setSpaceLevel(DocumentReplicationLevel.REFERENCE);
+        replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.REFERENCE);
 
         // Save replication configuration
-        replicationPane.save();
+        replicationPageAdmin.save();
     }
 
     private void replicateFull() throws Exception
