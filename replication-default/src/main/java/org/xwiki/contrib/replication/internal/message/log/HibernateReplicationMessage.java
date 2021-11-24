@@ -20,6 +20,9 @@
 package org.xwiki.contrib.replication.internal.message.log;
 
 import java.io.Serializable;
+import java.util.Date;
+
+import org.xwiki.contrib.replication.ReplicationMessage;
 
 /**
  * @version $Id$
@@ -30,12 +33,23 @@ public class HibernateReplicationMessage implements Serializable
 
     private String id;
 
+    private Date date;
+
     /**
      * Default constructor.
      */
     public HibernateReplicationMessage()
     {
 
+    }
+
+    /**
+     * @param message the message to log
+     */
+    public HibernateReplicationMessage(ReplicationMessage message)
+    {
+        this.id = message.getId();
+        this.date = message.getDate();
     }
 
     /**
@@ -82,5 +96,21 @@ public class HibernateReplicationMessage implements Serializable
     public void setId(String id)
     {
         this.id = id;
+    }
+
+    /**
+     * @return the date of the message
+     */
+    public Date getDate()
+    {
+        return this.date;
+    }
+
+    /**
+     * @param date the date of the message
+     */
+    public void setDate(Date date)
+    {
+        this.date = date;
     }
 }

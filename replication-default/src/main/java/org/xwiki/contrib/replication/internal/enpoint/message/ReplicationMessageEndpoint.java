@@ -110,8 +110,13 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
         }
     }
 
-    private void rememberMessage(ReplicationReceiverMessage message) throws XWikiException
+    private synchronized void rememberMessage(ReplicationReceiverMessage message) throws XWikiException
     {
+        if (this.messageLog.exist(message.getId())) {
+            // Was saved by another thread while waiting
+            return;
+        }
+
         this.messageLog.save(message);
     }
 

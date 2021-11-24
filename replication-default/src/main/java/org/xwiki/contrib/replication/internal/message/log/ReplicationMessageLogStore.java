@@ -95,7 +95,7 @@ public class ReplicationMessageLogStore
 
     private Object saveHibernateReplicationMessage(ReplicationMessage message, Session session)
     {
-        session.save(new HibernateReplicationMessage(message.getId()));
+        session.save(new HibernateReplicationMessage(message));
 
         return null;
     }
