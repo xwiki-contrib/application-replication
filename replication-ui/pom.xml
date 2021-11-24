@@ -25,7 +25,7 @@
   <parent>
     <groupId>org.xwiki.contrib.replication</groupId>
     <artifactId>replication</artifactId>
-    <version>0.6-SNAPSHOT</version>
+    <version>0.6</version>
   </parent>
 
   <artifactId>replication-ui</artifactId>
