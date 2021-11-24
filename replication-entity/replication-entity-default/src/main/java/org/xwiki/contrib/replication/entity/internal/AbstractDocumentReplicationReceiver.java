@@ -23,7 +23,6 @@ import javax.inject.Inject;
 
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
@@ -35,9 +34,6 @@ import com.xpn.xwiki.XWikiContext;
  */
 public abstract class AbstractDocumentReplicationReceiver extends AbstractEntityReplicationReceiver
 {
-    @Inject
-    protected DocumentReplicationController controller;
-
     @Inject
     protected DocumentReplicationSender documentSender;
 

@@ -19,7 +19,6 @@
  */
 package org.xwiki.contrib.replication.entity.internal.update;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
 
@@ -28,16 +27,12 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
+import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerUtils;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationSender;
-import org.xwiki.filter.FilterException;
-import org.xwiki.filter.input.DefaultInputStreamInputSource;
-import org.xwiki.filter.instance.output.DocumentInstanceOutputProperties;
-import org.xwiki.filter.xar.input.XARInputProperties;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.store.merge.MergeDocumentResult;
 import org.xwiki.store.merge.MergeManager;
@@ -48,7 +43,6 @@ import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.DocumentRevisionProvider;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.doc.merge.MergeConfiguration;
-import com.xpn.xwiki.internal.filter.XWikiDocumentFilterUtils;
 
 /**
  * @version $Id$
@@ -59,8 +53,7 @@ import com.xpn.xwiki.internal.filter.XWikiDocumentFilterUtils;
 public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
     @Inject
-    // TODO: don't use internal tool
-    private XWikiDocumentFilterUtils importer;
+    private DocumentUpdateLoaded loader;
 
     @Inject
     private DocumentRevisionProvider revisionProvider;
@@ -71,6 +64,9 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     @Inject
     private DocumentReplicationSender sender;
 
+    @Inject
+    private DocumentReplicationControllerUtils controllerUtils;
+
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
@@ -80,7 +76,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         // Load the document
         XWikiDocument document = new XWikiDocument(documentReference, documentReference.getLocale());
         try (InputStream stream = message.open()) {
-            importDocument(document, stream);
+            this.loader.importDocument(document, stream);
         } catch (Exception e) {
             throw new ReplicationException("Failed to parse document message to update", e);
         }
@@ -128,17 +124,19 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             throw new ReplicationException("Failed to save document update", e);
         }
 
-        // Get previous database version
-        String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
-        Date currentVersionDate = currentDocument.isNew() ? null : currentDocument.getDate();
+        // Deal with conflict if this instance is allowed to replicate content
+        if (this.controllerUtils.isReplicated(documentReference)) {
+            // Get previous database version
+            String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
+            Date currentVersionDate = currentDocument.isNew() ? null : currentDocument.getDate();
 
-        // Check if the previous version is the expected one
-        if (!Objects.equal(currentVersion, previousVersion)
-            || !Objects.equal(currentVersionDate, previousVersionDate)) {
-            // If not create and save a merged version of the document
-            merge(previousVersion, currentDocument, newDocument, xcontext);
+            // Check if the previous version is the expected one
+            if (!Objects.equal(currentVersion, previousVersion)
+                || !Objects.equal(currentVersionDate, previousVersionDate)) {
+                // If not create and save a merged version of the document
+                merge(previousVersion, currentDocument, newDocument, xcontext);
+            }
         }
-
     }
 
     private void completeUpdate(XWikiDocument document, XWikiContext xcontext) throws ReplicationException
@@ -204,20 +202,6 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             this.logger.error("Failed to send back the corrected complete document for reference [{}]",
                 newDocument.getDocumentReferenceWithLocale(), e);
         }
-    }
-
-    private void importDocument(XWikiDocument document, InputStream stream)
-        throws FilterException, IOException, ComponentLookupException
-    {
-        // Output
-        DocumentInstanceOutputProperties documentProperties = new DocumentInstanceOutputProperties();
-        documentProperties.setDefaultReference(document.getDocumentReferenceWithLocale());
-
-        // Input
-        XARInputProperties xarProperties = new XARInputProperties();
-
-        this.importer.importEntity(XWikiDocument.class, document, new DefaultInputStreamInputSource(stream),
-            xarProperties, documentProperties);
     }
 
     @Override

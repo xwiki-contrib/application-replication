@@ -17,37 +17,35 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity;
+package org.xwiki.contrib.replication.entity.internal;
 
-import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
-import org.xwiki.component.annotation.Role;
+import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.model.reference.DocumentReference;
 
 /**
+ * Various helpers around {@link DocumentReplicationController}.
+ * 
  * @version $Id$
  */
-@Role
-public interface DocumentReplicationController
+@Component(roles = DocumentReplicationControllerUtils.class)
+@Singleton
+public class DocumentReplicationControllerUtils
 {
-    /**
-     * Indicate the list of registered instances this document should be replicated to.
-     * 
-     * @param documentReference the reference of the document about to be replicated
-     * @return the registered instances on which to replicate the document
-     * @throws ReplicationException when failing to get the configuration
-     */
-    List<DocumentReplicationControllerInstance> getReplicationConfiguration(DocumentReference documentReference)
-        throws ReplicationException;
+    @Inject
+    private DocumentReplicationController controller;
 
     /**
-     * Indicate the list of registered instances this document's messages should be relayed to.
-     * 
-     * @param documentReference the reference of the document about to be replicated
-     * @return the registered instances on which to replicate the document
+     * @param reference the reference of the document
+     * @return true if the current instance is configured to directly replicate changes made to the passed document
      * @throws ReplicationException when failing to get the configuration
      */
-    List<DocumentReplicationControllerInstance> getRelayConfiguration(DocumentReference documentReference)
-        throws ReplicationException;
+    public boolean isReplicated(DocumentReference reference) throws ReplicationException
+    {
+        return !this.controller.getReplicationConfiguration(reference).isEmpty();
+    }
 }

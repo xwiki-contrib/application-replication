@@ -1,1 +1,2 @@
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerInstanceConverter
+org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerUtils
