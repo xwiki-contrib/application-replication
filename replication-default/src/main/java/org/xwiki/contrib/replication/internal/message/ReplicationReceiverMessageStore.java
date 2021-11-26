@@ -74,6 +74,9 @@ public class ReplicationReceiverMessageStore extends AbstractReplicationMessageS
         @Override
         public InputStream open() throws IOException
         {
+            // Make sure the folder exist
+            this.dataFile.getParentFile().mkdirs();
+
             return new FileInputStream(this.dataFile);
         }
     }
