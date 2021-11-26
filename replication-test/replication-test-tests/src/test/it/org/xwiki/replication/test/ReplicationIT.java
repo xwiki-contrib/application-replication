@@ -308,13 +308,13 @@ public class ReplicationIT extends AbstractTest
         getUtil().rest().save(page);
         assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
 
-        // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
+        // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
         getUtil().switchExecutor(1);
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
 
-        // ASSERT) The content in XWiki 0 should be the one set in XWiki 2
+        // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
         getUtil().switchExecutor(2);
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
