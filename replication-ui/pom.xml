@@ -31,7 +31,7 @@
   <artifactId>replication-ui</artifactId>
   <name>Replication Application</name>
   <packaging>xar</packaging>
-  <description>Allow relicating pages and other data between different XWiki instances</description>
+  <description>Allow replicating pages and other data between different XWiki instances</description>
 
   <properties>
     <xwiki.extension.category>application</xwiki.extension.category>
