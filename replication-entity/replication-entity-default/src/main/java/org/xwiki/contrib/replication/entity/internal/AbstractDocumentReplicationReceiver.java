@@ -35,7 +35,7 @@ import com.xpn.xwiki.XWikiContext;
 public abstract class AbstractDocumentReplicationReceiver extends AbstractEntityReplicationReceiver
 {
     @Inject
-    protected DocumentReplicationSender documentSender;
+    protected DocumentReplicationRelay documentRelay;
 
     @Override
     protected void receiveEntity(ReplicationReceiverMessage message, EntityReference entityReference,
@@ -54,6 +54,6 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
     protected void relay(ReplicationReceiverMessage message, DocumentReplicationLevel minimumLevel)
         throws ReplicationException
     {
-        this.documentSender.relay(message, minimumLevel);
+        this.documentRelay.relay(message, minimumLevel);
     }
 }

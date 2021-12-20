@@ -129,7 +129,7 @@ public class DocumentReplicationControllerInstanceConverter
             } else {
                 String valueString = valueInstance.toString();
                 if (StringUtils.isNotEmpty(valueString)) {
-                    instance = instances.getInstance(valueInstance.toString());
+                    instance = instances.getInstanceByURI(valueInstance.toString());
                     if (instance == null) {
                         // Not a valid instance
                         return null;
@@ -174,7 +174,7 @@ public class DocumentReplicationControllerInstanceConverter
         // Instance
         ReplicationInstance instance = null;
         if ((index + 1) < value.length()) {
-            instance = instances.getInstance(value.substring(index + 1));
+            instance = instances.getInstanceByURI(value.substring(index + 1));
             if (instance == null) {
                 // Not a valid instance
                 return null;

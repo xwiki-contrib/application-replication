@@ -1,6 +1,7 @@
+org.xwiki.contrib.replication.entity.internal.DefaultDocumentReplicationSender
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationListener
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationMessageTool
-org.xwiki.contrib.replication.entity.internal.DocumentReplicationSender
+org.xwiki.contrib.replication.entity.internal.DocumentReplicationRelay
 org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage
 org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteReplicationMessage

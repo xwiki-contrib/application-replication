@@ -19,7 +19,9 @@
  */
 package org.xwiki.contrib.replication.entity.internal.history;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
@@ -56,14 +58,16 @@ public class DocumentHistoryDeleteReplicationMessage
      * @param documentReference the reference of the document affected by this message
      * @param from the lowest version to delete
      * @param to the highest version to delete
+     * @param metadata custom metadata to add to the message
      */
-    public void initialize(DocumentReference documentReference, String from, String to)
+    public void initialize(DocumentReference documentReference, String from, String to,
+        Map<String, Collection<String>> metadata)
     {
-        initialize(documentReference);
+        initialize(documentReference, metadata);
 
         putMetadata(METADATA_VERSION_FROM, from);
         putMetadata(METADATA_VERSION_TO, to);
-
+        
         this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 

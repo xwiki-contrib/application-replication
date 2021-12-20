@@ -19,7 +19,9 @@
  */
 package org.xwiki.contrib.replication.entity.internal.reference;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -59,10 +61,12 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
     /**
      * @param documentReference the reference of the document to replicate
      * @param creatorReference the reference of the creator of the document
+     * @param metadata custom metadata to add to the message
      */
-    public void initialize(DocumentReference documentReference, DocumentReference creatorReference)
+    public void initialize(DocumentReference documentReference, DocumentReference creatorReference,
+        Map<String, Collection<String>> metadata)
     {
-        super.initialize(documentReference);
+        super.initialize(documentReference, metadata);
 
         putMetadata(DocumentUpdateReplicationMessage.METADATA_CREATOR, creatorReference);
 

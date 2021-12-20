@@ -82,7 +82,7 @@ public class ReplicationInstanceListener extends AbstractEventListener
     public ReplicationInstanceListener()
     {
         super(NAME, new ApplicationReadyEvent(),
-            BaseObjectReference.anyEvents(ReplicationInstanceClassInitializer.CLASS_FULLNAME));
+            BaseObjectReference.anyEvents(StandardReplicationInstanceClassInitializer.CLASS_FULLNAME));
     }
 
     @Override
@@ -122,7 +122,7 @@ public class ReplicationInstanceListener extends AbstractEventListener
 
             if (statusOld == Status.REGISTERED) {
                 String uriOld = store.getURI(xobjectOld);
-                ReplicationInstance oldInstance = this.instances.get().getInstance(uriOld);
+                ReplicationInstance oldInstance = this.instances.get().getInstanceByURI(uriOld);
                 if (oldInstance == null || oldInstance.getStatus() != Status.REGISTERED) {
                     this.observation.notify(new ReplicationInstanceUnregisteredEvent(uriOld),
                         store.toReplicationInstance(xobjectOld));
@@ -145,7 +145,7 @@ public class ReplicationInstanceListener extends AbstractEventListener
         if (xobjectNew != null) {
             String uriNew = store.getURI(xobjectNew);
 
-            ReplicationInstance instanceNew = this.instances.get().getInstance(uriNew);
+            ReplicationInstance instanceNew = this.instances.get().getInstanceByURI(uriNew);
 
             if (instanceNew != null && instanceNew.getStatus() == Status.REGISTERED
                 && (oldInstance == null || !oldInstance.getURI().equals(uriNew))) {

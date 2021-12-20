@@ -63,7 +63,7 @@ public class EntityReplicatioControllerMessage extends AbstractNoContentEntityRe
      */
     public void initialize(EntityReference entityReference, List<DocumentReplicationControllerInstance> configuration)
     {
-        super.initialize(entityReference);
+        super.initialize(entityReference, null);
 
         // Serialize the configuration
         setConfiguration(this.metadata, configuration);

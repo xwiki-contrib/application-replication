@@ -62,7 +62,7 @@ public class ReplicationReceiverMessageStore extends AbstractReplicationMessageS
             super.loadMetadata(metadata);
 
             String instanceURI = (String) metadata.getProperty(PROPERTY_INSTANCE);
-            this.instance = instances.getInstance(instanceURI);
+            this.instance = instances.getInstanceByURI(instanceURI);
         }
 
         @Override
@@ -74,9 +74,6 @@ public class ReplicationReceiverMessageStore extends AbstractReplicationMessageS
         @Override
         public InputStream open() throws IOException
         {
-            // Make sure the folder exist
-            this.dataFile.getParentFile().mkdirs();
-
             return new FileInputStream(this.dataFile);
         }
     }

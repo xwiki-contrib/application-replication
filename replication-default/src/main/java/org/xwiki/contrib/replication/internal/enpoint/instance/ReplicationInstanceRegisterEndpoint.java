@@ -56,7 +56,7 @@ public class ReplicationInstanceRegisterEndpoint extends AbstractReplicationEndp
         String name = reference.getParameterValue(PARAMETER_NAME);
         String uri = reference.getParameterValue(PARAMETER_URI);
 
-        ReplicationInstance instance = this.instances.getInstance(uri);
+        ReplicationInstance instance = this.instances.getInstanceByURI(uri);
 
         if (instance != null) {
             if (instance.getStatus() == Status.REQUESTED) {

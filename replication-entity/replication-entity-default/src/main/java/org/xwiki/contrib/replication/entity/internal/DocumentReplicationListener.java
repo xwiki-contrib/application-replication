@@ -33,7 +33,7 @@ import org.xwiki.bridge.event.DocumentVersionRangeDeletingEvent;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.ObservationContext;
 import org.xwiki.observation.event.Event;
@@ -59,7 +59,7 @@ public class DocumentReplicationListener extends AbstractEventListener
     private static final DocumentVersionRangeDeletingEvent HISTORY_DELETING = new DocumentVersionRangeDeletingEvent();
 
     @Inject
-    private Provider<DocumentReplicationSender> senderProvider;
+    private Provider<DocumentReplicationController> controllerProvider;
 
     @Inject
     private ReplicationContext replicationContext;
@@ -95,19 +95,19 @@ public class DocumentReplicationListener extends AbstractEventListener
         // Send the message
         try {
             if (event instanceof DocumentVersionRangeDeletedEvent) {
-                this.senderProvider.get().sendDocumentHistoryDelete(document.getDocumentReferenceWithLocale(),
+                this.controllerProvider.get().onDocumentHistoryDelete(document,
                     ((DocumentVersionRangeDeletedEvent) event).getFrom(),
                     ((DocumentVersionRangeDeletedEvent) event).getTo());
             } else if (event instanceof DocumentDeletedEvent) {
-                this.senderProvider.get().sendDocumentDelete(document.getDocumentReferenceWithLocale());
+                this.controllerProvider.get().onDocumentDeleted(document.getOriginalDocument());
             } else {
                 // Don't send document update which are the result of an history modification
                 if (!this.observationcontext.isIn(HISTORY_DELETING)) {
-                    // There is no point in sending a message for each update of the instance is only allowed to
-                    // replicate the reference
-                    this.senderProvider.get().sendDocument(document, event instanceof DocumentCreatedEvent,
-                        event instanceof DocumentCreatedEvent ? DocumentReplicationLevel.REFERENCE
-                            : DocumentReplicationLevel.ALL);
+                    if (event instanceof DocumentCreatedEvent) {
+                        this.controllerProvider.get().onDocumentCreated(document);
+                    } else {
+                        this.controllerProvider.get().onDocumentUpdated(document);
+                    }
                 }
             }
         } catch (ReplicationException e) {

@@ -132,7 +132,7 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
             for (LineIterator it = IOUtils.lineIterator(stream, StandardCharsets.UTF_8); it.hasNext();) {
                 String line = it.next();
                 if (StringUtils.isNotBlank(line)) {
-                    ReplicationInstance target = this.instances.getInstance(line);
+                    ReplicationInstance target = this.instances.getInstanceByURI(line);
                     if (target != null) {
                         targets.add(target);
                     }

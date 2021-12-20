@@ -21,8 +21,10 @@ package org.xwiki.contrib.replication.entity.internal.update;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -96,11 +98,12 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
      * @param previousVersion the previous version of the document
      * @param previousVersionDate the date of the previous version of the document
      * @param attachments the attachments content to send
+     * @param metadata custom metadata to add to the message
      */
     public void initialize(DocumentReference documentReference, String version, String previousVersion,
-        Date previousVersionDate, Set<String> attachments)
+        Date previousVersionDate, Set<String> attachments, Map<String, Collection<String>> metadata)
     {
-        initialize(documentReference, version, false);
+        initialize(documentReference, version, false, metadata);
 
         this.attachments = attachments;
 
@@ -116,19 +119,22 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
      * @param documentReference the reference of the document affected by this message
      * @param version the version of the document
      * @param creator the user who created the document
+     * @param metadata custom metadata to add to the message
      */
-    public void initialize(DocumentReference documentReference, DocumentReference creator, String version)
+    public void initialize(DocumentReference documentReference, DocumentReference creator, String version,
+        Map<String, Collection<String>> metadata)
     {
-        initialize(documentReference, version, true);
+        initialize(documentReference, version, true, metadata);
 
         putMetadata(METADATA_CREATOR, creator);
 
         this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 
-    private void initialize(DocumentReference documentReference, String version, boolean complete)
+    private void initialize(DocumentReference documentReference, String version, boolean complete,
+        Map<String, Collection<String>> metadata)
     {
-        super.initialize(documentReference);
+        super.initialize(documentReference, metadata);
 
         this.complete = complete;
 

@@ -29,10 +29,9 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerUtils;
-import org.xwiki.contrib.replication.entity.internal.DocumentReplicationSender;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.store.merge.MergeDocumentResult;
 import org.xwiki.store.merge.MergeManager;
@@ -62,10 +61,10 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     private MergeManager mergeManager;
 
     @Inject
-    private DocumentReplicationSender sender;
+    private DocumentReplicationControllerUtils controllerUtils;
 
     @Inject
-    private DocumentReplicationControllerUtils controllerUtils;
+    private DocumentReplicationController controller;
 
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
@@ -197,7 +196,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
 
         // Send the complete document with updated history to other instances so that they synchronize
         try {
-            this.sender.sendDocument(newDocument, true, DocumentReplicationLevel.ALL);
+            this.controller.sendCompleteDocument(newDocument);
         } catch (ReplicationException e) {
             this.logger.error("Failed to send back the corrected complete document for reference [{}]",
                 newDocument.getDocumentReferenceWithLocale(), e);
@@ -207,6 +206,6 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     @Override
     public void relay(ReplicationReceiverMessage message) throws ReplicationException
     {
-        this.documentSender.relayDocumentUpdate(message);
+        this.documentRelay.relayDocumentUpdate(message);
     }
 }

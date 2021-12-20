@@ -78,6 +78,6 @@ public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicati
     @Override
     public void relay(ReplicationReceiverMessage message) throws ReplicationException
     {
-        this.documentSender.relayDocumentDelete(message);
+        this.documentRelay.relayDocumentDelete(message);
     }
 }

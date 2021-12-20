@@ -86,12 +86,17 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
 
     /**
      * @param entityReference the reference of the document affected by this message
+     * @param extraMetadata custom metadata to add to the message
      */
-    protected void initialize(E entityReference)
+    protected void initialize(E entityReference, Map<String, Collection<String>> extraMetadata)
     {
         this.entityReference = entityReference;
 
         this.metadata = new HashMap<>();
+
+        if (extraMetadata != null) {
+            this.metadata.putAll(extraMetadata);
+        }
 
         // Make sure to use the EntityReference converter (otherwise it won't unserialize to the right type)
         putMetadata(METADATA_REFERENCE, entityReference.getClass() == EntityReference.class ? entityReference

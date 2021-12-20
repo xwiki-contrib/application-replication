@@ -53,7 +53,7 @@ class DocumentReplicationControllerInstanceConverterTest
     @BeforeEach
     void beforeEach() throws ReplicationException
     {
-        when(this.manager.getInstance("uri")).thenReturn(INSTANCE);
+        when(this.manager.getInstanceByURI("uri")).thenReturn(INSTANCE);
     }
 
     @Test

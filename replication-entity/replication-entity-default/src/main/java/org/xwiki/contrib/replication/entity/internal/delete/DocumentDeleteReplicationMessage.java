@@ -19,7 +19,9 @@
  */
 package org.xwiki.contrib.replication.entity.internal.delete;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -59,9 +61,9 @@ public class DocumentDeleteReplicationMessage extends AbstractNoContentEntityRep
     }
 
     @Override
-    public void initialize(DocumentReference documentReference)
+    public void initialize(DocumentReference documentReference, Map<String, Collection<String>> metadata)
     {
-        super.initialize(documentReference);
+        super.initialize(documentReference, metadata);
 
         putMetadata(METADATA_BATCH, this.batchOperation.getCurrentBatchId());
 

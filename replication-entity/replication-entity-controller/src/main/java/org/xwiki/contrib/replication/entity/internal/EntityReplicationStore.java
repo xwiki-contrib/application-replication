@@ -323,7 +323,7 @@ public class EntityReplicationStore
             } else {
                 ReplicationInstance instance;
                 try {
-                    instance = this.instanceManager.getInstance(hibernateInstance.getInstance());
+                    instance = this.instanceManager.getInstanceByURI(hibernateInstance.getInstance());
                 } catch (ReplicationException e) {
                     throw new XWikiException("Failed to access instances", e);
                 }

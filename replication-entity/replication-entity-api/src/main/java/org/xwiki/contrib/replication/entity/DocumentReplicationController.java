@@ -25,6 +25,8 @@ import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.model.reference.DocumentReference;
 
+import com.xpn.xwiki.doc.XWikiDocument;
+
 /**
  * @version $Id$
  */
@@ -50,4 +52,38 @@ public interface DocumentReplicationController
      */
     List<DocumentReplicationControllerInstance> getRelayConfiguration(DocumentReference documentReference)
         throws ReplicationException;
+
+    /**
+     * @param document the created document
+     * @throws ReplicationException when failing to replicate the document creation
+     */
+    void onDocumentCreated(XWikiDocument document) throws ReplicationException;
+
+    /**
+     * @param document the updated document
+     * @throws ReplicationException when failing to replicate the document update
+     */
+    void onDocumentUpdated(XWikiDocument document) throws ReplicationException;
+
+    /**
+     * @param document the deleted document
+     * @throws ReplicationException when failing to replicate the document update
+     */
+    void onDocumentDeleted(XWikiDocument document) throws ReplicationException;
+
+    /**
+     * @param document the document from which version has been deleted
+     * @param from the version from which to start deleting
+     * @param to the version where to stop deleting
+     * @throws ReplicationException when failing to replicate the document history delete
+     */
+    void onDocumentHistoryDelete(XWikiDocument document, String from, String to) throws ReplicationException;
+
+    /**
+     * Force pushing a complete document to allowed instances.
+     * 
+     * @param document the document to send
+     * @throws ReplicationException when failing to replicate the document
+     */
+    void sendCompleteDocument(XWikiDocument document) throws ReplicationException;
 }

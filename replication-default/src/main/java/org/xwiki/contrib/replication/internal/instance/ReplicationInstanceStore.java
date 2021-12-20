@@ -179,7 +179,7 @@ public class ReplicationInstanceStore
      */
     public String getURI(BaseObject instanceObject)
     {
-        return instanceObject.getStringValue(ReplicationInstanceClassInitializer.FIELD_URI);
+        return instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_URI);
     }
 
     /**
@@ -188,7 +188,7 @@ public class ReplicationInstanceStore
      */
     public String getName(BaseObject instanceObject)
     {
-        return instanceObject.getStringValue(ReplicationInstanceClassInitializer.FIELD_NAME);
+        return instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_NAME);
     }
 
     /**
@@ -197,14 +197,14 @@ public class ReplicationInstanceStore
      */
     public Status getStatus(BaseObject instanceObject)
     {
-        String statusString = instanceObject.getStringValue(ReplicationInstanceClassInitializer.FIELD_STATUS);
+        String statusString = instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_STATUS);
 
         return StringUtils.isEmpty(statusString) ? null : Enum.valueOf(Status.class, statusString);
     }
 
     private void setStatus(BaseObject instanceObject, Status status)
     {
-        instanceObject.setStringValue(ReplicationInstanceClassInitializer.FIELD_STATUS, status.name());
+        instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_STATUS, status.name());
     }
 
     /**
@@ -224,10 +224,10 @@ public class ReplicationInstanceStore
 
     private void setReplicationInstance(String name, String uri, Status status, BaseObject instanceObject)
     {
-        instanceObject.setStringValue(ReplicationInstanceClassInitializer.FIELD_NAME, name);
-        instanceObject.setStringValue(ReplicationInstanceClassInitializer.FIELD_URI, uri);
+        instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_NAME, name);
+        instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_URI, uri);
 
-        instanceObject.setStringValue(ReplicationInstanceClassInitializer.FIELD_STATUS,
+        instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_STATUS,
             status != null ? status.name() : "");
     }
 
@@ -239,7 +239,7 @@ public class ReplicationInstanceStore
     {
         return executeInstanceDocument((instancesDocument, xcontext) -> {
             List<BaseObject> instanceObjects =
-                instancesDocument.getXObjects(ReplicationInstanceClassInitializer.CLASS_REFERENCE);
+                instancesDocument.getXObjects(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE);
 
             List<ReplicationInstance> instances = new ArrayList<>(instanceObjects.size());
             for (BaseObject instanceObject : instanceObjects) {
@@ -282,7 +282,7 @@ public class ReplicationInstanceStore
     {
         executeInstanceDocument((instancesDocument, xcontext) -> {
             BaseObject instanceObject =
-                instancesDocument.newXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE, xcontext);
+                instancesDocument.newXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE, xcontext);
 
             setReplicationInstance(instance, instanceObject);
 
@@ -300,8 +300,8 @@ public class ReplicationInstanceStore
     {
         executeInstanceDocument((instancesDocument, xcontext) -> {
             BaseObject objectToDelete =
-                instancesDocument.getXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE,
-                    ReplicationInstanceClassInitializer.FIELD_URI, uri, false);
+                instancesDocument.getXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE,
+                    StandardReplicationInstanceClassInitializer.FIELD_URI, uri, false);
 
             if (objectToDelete != null) {
                 instancesDocument.removeXObject(objectToDelete);
@@ -322,8 +322,8 @@ public class ReplicationInstanceStore
     {
         executeInstanceDocument((instancesDocument, xcontext) -> {
             BaseObject instanceObject =
-                instancesDocument.getXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE,
-                    ReplicationInstanceClassInitializer.FIELD_URI, instance.getURI(), false);
+                instancesDocument.getXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE,
+                    StandardReplicationInstanceClassInitializer.FIELD_URI, instance.getURI(), false);
 
             setStatus(instanceObject, status);
 
@@ -346,8 +346,8 @@ public class ReplicationInstanceStore
     {
         executeInstanceDocument((instancesDocument, xcontext) -> {
             BaseObject instanceObject =
-                instancesDocument.getXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE,
-                    ReplicationInstanceClassInitializer.FIELD_URI, instance.getURI(), false);
+                instancesDocument.getXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE,
+                    StandardReplicationInstanceClassInitializer.FIELD_URI, instance.getURI(), false);
 
             if (instanceObject == null) {
                 throw new ReplicationException("The instance with URI [" + instance.getURI() + "] does not exist");
@@ -370,12 +370,12 @@ public class ReplicationInstanceStore
     {
         executeInstanceDocument((instancesDocument, xcontext) -> {
             BaseObject instanceObject =
-                instancesDocument.getXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE,
-                    ReplicationInstanceClassInitializer.FIELD_STATUS, "", false);
+                instancesDocument.getXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE,
+                    StandardReplicationInstanceClassInitializer.FIELD_STATUS, "", false);
 
             if (instanceObject == null) {
                 instanceObject =
-                    instancesDocument.newXObject(ReplicationInstanceClassInitializer.CLASS_REFERENCE, xcontext);
+                    instancesDocument.newXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE, xcontext);
             }
 
             setReplicationInstance(name, uri, null, instanceObject);

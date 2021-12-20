@@ -49,7 +49,7 @@ public abstract class AbstractReplicationEndpoint implements ReplicationEndpoint
     protected ReplicationInstance validateInstance(String instanceId)
         throws ResourceReferenceHandlerException, ReplicationException
     {
-        ReplicationInstance instance = this.instances.getInstance(instanceId);
+        ReplicationInstance instance = this.instances.getInstanceByURI(instanceId);
         
         if (instance == null || instance.getStatus() != Status.REGISTERED) {
             throw new ResourceReferenceHandlerException(

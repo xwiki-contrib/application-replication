@@ -35,9 +35,11 @@ import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.XWikiException;
+import com.xpn.xwiki.doc.XWikiDocument;
 
 /**
  * Default implementation of {@link DocumentReplicationController}.
@@ -53,6 +55,9 @@ public class DefaultDocumentReplicationController implements DocumentReplication
 
     @Inject
     private ReplicationInstanceManager instanceManager;
+
+    @Inject
+    private DocumentReplicationSender sender;
 
     @Override
     public List<DocumentReplicationControllerInstance> getReplicationConfiguration(DocumentReference documentReference)
@@ -113,5 +118,37 @@ public class DefaultDocumentReplicationController implements DocumentReplication
         }
 
         return filteredInstances;
+    }
+
+    @Override
+    public void onDocumentCreated(XWikiDocument document) throws ReplicationException
+    {
+        this.sender.sendDocument(document, true, null, DocumentReplicationLevel.REFERENCE, null);
+    }
+
+    @Override
+    public void onDocumentUpdated(XWikiDocument document) throws ReplicationException
+    {
+        // There is no point in sending a message for each update if the instance is only allowed to
+        // replicate the reference
+        this.sender.sendDocument(document, false, null, DocumentReplicationLevel.ALL, null);
+    }
+
+    @Override
+    public void onDocumentDeleted(XWikiDocument document) throws ReplicationException
+    {
+        this.sender.sendDocumentDelete(document.getDocumentReferenceWithLocale(), null, null);
+    }
+
+    @Override
+    public void onDocumentHistoryDelete(XWikiDocument document, String from, String to) throws ReplicationException
+    {
+        this.sender.sendDocumentHistoryDelete(document.getDocumentReferenceWithLocale(), from, to, null, null);
+    }
+
+    @Override
+    public void sendCompleteDocument(XWikiDocument document) throws ReplicationException
+    {
+        this.sender.sendDocument(document, true, null, DocumentReplicationLevel.REFERENCE, null);
     }
 }

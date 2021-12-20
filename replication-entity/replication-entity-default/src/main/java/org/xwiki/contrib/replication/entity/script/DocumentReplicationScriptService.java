@@ -30,8 +30,6 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
-import org.xwiki.contrib.replication.entity.internal.DocumentReplicationSender;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.script.service.ScriptService;
 
@@ -51,9 +49,6 @@ public class DocumentReplicationScriptService implements ScriptService
 {
     @Inject
     private DocumentReplicationController controller;
-
-    @Inject
-    private DocumentReplicationSender sender;
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;
@@ -85,6 +80,6 @@ public class DocumentReplicationScriptService implements ScriptService
 
         XWikiDocument document = xcontext.getWiki().getDocument(documentReference, xcontext);
 
-        this.sender.sendDocument(document, true, DocumentReplicationLevel.ALL);
+        this.controller.sendCompleteDocument(document);
     }
 }

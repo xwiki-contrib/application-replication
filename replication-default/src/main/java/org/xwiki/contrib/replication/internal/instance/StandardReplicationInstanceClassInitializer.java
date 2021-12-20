@@ -19,11 +19,15 @@
  */
 package org.xwiki.contrib.replication.internal.instance;
 
+import java.util.List;
+
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
+import org.xwiki.contrib.replication.ReplicationInstanceClassInitializer;
 import org.xwiki.model.reference.LocalDocumentReference;
 
 import com.xpn.xwiki.doc.AbstractMandatoryClassInitializer;
@@ -33,9 +37,9 @@ import com.xpn.xwiki.objects.classes.BaseClass;
  * @version $Id$
  */
 @Component
-@Named(ReplicationInstanceClassInitializer.CLASS_FULLNAME)
+@Named(StandardReplicationInstanceClassInitializer.CLASS_FULLNAME)
 @Singleton
-public class ReplicationInstanceClassInitializer extends AbstractMandatoryClassInitializer
+public class StandardReplicationInstanceClassInitializer extends AbstractMandatoryClassInitializer
 {
     /**
      * The name of the class defining the object which contains a Replication Instance metadata.
@@ -68,10 +72,13 @@ public class ReplicationInstanceClassInitializer extends AbstractMandatoryClassI
      */
     public static final String FIELD_STATUS = "status";
 
+    @Inject
+    private List<ReplicationInstanceClassInitializer> initializers;
+
     /**
      * Default constructor.
      */
-    public ReplicationInstanceClassInitializer()
+    public StandardReplicationInstanceClassInitializer()
     {
         super(CLASS_REFERENCE, "Replication Instance Class");
     }
@@ -91,5 +98,8 @@ public class ReplicationInstanceClassInitializer extends AbstractMandatoryClassI
 
         xclass.addStaticListField(FIELD_STATUS, "Status",
             Status.REGISTERED.name() + '|' + Status.REQUESTED.name() + '|' + Status.REQUESTING.name());
+
+        // Extends the class
+        this.initializers.forEach(i -> i.extendClass(xclass));
     }
 }

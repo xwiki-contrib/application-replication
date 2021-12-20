@@ -19,8 +19,10 @@
  */
 package org.xwiki.contrib.replication.entity.internal;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -32,34 +34,32 @@ import org.apache.commons.collections.CollectionUtils;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
 import org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
-import org.xwiki.contrib.replication.internal.RelayReplicationSender;
 import org.xwiki.model.reference.DocumentReference;
 
+import com.xpn.xwiki.XWikiContext;
+import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiAttachment;
 import com.xpn.xwiki.doc.XWikiDocument;
 
 /**
  * @version $Id$
  */
-@Component(roles = DocumentReplicationSender.class)
+@Component
 @Singleton
-public class DocumentReplicationSender
+public class DefaultDocumentReplicationSender implements DocumentReplicationSender
 {
     @Inject
     private ReplicationSender sender;
-
-    @Inject
-    private RelayReplicationSender relay;
 
     @Inject
     private Provider<DocumentReferenceReplicationMessage> documentReferenceMessageProvider;
@@ -74,33 +74,48 @@ public class DocumentReplicationSender
     private Provider<DocumentHistoryDeleteReplicationMessage> historyMessageProvider;
 
     @Inject
-    private DocumentReplicationController controller;
+    private Provider<DocumentReplicationController> controllerProvider;
 
     @Inject
-    private DocumentReplicationMessageTool documentMessageTool;
+    private Provider<XWikiContext> xcontextProvider;
 
-    /**
-     * @param document the document to send
-     * @param complete true of the complete document should be send (including history and all attachments)
-     * @param minimumLevel the minimum that need to be replicated from the document
-     * @throws ReplicationException when failing to queue the replication message
-     */
-    public void sendDocument(XWikiDocument document, boolean complete, DocumentReplicationLevel minimumLevel)
-        throws ReplicationException
+    @Override
+    public void sendDocument(DocumentReference documentReference, boolean complete,
+        Map<String, Collection<String>> metadata, DocumentReplicationLevel minimumLevel,
+        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
     {
-        List<DocumentReplicationControllerInstance> configurations =
-            this.controller.getReplicationConfiguration(document.getDocumentReference());
+        XWikiContext xcontext = this.xcontextProvider.get();
 
-        // The message to send to instances allowed to receive full document
-        sendDocument(document, complete, DocumentReplicationLevel.ALL, minimumLevel, configurations);
+        XWikiDocument document;
+        try {
+            document = xcontext.getWiki().getDocument(documentReference, xcontext);
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to get the document content", e);
+        }
 
-        // The message to send to instances allowed to receive only the reference
-        sendDocument(document, complete, DocumentReplicationLevel.REFERENCE, minimumLevel, configurations);
+        sendDocument(document, complete, metadata, minimumLevel, configurations);
     }
 
-    private void sendDocument(XWikiDocument document, boolean complete, DocumentReplicationLevel level,
-        DocumentReplicationLevel minimumLevel, List<DocumentReplicationControllerInstance> configurations)
+    @Override
+    public void sendDocument(XWikiDocument document, boolean complete, Map<String, Collection<String>> metadata,
+        DocumentReplicationLevel minimumLevel, Collection<DocumentReplicationControllerInstance> inputConfigurations)
         throws ReplicationException
+    {
+        Collection<DocumentReplicationControllerInstance> configurations = inputConfigurations;
+        if (configurations == null) {
+            configurations = this.controllerProvider.get().getReplicationConfiguration(document.getDocumentReference());
+        }
+
+        // The message to send to instances allowed to receive full document
+        sendDocument(document, complete, metadata, DocumentReplicationLevel.ALL, minimumLevel, configurations);
+
+        // The message to send to instances allowed to receive only the reference
+        sendDocument(document, complete, metadata, DocumentReplicationLevel.REFERENCE, minimumLevel, configurations);
+    }
+
+    private void sendDocument(XWikiDocument document, boolean complete, Map<String, Collection<String>> metadata,
+        DocumentReplicationLevel level, DocumentReplicationLevel minimumLevel,
+        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
     {
         if (level.ordinal() < minimumLevel.ordinal()) {
             // We don't want to send any message for this level of replication
@@ -120,19 +135,19 @@ public class DocumentReplicationSender
             message = this.documentReferenceMessageProvider.get();
 
             ((DocumentReferenceReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
-                document.getCreatorReference());
+                document.getCreatorReference(), metadata);
         } else {
             message = this.documentUpdateMessageProvider.get();
 
             if (complete) {
                 ((DocumentUpdateReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
-                    document.getCreatorReference(), document.getVersion());
+                    document.getCreatorReference(), document.getVersion(), metadata);
             } else {
                 ((DocumentUpdateReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
                     document.getVersion(),
                     document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getVersion(),
                     document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getDate(),
-                    getModifiedAttachments(document));
+                    getModifiedAttachments(document), metadata);
             }
         }
 
@@ -166,125 +181,56 @@ public class DocumentReplicationSender
         return attachments;
     }
 
-    /**
-     * @param documentReference the reference of the document to delete
-     * @throws ReplicationException when failing to queue the replication message
-     */
-    public void sendDocumentDelete(DocumentReference documentReference) throws ReplicationException
+    @Override
+    public void sendDocumentDelete(DocumentReference documentReference, Map<String, Collection<String>> metadata,
+        Collection<DocumentReplicationControllerInstance> inputConfigurations) throws ReplicationException
     {
-        List<ReplicationInstance> instances = getInstances(documentReference, DocumentReplicationLevel.REFERENCE);
+        Collection<DocumentReplicationControllerInstance> configurations = inputConfigurations;
+        if (configurations == null) {
+            configurations = this.controllerProvider.get().getReplicationConfiguration(documentReference);
+        }
+
+        List<ReplicationInstance> instances = getInstancesFrom(DocumentReplicationLevel.REFERENCE, configurations);
 
         DocumentDeleteReplicationMessage message = this.documentDeleteMessageProvider.get();
 
-        message.initialize(documentReference);
+        message.initialize(documentReference, metadata);
 
         this.sender.send(message, instances);
     }
 
-    /**
-     * @param documentReference the reference of the document to send
-     * @param from the lowest version to delete
-     * @param to the highest version to delete
-     * @throws ReplicationException when failing to queue the replication message
-     */
-    public void sendDocumentHistoryDelete(DocumentReference documentReference, String from, String to)
+    @Override
+    public void sendDocumentHistoryDelete(DocumentReference documentReference, String from, String to,
+        Map<String, Collection<String>> metadata, Collection<DocumentReplicationControllerInstance> inputConfigurations)
         throws ReplicationException
     {
+        Collection<DocumentReplicationControllerInstance> configurations = inputConfigurations;
+        if (configurations == null) {
+            configurations = this.controllerProvider.get().getReplicationConfiguration(documentReference);
+        }
+
         // Sending history update only make sense to instance allowed to contains complete documents
-        List<ReplicationInstance> instances = getInstances(documentReference, DocumentReplicationLevel.ALL);
+        List<ReplicationInstance> instances = getInstancesFrom(DocumentReplicationLevel.ALL, configurations);
 
         if (!CollectionUtils.isEmpty(instances)) {
             DocumentHistoryDeleteReplicationMessage message = this.historyMessageProvider.get();
-            message.initialize(documentReference, from, to);
+            message.initialize(documentReference, from, to, metadata);
 
             this.sender.send(message, instances);
         }
     }
 
     private List<ReplicationInstance> getInstances(DocumentReplicationLevel level,
-        List<DocumentReplicationControllerInstance> configurations)
+        Collection<DocumentReplicationControllerInstance> configurations)
     {
         return configurations.stream().filter(c -> c.getLevel() == level)
             .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
     }
 
-    private List<ReplicationInstance> getInstances(DocumentReference reference, DocumentReplicationLevel minimumLevel)
-        throws ReplicationException
+    private List<ReplicationInstance> getInstancesFrom(DocumentReplicationLevel minimumLevel,
+        Collection<DocumentReplicationControllerInstance> configurations)
     {
-        List<DocumentReplicationControllerInstance> configurations =
-            this.controller.getReplicationConfiguration(reference);
-
         return configurations.stream().filter(c -> c.getLevel().ordinal() >= minimumLevel.ordinal())
             .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
-    }
-
-    private List<ReplicationInstance> getRelayInstances(DocumentReference reference,
-        DocumentReplicationLevel minimumLevel) throws ReplicationException
-    {
-        List<DocumentReplicationControllerInstance> instances = this.controller.getRelayConfiguration(reference);
-
-        return instances.stream().filter(i -> i.getLevel().ordinal() >= minimumLevel.ordinal())
-            .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
-    }
-
-    /**
-     * @param message the message to relay
-     * @param minimumLevel the minimum level required to relay the message
-     * @throws ReplicationException when failing to queue the replication message
-     */
-    public void relay(ReplicationReceiverMessage message, DocumentReplicationLevel minimumLevel)
-        throws ReplicationException
-    {
-        // Find the instances allowed to receive the message
-        List<ReplicationInstance> targets =
-            getRelayInstances(this.documentMessageTool.getDocumentReference(message), minimumLevel);
-
-        // Relay the message
-        this.relay.relay(message, targets);
-    }
-
-    /**
-     * @param message the message to relay
-     * @throws ReplicationException when failing to queue the replication message
-     */
-    public void relayDocumentDelete(ReplicationReceiverMessage message) throws ReplicationException
-    {
-        relay(message, DocumentReplicationLevel.REFERENCE);
-    }
-
-    /**
-     * @param message the message to relay
-     * @throws ReplicationException when failing to queue the replication message
-     */
-    public void relayDocumentHistoryDelete(ReplicationReceiverMessage message) throws ReplicationException
-    {
-        relay(message, DocumentReplicationLevel.ALL);
-    }
-
-    /**
-     * @param message the message to relay
-     * @throws ReplicationException when failing to queue the replication message
-     */
-    public void relayDocumentUpdate(ReplicationReceiverMessage message) throws ReplicationException
-    {
-        DocumentReference reference = this.documentMessageTool.getDocumentReference(message);
-
-        List<DocumentReplicationControllerInstance> allInstances = this.controller.getRelayConfiguration(reference);
-
-        // Send the message as is for instances allowed to receive complete updates
-        this.relay.relay(message, getInstances(DocumentReplicationLevel.ALL, allInstances));
-
-        // Strip the message for instances allowed to receive only references
-        if (this.documentMessageTool.isComplete(message)) {
-            List<ReplicationInstance> referenceInstances =
-                this.relay.getRelayedInstances(message, getInstances(DocumentReplicationLevel.REFERENCE, allInstances));
-
-            if (!referenceInstances.isEmpty()) {
-                DocumentReferenceReplicationMessage sendMessage = this.documentReferenceMessageProvider.get();
-                sendMessage.initialize(message);
-
-                this.sender.send(sendMessage, referenceInstances);
-            }
-        }
     }
 }
