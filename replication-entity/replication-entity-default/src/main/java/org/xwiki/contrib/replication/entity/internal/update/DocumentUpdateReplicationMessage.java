@@ -73,11 +73,6 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
      */
     public static final String METADATA_COMPLETE = METADATA_PREFIX + "COMPLETE";
 
-    /**
-     * The name of the metadata containing the creator of the document.
-     */
-    public static final String METADATA_CREATOR = METADATA_PREFIX + "CREATOR";
-
     @Inject
     private Provider<XWikiContext> xcontextProvider;
 

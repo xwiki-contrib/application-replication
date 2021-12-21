@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -86,4 +87,13 @@ public interface DocumentReplicationController
      * @throws ReplicationException when failing to replicate the document
      */
     void sendCompleteDocument(XWikiDocument document) throws ReplicationException;
+
+    /**
+     * Give a chance to the controller to modify the document created for REFERENCE level replication before it's saved.
+     * 
+     * @param document the document to modify
+     * @param message the received message
+     * @return true if the document was modified
+     */
+    boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message);
 }

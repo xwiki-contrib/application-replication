@@ -30,7 +30,6 @@ import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationMessageTool;
-import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
 /**
@@ -68,7 +67,7 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
     {
         super.initialize(documentReference, metadata);
 
-        putMetadata(DocumentUpdateReplicationMessage.METADATA_CREATOR, creatorReference);
+        putMetadata(METADATA_CREATOR, creatorReference);
 
         this.metadata = Collections.unmodifiableMap(this.metadata);
     }
@@ -79,8 +78,8 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
      */
     public void initialize(ReplicationReceiverMessage message) throws InvalidReplicationMessageException
     {
-        initialize(this.documentMessageTool.getDocumentReference(message), this.documentMessageTool.getMetadata(message,
-            DocumentUpdateReplicationMessage.METADATA_CREATOR, true, DocumentReference.class));
+        initialize(this.documentMessageTool.getDocumentReference(message),
+            this.documentMessageTool.getMetadata(message, METADATA_CREATOR, true, DocumentReference.class));
 
         // Relay the source information
         this.id = message.getId();

@@ -32,6 +32,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
@@ -150,5 +151,12 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     public void sendCompleteDocument(XWikiDocument document) throws ReplicationException
     {
         this.sender.sendDocument(document, true, null, DocumentReplicationLevel.REFERENCE, null);
+    }
+
+    @Override
+    public boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message)
+    {
+        // Nothing to do
+        return false;
     }
 }

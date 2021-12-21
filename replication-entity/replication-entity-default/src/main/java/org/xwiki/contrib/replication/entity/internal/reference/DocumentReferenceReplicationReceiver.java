@@ -19,15 +19,16 @@
  */
 package org.xwiki.contrib.replication.entity.internal.reference;
 
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
-import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.rendering.syntax.Syntax;
 
@@ -43,6 +44,9 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Named(DocumentReferenceReplicationMessage.TYPE)
 public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
+    @Inject
+    private DocumentReplicationController controller;
+
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
@@ -52,7 +56,7 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
 
         // Just indicate who created it
         DocumentReference creatorReference = this.documentMessageTool.getMetadata(message,
-            DocumentUpdateReplicationMessage.METADATA_CREATOR, true, DocumentReference.class);
+            DocumentReferenceReplicationMessage.METADATA_CREATOR, true, DocumentReference.class);
         document.setCreatorReference(creatorReference);
         document.setAuthorReference(creatorReference);
         document.setContentAuthorReference(creatorReference);
@@ -63,6 +67,9 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
         document.setContent(
             // TODO: go through an xobject and a sheet instead to keep an empty document content (less impacting)
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+
+        // Ask the controller for modification before save
+        this.controller.receiveREFERENCEDocument(document, message);
 
         // Save the document
         try {

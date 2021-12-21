@@ -68,6 +68,11 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
      */
     public static final String METADATA_CONTEXT_USER = METADATA_PREFIX + "CONTEXT_USER";
 
+    /**
+     * The name of the metadata containing the creator of the document.
+     */
+    public static final String METADATA_CREATOR = METADATA_PREFIX + "CREATOR";
+
     @Inject
     protected ConverterManager converter;
 
