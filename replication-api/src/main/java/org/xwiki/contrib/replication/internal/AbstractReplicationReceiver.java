@@ -19,11 +19,14 @@
  */
 package org.xwiki.contrib.replication.internal;
 
+import java.util.concurrent.CompletableFuture;
+
 import javax.inject.Inject;
 
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 
 /**
  * @version $Id$
@@ -34,8 +37,9 @@ public abstract class AbstractReplicationReceiver implements ReplicationReceiver
     protected RelayReplicationSender relay;
 
     @Override
-    public void relay(ReplicationReceiverMessage message) throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
+        throws ReplicationException
     {
-        this.relay.relay(message);
+        return this.relay.relay(message);
     }
 }

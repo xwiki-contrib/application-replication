@@ -19,6 +19,8 @@
  */
 package org.xwiki.contrib.replication;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.xwiki.component.annotation.Role;
 
 /**
@@ -35,7 +37,8 @@ public interface ReplicationReceiver
 
     /**
      * @param message the message received
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to relay the received data
      */
-    void relay(ReplicationReceiverMessage message) throws ReplicationException;
+    CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message) throws ReplicationException;
 }

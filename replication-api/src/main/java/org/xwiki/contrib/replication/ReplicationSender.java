@@ -20,6 +20,7 @@
 package org.xwiki.contrib.replication;
 
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 
 import org.xwiki.component.annotation.Role;
 
@@ -33,18 +34,21 @@ public interface ReplicationSender
      * Asynchronously send a message to all registered instances.
      * 
      * @param message the data to send
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to queue the replication message
      */
-    void send(ReplicationSenderMessage message) throws ReplicationException;
+    CompletableFuture<ReplicationSenderMessage> send(ReplicationSenderMessage message) throws ReplicationException;
 
     /**
      * Asynchronously send a message to passed instances.
      * 
      * @param message the data to send
      * @param targets the instances to send message to
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to queue the replication message
      */
-    void send(ReplicationSenderMessage message, Collection<ReplicationInstance> targets) throws ReplicationException;
+    CompletableFuture<ReplicationSenderMessage> send(ReplicationSenderMessage message,
+        Collection<ReplicationInstance> targets) throws ReplicationException;
 
     /**
      * Notify the sender that the passed instance sent a ping. Among other things this suggest the sender to force

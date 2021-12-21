@@ -109,6 +109,20 @@ public class ReplicationIT extends AbstractTest
         });
     }
 
+    private PageReplicationAdministrationSectionPage assertReplicationMode(LocalDocumentReference documentReference,
+        String scope, String value) throws InterruptedException
+    {
+        assertEqualsWithTimeout(value, () -> {
+            try {
+                return PageReplicationAdministrationSectionPage.gotoPage(documentReference).getMode(scope);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return new PageReplicationAdministrationSectionPage();
+    }
+
     private WikiReplicationAdministrationSectionPage assertEqualsRequestingInstancesWithTimeout(int requestingInstances)
         throws InterruptedException
     {
@@ -266,14 +280,12 @@ public class ReplicationIT extends AbstractTest
 
         // Make sure the configuration is replicated on instance1
         getUtil().switchExecutor(1);
-        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_FULL);
-        assertEquals("all", replicationPageAdmin.getMode("space"));
+        replicationPageAdmin = assertReplicationMode(REPLICATION_FULL, "space", "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
 
         // Make sure the configuration is replicated on instance2
         getUtil().switchExecutor(2);
-        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_FULL);
-        assertEquals("all", replicationPageAdmin.getMode("space"));
+        replicationPageAdmin = assertReplicationMode(REPLICATION_FULL, "space", "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
 
         ////////////////////////

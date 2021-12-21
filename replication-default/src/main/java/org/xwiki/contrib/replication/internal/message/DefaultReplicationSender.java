@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -54,7 +55,7 @@ import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageSt
  */
 @Component
 @Singleton
-// Make sure the component is disposed at the end in case some data still need saving
+// Make sure the component is disposed at the end in case some message still need saving
 @DisposePriority(10000)
 public class DefaultReplicationSender implements ReplicationSender, Initializable, Disposable
 {
@@ -87,22 +88,26 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
         private final ReplicationSenderMessage message;
 
-        private QueueEntry(ReplicationSenderMessage data, ReplicationInstance target)
+        private final CompletableFuture<ReplicationSenderMessage> future;
+
+        private QueueEntry(ReplicationSenderMessage message, ReplicationInstance target)
         {
-            this(data, Collections.singletonList(target));
+            this(message, Collections.singletonList(target));
         }
 
-        private QueueEntry(ReplicationSenderMessage data, Collection<ReplicationInstance> targets)
+        private QueueEntry(ReplicationSenderMessage message, Collection<ReplicationInstance> targets)
         {
             this.targets = targets;
-            this.message = data;
+            this.message = message;
+
+            this.future = new CompletableFuture<>();
         }
     }
 
     @Override
     public void initialize() throws InitializationException
     {
-        // Create a thread in charge of locally serializing data to send to other instances
+        // Create a thread in charge of locally serializing message to send to other instances
         this.storeThread = new Thread(this::store);
         this.storeThread.setName("Replication serializing");
         this.storeThread.setPriority(Thread.NORM_PRIORITY - 1);
@@ -173,7 +178,7 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
     private void store()
     {
         while (true) {
-            QueueEntry entry;
+            QueueEntry entry = null;
             try {
                 entry = this.storeQueue.take();
 
@@ -182,8 +187,13 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
                     break;
                 }
 
-                syncStore(entry.message, entry.targets);
+                syncStore(entry);
             } catch (InterruptedException e) {
+                // Complete all remaining entries
+                for (QueueEntry remaining : this.storeQueue) {
+                    remaining.future.completeExceptionally(e);
+                }
+
                 this.logger.warn("The replication storing thread has been interrupted");
 
                 // Mark back the thread as interrupted
@@ -192,39 +202,50 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
                 // Stop thread
                 return;
             } catch (Exception e) {
+                if (entry != null) {
+                    entry.future.completeExceptionally(e);
+                }
+
                 this.logger.error("Failed to store the message", e);
             }
         }
     }
 
-    private void syncStore(ReplicationSenderMessage message, Collection<ReplicationInstance> targets)
-        throws ExecutionContextException, ReplicationException
+    private void syncStore(QueueEntry entry) throws ExecutionContextException, ReplicationException
     {
-        // Get the instances to send the data to
-        Collection<ReplicationInstance> finalTargets = targets;
-        if (targets == null) {
-            finalTargets = this.instances.getRegisteredInstances();
+        // Get the instances to send the message to
+        Collection<ReplicationInstance> targets = entry.targets;
+        if (entry.targets == null) {
+            targets = this.instances.getRegisteredInstances();
         }
 
         // Stop there if there is no instance to send the message to
-        if (!finalTargets.isEmpty()) {
+        if (!targets.isEmpty()) {
             // Make sure an ExecutionContext is available
             this.executionContextManager.pushContext(new ExecutionContext(), false);
 
             try {
-                FileReplicationSenderMessage fileMessage = this.store.store(message, finalTargets);
+                FileReplicationSenderMessage fileMessage = this.store.store(entry.message, targets);
+
+                // Notify that the message is stored
+                entry.future.complete(fileMessage);
 
                 // Put the stored message in the sending queue
                 addSend(fileMessage, fileMessage.getTargets());
             } catch (Exception e) {
-                this.logger.error("Failed to store the message with id [" + message.getId() + "] on disk."
+                this.logger.error("Failed to store the message with id [" + entry.message.getId() + "] on disk."
                     + " Might be lost if it cannot be sent to the target instance before next restart.", e);
 
+                // Unlock those waiting for the future even if the message is not really stored
+                entry.future.complete(entry.message);
+
                 // Put the initial message in the sending queue and hope it's reusable
-                addSend(message, finalTargets);
+                addSend(entry.message, targets);
             } finally {
                 this.executionContextManager.popContext();
             }
+        } else {
+            entry.future.complete(entry.message);
         }
     }
 
@@ -267,30 +288,49 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
     }
 
     @Override
-    public void send(ReplicationSenderMessage data) throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> send(ReplicationSenderMessage message)
+        throws ReplicationException
     {
+        QueueEntry entry = new QueueEntry(message, (Collection<ReplicationInstance>) null);
         try {
-            this.storeQueue.put(new QueueEntry(data, (Collection<ReplicationInstance>) null));
+            this.storeQueue.put(entry);
         } catch (InterruptedException e) {
+            entry.future.completeExceptionally(e);
+
             // Mark the thread as interrupted
             this.storeThread.interrupt();
 
-            throw new ReplicationException(String.format("Failed to queue the data [%s]", data), e);
+            throw new ReplicationException(String.format("Failed to queue the message [%s]", message), e);
         }
+
+        return entry.future;
     }
 
     @Override
-    public void send(ReplicationSenderMessage data, Collection<ReplicationInstance> targets) throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> send(ReplicationSenderMessage message,
+        Collection<ReplicationInstance> targets) throws ReplicationException
     {
+        if (targets.isEmpty()) {
+            CompletableFuture<ReplicationSenderMessage> future = new CompletableFuture<>();
+            future.complete(message);
+
+            return future;
+        }
+
+        QueueEntry entry = new QueueEntry(message, targets);
         try {
-            this.storeQueue.put(new QueueEntry(data, targets));
+            this.storeQueue.put(entry);
         } catch (InterruptedException e) {
+            entry.future.completeExceptionally(e);
+
             // Mark the thread as interrupted
             this.storeThread.interrupt();
 
             throw new ReplicationException(
-                String.format("Failed to queue the data [%s] targetting instances %s", data, targets), e);
+                String.format("Failed to queue the message [%s] targetting instances %s", message, targets), e);
         }
+
+        return entry.future;
     }
 
     @Override

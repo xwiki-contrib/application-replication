@@ -19,6 +19,8 @@
  */
 package org.xwiki.contrib.replication.entity.internal.delete;
 
+import java.util.concurrent.CompletableFuture;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -26,6 +28,7 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.refactoring.batch.BatchOperationExecutor;
@@ -76,8 +79,9 @@ public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicati
     }
 
     @Override
-    public void relay(ReplicationReceiverMessage message) throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
+        throws ReplicationException
     {
-        this.documentRelay.relayDocumentDelete(message);
+        return this.documentRelay.relayDocumentDelete(message);
     }
 }

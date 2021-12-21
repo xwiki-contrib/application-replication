@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.entity.internal;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -32,6 +33,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSender;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
@@ -80,49 +82,57 @@ public class DocumentReplicationRelay
     /**
      * @param message the message to relay
      * @param minimumLevel the minimum level required to relay the message
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to queue the replication message
      */
-    public void relay(ReplicationReceiverMessage message, DocumentReplicationLevel minimumLevel)
-        throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel) throws ReplicationException
     {
         // Find the instances allowed to receive the message
         List<ReplicationInstance> targets =
             getRelayInstances(this.documentMessageTool.getDocumentReference(message), minimumLevel);
 
         // Relay the message
-        this.relay.relay(message, targets);
+        return this.relay.relay(message, targets);
     }
 
     /**
      * @param message the message to relay
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to queue the replication message
      */
-    public void relayDocumentDelete(ReplicationReceiverMessage message) throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> relayDocumentDelete(ReplicationReceiverMessage message)
+        throws ReplicationException
     {
-        relay(message, DocumentReplicationLevel.REFERENCE);
+        return relay(message, DocumentReplicationLevel.REFERENCE);
     }
 
     /**
      * @param message the message to relay
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to queue the replication message
      */
-    public void relayDocumentHistoryDelete(ReplicationReceiverMessage message) throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> relayDocumentHistoryDelete(ReplicationReceiverMessage message)
+        throws ReplicationException
     {
-        relay(message, DocumentReplicationLevel.ALL);
+        return relay(message, DocumentReplicationLevel.ALL);
     }
 
     /**
      * @param message the message to relay
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to queue the replication message
      */
-    public void relayDocumentUpdate(ReplicationReceiverMessage message) throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> relayDocumentUpdate(ReplicationReceiverMessage message)
+        throws ReplicationException
     {
         DocumentReference reference = this.documentMessageTool.getDocumentReference(message);
 
         List<DocumentReplicationControllerInstance> allInstances = this.controller.getRelayConfiguration(reference);
 
         // Send the message as is for instances allowed to receive complete updates
-        this.relay.relay(message, getInstances(DocumentReplicationLevel.ALL, allInstances));
+        CompletableFuture<ReplicationSenderMessage> future =
+            this.relay.relay(message, getInstances(DocumentReplicationLevel.ALL, allInstances));
 
         // Strip the message for instances allowed to receive only references
         if (this.documentMessageTool.isComplete(message)) {
@@ -133,8 +143,10 @@ public class DocumentReplicationRelay
                 DocumentReferenceReplicationMessage sendMessage = this.documentReferenceMessageProvider.get();
                 sendMessage.initialize(message);
 
-                this.sender.send(sendMessage, referenceInstances);
+                future = this.sender.send(sendMessage, referenceInstances);
             }
         }
+
+        return future;
     }
 }

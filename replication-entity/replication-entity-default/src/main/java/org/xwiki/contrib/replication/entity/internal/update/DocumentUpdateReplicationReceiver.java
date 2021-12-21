@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.entity.internal.update;
 
 import java.io.InputStream;
 import java.util.Date;
+import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -29,6 +30,7 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerUtils;
@@ -204,8 +206,9 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     }
 
     @Override
-    public void relay(ReplicationReceiverMessage message) throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
+        throws ReplicationException
     {
-        this.documentRelay.relayDocumentUpdate(message);
+        return this.documentRelay.relayDocumentUpdate(message);
     }
 }

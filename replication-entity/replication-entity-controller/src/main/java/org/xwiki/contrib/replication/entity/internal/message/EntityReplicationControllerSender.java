@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -34,6 +35,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSender;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.internal.RelayReplicationSender;
 import org.xwiki.model.reference.EntityReference;
@@ -62,45 +64,61 @@ public class EntityReplicationControllerSender
     /**
      * @param reference the reference of the configured entity
      * @param configuration the replication configuration of the entity
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to send replication configuration to other instances
      */
-    public void send(EntityReference reference, List<DocumentReplicationControllerInstance> configuration)
-        throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> send(EntityReference reference,
+        List<DocumentReplicationControllerInstance> configuration) throws ReplicationException
     {
         // Send the configuration to everyone, each instance will decide what to do with it (including when they are not
         // or not anymore supposed to be part of the replication)
         // TODO: cut this in two different messaging for adding new instance and removing instances ?
         Collection<ReplicationInstance> instances = this.instanceManager.getRegisteredInstances();
 
+        CompletableFuture<ReplicationSenderMessage> future;
         if (!instances.isEmpty()) {
             EntityReplicatioControllerMessage message = this.messageProvider.get();
 
             message.initialize(reference, configuration);
 
-            this.sender.send(message, instances);
+            future = this.sender.send(message, instances);
+        } else {
+            // Nothing to send
+            future = new CompletableFuture<>();
+            future.complete(null);
         }
+
+        return future;
     }
 
     /**
      * @param message the message to relay
      * @param configurations the configuration to send with the relayed message
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to send replication configuration to other instances
      */
-    public void relay(ReplicationReceiverMessage message, List<DocumentReplicationControllerInstance> configurations)
-        throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
+        List<DocumentReplicationControllerInstance> configurations) throws ReplicationException
     {
         // Send the configuration to everyone, each instance will decide what to do with it (including when they are not
         // or not anymore supposed to be part of the replication)
         // TODO: cut this in two different messaging for adding new instance and removing instances ?
         Collection<ReplicationInstance> instances = this.instanceManager.getRegisteredInstances();
 
+        CompletableFuture<ReplicationSenderMessage> future;
         if (!instances.isEmpty()) {
             // Change the configuration in the message
             Map<String, Collection<String>> metadata = new HashMap<>(message.getCustomMetadata());
             EntityReplicatioControllerMessage.setConfiguration(metadata, configurations);
 
             // Send the new message
-            this.relay.relay(message, metadata, instances);
+            future = this.relay.relay(message, metadata, instances);
+        } else {
+            // Nothing to send
+            future = new CompletableFuture<>();
+            future.complete(null);
         }
+
+        return future;
     }
 }

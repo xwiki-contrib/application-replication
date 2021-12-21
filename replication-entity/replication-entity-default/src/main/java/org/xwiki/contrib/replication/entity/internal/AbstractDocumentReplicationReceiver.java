@@ -19,10 +19,13 @@
  */
 package org.xwiki.contrib.replication.entity.internal;
 
+import java.util.concurrent.CompletableFuture;
+
 import javax.inject.Inject;
 
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
@@ -51,9 +54,9 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
     protected abstract void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException;
 
-    protected void relay(ReplicationReceiverMessage message, DocumentReplicationLevel minimumLevel)
-        throws ReplicationException
+    protected CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel) throws ReplicationException
     {
-        this.documentRelay.relay(message, minimumLevel);
+        return this.documentRelay.relay(message, minimumLevel);
     }
 }

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -32,6 +33,7 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.internal.AbstractEntityReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerInstanceConverter;
@@ -160,12 +162,13 @@ public class EntityReplicatioControllerReceiver extends AbstractEntityReplicatio
     }
 
     @Override
-    public void relay(ReplicationReceiverMessage message) throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
+        throws ReplicationException
     {
         // We relay the optimized configuration instead of the source configuration
         List<DocumentReplicationControllerInstance> configurations = optimizeConfiguration(message);
 
         // Relay the configuration
-        this.controlSender.relay(message, configurations);
+        return this.controlSender.relay(message, configurations);
     }
 }

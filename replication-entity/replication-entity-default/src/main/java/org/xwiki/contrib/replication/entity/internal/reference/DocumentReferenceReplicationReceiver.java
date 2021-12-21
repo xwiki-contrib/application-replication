@@ -19,6 +19,8 @@
  */
 package org.xwiki.contrib.replication.entity.internal.reference;
 
+import java.util.concurrent.CompletableFuture;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -26,6 +28,7 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
@@ -80,8 +83,9 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
     }
 
     @Override
-    public void relay(ReplicationReceiverMessage message) throws ReplicationException
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
+        throws ReplicationException
     {
-        relay(message, DocumentReplicationLevel.REFERENCE);
+        return relay(message, DocumentReplicationLevel.REFERENCE);
     }
 }
