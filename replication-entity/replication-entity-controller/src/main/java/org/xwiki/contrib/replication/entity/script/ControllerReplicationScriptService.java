@@ -36,8 +36,10 @@ import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerInstanceConverter;
+import org.xwiki.contrib.replication.entity.internal.EntityReplicationConfigurationUpdater;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationStore;
 import org.xwiki.model.reference.EntityReference;
+import org.xwiki.query.QueryException;
 import org.xwiki.script.service.ScriptService;
 import org.xwiki.security.authorization.AccessDeniedException;
 import org.xwiki.security.authorization.ContextualAuthorizationManager;
@@ -57,6 +59,9 @@ public class ControllerReplicationScriptService implements ScriptService
 {
     @Inject
     private EntityReplicationStore store;
+
+    @Inject
+    private EntityReplicationConfigurationUpdater updater;
 
     @Inject
     private ReplicationInstanceManager instanceManager;
@@ -109,9 +114,10 @@ public class ControllerReplicationScriptService implements ScriptService
      * @throws AccessDeniedException if the current script author does not have the right to use this API
      * @throws XWikiException when failing to save the configuration
      * @throws ReplicationException when failing to get current instance
+     * @throws QueryException when failing to save the configuration
      */
     public void save(EntityReference reference, List<Map<String, Object>> instances)
-        throws AccessDeniedException, XWikiException, ReplicationException
+        throws AccessDeniedException, XWikiException, ReplicationException, QueryException
     {
         this.authorization.checkAccess(Right.PROGRAM);
 
@@ -142,6 +148,7 @@ public class ControllerReplicationScriptService implements ScriptService
             }
         }
 
-        this.store.storeHibernateEntityReplication(reference, configuration);
+        // Save new configuration
+        this.updater.save(reference, configuration);
     }
 }
