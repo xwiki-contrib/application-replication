@@ -116,7 +116,7 @@ public class ReplicationClient implements Initializable
         for (Map.Entry<String, Collection<String>> entry : message.getCustomMetadata().entrySet()) {
             String header = HttpServletRequestReplicationReceiverMessage.HEADER_METADATA_PREFIX + entry.getKey();
 
-            entry.getValue().forEach(v -> httpPut.addHeader(header, v));
+            httpPut.setHeader(header, HTTPUtils.toString(entry.getValue()));
         }
 
         try (CloseableHttpResponse response = this.client.execute(httpPut)) {

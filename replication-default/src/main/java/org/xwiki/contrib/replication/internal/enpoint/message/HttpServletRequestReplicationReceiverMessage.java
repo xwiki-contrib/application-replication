@@ -22,21 +22,19 @@ package org.xwiki.contrib.replication.internal.enpoint.message;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.internal.HTTPUtils;
 
 /**
  * @version $Id$
@@ -69,9 +67,6 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
      * The prefix in frong of all the HTTP headers containing the custom metadata associated to the message.
      */
     public static final String HEADER_METADATA_PREFIX = "X-XWIKI-R-";
-
-    @Inject
-    private ReplicationInstanceManager instances;
 
     // TODO: use it to decrypt values
     private ReplicationInstance instance;
@@ -150,7 +145,7 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
 
             String upperCaseHeaderName = headerName.toUpperCase();
             if (upperCaseHeaderName.startsWith(HEADER_METADATA_PREFIX)) {
-                Collection<String> values = Collections.list(this.request.getHeaders(headerName));
+                Collection<String> values = HTTPUtils.toList(this.request.getHeader(headerName));
 
                 metadatas.put(upperCaseHeaderName.substring(HEADER_METADATA_PREFIX.length()), values);
             }
