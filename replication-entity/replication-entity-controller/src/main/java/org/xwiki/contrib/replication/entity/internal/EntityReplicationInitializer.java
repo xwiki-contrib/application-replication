@@ -19,18 +19,25 @@
  */
 package org.xwiki.contrib.replication.entity.internal;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.component.phase.Initializable;
+import org.xwiki.component.phase.InitializationException;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.event.ApplicationStartedEvent;
 import org.xwiki.observation.event.Event;
 
-import com.xpn.xwiki.store.hibernate.HibernateSessionFactory;
+import com.xpn.xwiki.XWikiContext;
+import com.xpn.xwiki.internal.store.hibernate.HibernateStore;
 import com.xpn.xwiki.util.Util;
 
 /**
@@ -41,10 +48,18 @@ import com.xpn.xwiki.util.Util;
 @Component
 @Named("EntityReplicationInitializer")
 @Singleton
-public class EntityReplicationInitializer extends AbstractEventListener
+public class EntityReplicationInitializer extends AbstractEventListener implements Initializable
 {
     @Inject
-    private HibernateSessionFactory sessionFactory;
+    @Named("readonly")
+    private Provider<XWikiContext> xcontextProvider;
+
+    @Inject
+    // FIXME: don't use private component
+    private HibernateStore store;
+
+    @Inject
+    private Logger logger;
 
     /**
      * Setup the listener.
@@ -57,7 +72,38 @@ public class EntityReplicationInitializer extends AbstractEventListener
     @Override
     public void onEvent(Event event, Object source, Object data)
     {
-        this.sessionFactory.getConfiguration().addInputStream(getMappingFile("replication/entityreplication.hbm.xml"));
+        // Inject the configuration before Hibernate initialization
+        configure();
+    }
+
+    @Override
+    public void initialize() throws InitializationException
+    {
+        // Check if XWiki is currently initializing (in which case the configuration injection will take place when
+        // receiving ApplicationStartedEvent)
+        if (this.xcontextProvider.get() == null) {
+            return;
+        }
+
+        // Check if the Hibernate configuration already been injected
+        if (this.store.getConfigurationMetadata()
+            .getEntityBinding(HibernateEntityReplicationInstance.class.getName()) == null) {
+            // Inject the configuration
+            configure();
+        }
+
+        // Force reload Hibernate configuration
+        // Even if the configuration did not changed the registered class did so it needs to be reloaded
+        this.store.build();
+    }
+
+    private void configure()
+    {
+        try (InputStream stream = getMappingFile("replication/entityreplication.hbm.xml")) {
+            this.store.getConfiguration().addInputStream(stream);
+        } catch (IOException e) {
+            this.logger.warn("Failed to close the stream: {}", ExceptionUtils.getRootCauseMessage(e));
+        }
     }
 
     private InputStream getMappingFile(String mappingFileName)
@@ -73,6 +119,7 @@ public class EntityReplicationInitializer extends AbstractEventListener
         if (resource == null) {
             resource = getClass().getClassLoader().getResourceAsStream(mappingFileName);
         }
+
         return resource;
     }
 }
