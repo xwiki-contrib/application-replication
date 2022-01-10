@@ -94,7 +94,11 @@ public class EntityReplicationInitializer extends AbstractEventListener implemen
 
         // Force reload Hibernate configuration
         // Even if the configuration did not changed the registered class did so it needs to be reloaded
-        this.store.build();
+        try {
+            this.store.build();
+        } catch (Exception e) {
+            this.logger.error("Failed to reload the Hibernate configuration", e);
+        }
     }
 
     private void configure()
