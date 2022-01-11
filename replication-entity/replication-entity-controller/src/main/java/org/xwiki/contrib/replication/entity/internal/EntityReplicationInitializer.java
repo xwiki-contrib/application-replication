@@ -100,7 +100,7 @@ public class EntityReplicationInitializer extends AbstractEventListener implemen
             configure();
         }
 
-        // TODO: remove when upgrading to 13.10.3 or 14.0
+        // TODO: remove when upgrading to >=13.10.3
         if (this.coreExtensions.getCoreExtension("org.xwiki.platform:xwiki-platform-oldcore").getId().getVersion()
             .compareTo(VERSION_131003) >= 0) {
             // Force reload Hibernate configuration
