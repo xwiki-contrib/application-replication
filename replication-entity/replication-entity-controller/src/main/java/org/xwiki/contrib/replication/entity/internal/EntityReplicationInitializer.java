@@ -32,6 +32,9 @@ import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.phase.Initializable;
 import org.xwiki.component.phase.InitializationException;
+import org.xwiki.extension.repository.CoreExtensionRepository;
+import org.xwiki.extension.version.Version;
+import org.xwiki.extension.version.internal.DefaultVersion;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.event.ApplicationStartedEvent;
 import org.xwiki.observation.event.Event;
@@ -50,6 +53,8 @@ import com.xpn.xwiki.util.Util;
 @Singleton
 public class EntityReplicationInitializer extends AbstractEventListener implements Initializable
 {
+    private static final Version VERSION_131003 = new DefaultVersion("13.10.3");
+
     @Inject
     @Named("readonly")
     private Provider<XWikiContext> xcontextProvider;
@@ -57,6 +62,9 @@ public class EntityReplicationInitializer extends AbstractEventListener implemen
     @Inject
     // FIXME: don't use private component
     private HibernateStore store;
+
+    @Inject
+    private CoreExtensionRepository coreExtensions;
 
     @Inject
     private Logger logger;
@@ -92,12 +100,16 @@ public class EntityReplicationInitializer extends AbstractEventListener implemen
             configure();
         }
 
-        // Force reload Hibernate configuration
-        // Even if the configuration did not changed the registered class did so it needs to be reloaded
-        try {
-            this.store.build();
-        } catch (Exception e) {
-            this.logger.error("Failed to reload the Hibernate configuration", e);
+        // TODO: remove when upgrading to 13.10.3 or 14.0
+        if (this.coreExtensions.getCoreExtension("org.xwiki.platform:xwiki-platform-oldcore").getId().getVersion()
+            .compareTo(VERSION_131003) >= 0) {
+            // Force reload Hibernate configuration
+            // Even if the configuration did not changed the registered class did so it needs to be reloaded
+            try {
+                this.store.build();
+            } catch (Exception e) {
+                this.logger.error("Failed to reload the Hibernate configuration", e);
+            }
         }
     }
 
