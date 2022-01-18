@@ -35,14 +35,12 @@ import org.hibernate.Session;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
-import org.xwiki.contrib.replication.entity.internal.message.EntityReplicationControllerSender;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.wiki.descriptor.WikiDescriptorManager;
 import org.xwiki.wiki.manager.WikiManagerException;
@@ -82,12 +80,6 @@ public class EntityReplicationStore
     private WikiDescriptorManager wikis;
 
     @Inject
-    private EntityReplicationControllerSender sender;
-
-    @Inject
-    private ReplicationContext replicationContext;
-
-    @Inject
     private Logger logger;
 
     /**
@@ -105,17 +97,6 @@ public class EntityReplicationStore
 
         // Clear the cache for this entity
         this.cache.remove(entityId);
-
-        // Synchronize configuration with other instances
-        // TODO: move it to a listener
-        if (!this.replicationContext.isReplicationMessage()) {
-            try {
-                this.sender.send(reference, instances);
-            } catch (Exception e) {
-                // TODO: put this in a retry queue
-                this.logger.error("Failed to notify other instances about the replication configuration change", e);
-            }
-        }
     }
 
     private Object storeHibernateEntityReplication(long entityId, List<DocumentReplicationControllerInstance> instances,
@@ -161,7 +142,12 @@ public class EntityReplicationStore
         return null;
     }
 
-    private Collection<DocumentReplicationControllerInstance> resolveControllerInstances(
+    /**
+     * @param instances the stored configuration
+     * @return the resolved configuration
+     * @throws ReplicationException when failing to resolve the configuration
+     */
+    public Map<String, DocumentReplicationControllerInstance> resolveControllerInstancesMap(
         Collection<DocumentReplicationControllerInstance> instances) throws ReplicationException
     {
         if (instances != null) {
@@ -189,11 +175,24 @@ public class EntityReplicationStore
                 }
             }
 
-            return resolvedInstances.values();
+            return resolvedInstances;
         }
 
         // Not configured at this level
         return null;
+    }
+
+    /**
+     * @param instances the stored configuration
+     * @return the resolved configuration
+     * @throws ReplicationException when failing to resolve the configuration
+     */
+    public Collection<DocumentReplicationControllerInstance> resolveControllerInstances(
+        Collection<DocumentReplicationControllerInstance> instances) throws ReplicationException
+    {
+        Map<String, DocumentReplicationControllerInstance> resolvedInstances = resolveControllerInstancesMap(instances);
+
+        return resolvedInstances != null ? resolvedInstances.values() : null;
     }
 
     /**

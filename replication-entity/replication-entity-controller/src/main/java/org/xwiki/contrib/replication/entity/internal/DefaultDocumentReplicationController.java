@@ -113,12 +113,17 @@ public class DefaultDocumentReplicationController implements DocumentReplication
             // Make sure to select only registered instances (in case the configuration is out of sync)
             // Don't relay messages to an instance with higher replication level
             if (instance.getInstance().getStatus() == Status.REGISTERED
-                && currentInstance.getLevel().ordinal() >= instance.getLevel().ordinal()) {
+                && ordinal(currentInstance.getLevel()) >= ordinal(instance.getLevel())) {
                 filteredInstances.add(instance);
             }
         }
 
         return filteredInstances;
+    }
+
+    private int ordinal(DocumentReplicationLevel level)
+    {
+        return level != null ? level.ordinal() : -1;
     }
 
     @Override

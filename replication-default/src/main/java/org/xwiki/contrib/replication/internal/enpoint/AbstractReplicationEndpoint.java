@@ -25,7 +25,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
-import org.xwiki.resource.ResourceReferenceHandlerException;
+import org.xwiki.contrib.replication.UnauthorizedReplicationInstanceException;
 
 /**
  * @version $Id$
@@ -46,14 +46,13 @@ public abstract class AbstractReplicationEndpoint implements ReplicationEndpoint
     @Inject
     protected ReplicationInstanceManager instances;
 
-    protected ReplicationInstance validateInstance(String instanceId)
-        throws ResourceReferenceHandlerException, ReplicationException
+    protected ReplicationInstance validateInstance(String instanceId) throws ReplicationException
     {
         ReplicationInstance instance = this.instances.getInstanceByURI(instanceId);
-        
+
         if (instance == null || instance.getStatus() != Status.REGISTERED) {
-            throw new ResourceReferenceHandlerException(
-                "The instance with id [" + instanceId + "] is not authorized to send replication data");
+            throw new UnauthorizedReplicationInstanceException(
+                "The instance with id [" + instanceId + "] is not authorized to send replication messages");
         }
 
         // Validate the key
