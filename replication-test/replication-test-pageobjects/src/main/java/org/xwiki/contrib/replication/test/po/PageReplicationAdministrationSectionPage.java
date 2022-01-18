@@ -44,8 +44,10 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
 
     public static PageReplicationAdministrationSectionPage gotoPage(EntityReference reference)
     {
-        getUtil().gotoPage(new EntityReference("WebPreferences", EntityType.SPACE, reference.getParent()), "admin",
-            "section=Replication");
+        getUtil().gotoPage(
+            new EntityReference("WebPreferences", EntityType.SPACE,
+                reference.getType() == EntityType.DOCUMENT ? reference.getParent() : reference),
+            "admin", "section=Replication");
 
         return new PageReplicationAdministrationSectionPage();
     }
@@ -105,7 +107,7 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
 
         // Set the level
         Select levelSelect = new Select(getDriver().findElement(By.id(scope + "_replication_instance_level")));
-        levelSelect.selectByValue(StringUtils.capitalize(level.name()));
+        levelSelect.selectByValue(level != null ? StringUtils.capitalize(level.name()) : "");
     }
 
     public void setSpaceLevel(int index, DocumentReplicationLevel level)

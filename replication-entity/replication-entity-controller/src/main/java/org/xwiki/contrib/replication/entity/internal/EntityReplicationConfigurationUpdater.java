@@ -54,7 +54,7 @@ import com.xpn.xwiki.doc.XWikiDocument;
  * 
  * @version $Id$
  */
-@Component(roles = EntityReplicationCache.class)
+@Component(roles = EntityReplicationConfigurationUpdater.class)
 @Singleton
 public class EntityReplicationConfigurationUpdater
 {
@@ -126,26 +126,69 @@ public class EntityReplicationConfigurationUpdater
         sendAddMessages(documentsToUpdate, newInstances, xcontext);
     }
 
+    private DocumentReplicationControllerInstance get(Map<String, DocumentReplicationControllerInstance> configurations,
+        String uri)
+    {
+        if (configurations != null) {
+            DocumentReplicationControllerInstance configuration = configurations.get(uri);
+
+            if (configuration != null && configuration.getLevel() != null) {
+                return configuration;
+            }
+        }
+
+        return null;
+    }
+
     private void diff(Map<String, DocumentReplicationControllerInstance> preConfigurations,
         Map<String, DocumentReplicationControllerInstance> postConfigurations,
         List<DocumentReplicationControllerInstance> newInstances,
         List<DocumentReplicationControllerInstance> removedInstances)
     {
-        for (DocumentReplicationControllerInstance preConfiguration : preConfigurations.values()) {
-            DocumentReplicationControllerInstance postConfiguration =
-                postConfigurations.get(preConfiguration.getInstance().getURI());
+        if (preConfigurations != null) {
+            diffPre(preConfigurations, postConfigurations, newInstances, removedInstances);
+        }
 
-            if (preConfiguration.getLevel() == null) {
-                if (postConfiguration != null && postConfiguration.getLevel() != null) {
-                    // A new instance configuration was added
-                    newInstances.add(postConfiguration);
-                }
-            } else {
-                if (postConfiguration == null || postConfiguration.getLevel() == null) {
+        if (postConfigurations != null) {
+            diffPost(preConfigurations, postConfigurations, newInstances, removedInstances);
+        }
+    }
+
+    private void diffPre(Map<String, DocumentReplicationControllerInstance> preConfigurations,
+        Map<String, DocumentReplicationControllerInstance> postConfigurations,
+        List<DocumentReplicationControllerInstance> newInstances,
+        List<DocumentReplicationControllerInstance> removedInstances)
+    {
+        for (DocumentReplicationControllerInstance preConfiguration : preConfigurations.values()) {
+            // Skip current instance
+            if (preConfiguration.getInstance().getStatus() != null && preConfiguration.getLevel() != null) {
+                DocumentReplicationControllerInstance postConfiguration =
+                    get(postConfigurations, preConfiguration.getInstance().getURI());
+
+                if (postConfiguration == null) {
                     // An instance configuration was removed
                     removedInstances.add(preConfiguration);
                 } else if (postConfiguration.getLevel() != preConfiguration.getLevel()) {
                     // An instance configuration level changed
+                    newInstances.add(postConfiguration);
+                }
+            }
+        }
+    }
+
+    private void diffPost(Map<String, DocumentReplicationControllerInstance> preConfigurations,
+        Map<String, DocumentReplicationControllerInstance> postConfigurations,
+        List<DocumentReplicationControllerInstance> newInstances,
+        List<DocumentReplicationControllerInstance> removedInstances)
+    {
+        for (DocumentReplicationControllerInstance postConfiguration : postConfigurations.values()) {
+            // Skip current instance
+            if (postConfiguration.getInstance().getStatus() != null && postConfiguration.getLevel() != null) {
+                DocumentReplicationControllerInstance preConfiguration =
+                    get(preConfigurations, postConfiguration.getInstance().getURI());
+
+                if (preConfiguration == null) {
+                    // A new instance configuration was added
                     newInstances.add(postConfiguration);
                 }
             }

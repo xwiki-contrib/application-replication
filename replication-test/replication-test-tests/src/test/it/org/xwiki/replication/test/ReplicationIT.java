@@ -33,6 +33,8 @@ import org.xwiki.contrib.replication.test.po.RegisteredInstancePane;
 import org.xwiki.contrib.replication.test.po.RequestedInstancePane;
 import org.xwiki.contrib.replication.test.po.RequestingInstancePane;
 import org.xwiki.contrib.replication.test.po.WikiReplicationAdministrationSectionPage;
+import org.xwiki.model.EntityType;
+import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.LocalDocumentReference;
 import org.xwiki.rest.model.jaxb.History;
 import org.xwiki.rest.model.jaxb.HistorySummary;
@@ -52,10 +54,10 @@ import static org.junit.Assert.fail;
  */
 public class ReplicationIT extends AbstractTest
 {
-    private static final LocalDocumentReference REPLICATION_FULL =
-        new LocalDocumentReference("ReplicationFULL", "WebHome");
+    private static final LocalDocumentReference REPLICATION_ALL =
+        new LocalDocumentReference("ReplicationALL", "WebHome");
 
-    private static final LocalDocumentReference REPLICATION_EMPTY =
+    private static final LocalDocumentReference REPLICATION_REFERENCE =
         new LocalDocumentReference("ReplicationREFERENCE", "WebHome");
 
     private <T> void assertEqualsWithTimeout(T expected, Supplier<T> supplier) throws InterruptedException
@@ -194,6 +196,9 @@ public class ReplicationIT extends AbstractTest
 
         // Reference replication
         replicateEmpty();
+
+        // Replication reaction to configuration change
+        changeController();
     }
 
     private void instances() throws InterruptedException
@@ -270,22 +275,22 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////
         // FULL replication
 
-        // Configure ReplicationFULL space replication on instance0
+        // Configure ReplicationALL space replication on instance0
         getUtil().switchExecutor(0);
         PageReplicationAdministrationSectionPage replicationPageAdmin =
-            PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_FULL);
+            PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_ALL);
         replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.ALL);
         // Save replication configuration
         replicationPageAdmin.save();
 
         // Make sure the configuration is replicated on instance1
         getUtil().switchExecutor(1);
-        replicationPageAdmin = assertReplicationMode(REPLICATION_FULL, "space", "all");
+        replicationPageAdmin = assertReplicationMode(REPLICATION_ALL, "space", "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
 
         // Make sure the configuration is replicated on instance2
         getUtil().switchExecutor(2);
-        replicationPageAdmin = assertReplicationMode(REPLICATION_FULL, "space", "all");
+        replicationPageAdmin = assertReplicationMode(REPLICATION_ALL, "space", "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
 
         ////////////////////////
@@ -293,7 +298,7 @@ public class ReplicationIT extends AbstractTest
 
         // Configure ReplicationREFERENCE space replication on instance0
         getUtil().switchExecutor(0);
-        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_EMPTY);
+        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_REFERENCE);
         replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.REFERENCE);
         // Save replication configuration
         replicationPageAdmin.save();
@@ -302,7 +307,7 @@ public class ReplicationIT extends AbstractTest
     private void replicateFull() throws Exception
     {
         Page page = new Page();
-        page.setSpace(REPLICATION_FULL.getParent().getName());
+        page.setSpace(REPLICATION_ALL.getParent().getName());
         page.setName("ReplicatedPage");
 
         LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
@@ -510,7 +515,7 @@ public class ReplicationIT extends AbstractTest
     private void replicateEmpty() throws Exception
     {
         Page page = new Page();
-        page.setSpace(REPLICATION_EMPTY.getParent().getName());
+        page.setSpace(REPLICATION_REFERENCE.getParent().getName());
         page.setName("ReplicatedPage");
 
         LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
@@ -581,5 +586,110 @@ public class ReplicationIT extends AbstractTest
         assertDoesNotExistWithTimeout(documentReference);
 
         // TODO: ASSERT) The deleted document has the expected id
+    }
+
+    private void setConfiguration(EntityReference reference, DocumentReplicationLevel level)
+    {
+        PageReplicationAdministrationSectionPage replicationPageAdmin =
+            PageReplicationAdministrationSectionPage.gotoPage(reference);
+
+        if (reference.getType() == EntityType.SPACE) {
+            replicationPageAdmin.setSpaceLevel(level);
+        } else {
+            replicationPageAdmin.setDocumentLevel(level);
+        }
+
+        replicationPageAdmin.save();
+    }
+
+    private void changeController() throws Exception
+    {
+        EntityReference page1Space = new EntityReference("page1", EntityType.SPACE);
+        LocalDocumentReference page1 = new LocalDocumentReference("WebHome", page1Space);
+        EntityReference page1_1Space = new EntityReference("page1_1", EntityType.SPACE, page1Space);
+        LocalDocumentReference page1_1 = new LocalDocumentReference("WebHome", page1_1Space);
+        LocalDocumentReference page1_1_1 =
+            new LocalDocumentReference("WebHome", new EntityReference("page1_1_1", EntityType.SPACE, page1_1Space));
+        LocalDocumentReference page1_2 =
+            new LocalDocumentReference("WebHome", new EntityReference("page1_2", EntityType.SPACE, page1Space));
+        EntityReference page2Space = new EntityReference("page1", EntityType.SPACE);
+        LocalDocumentReference page2 = new LocalDocumentReference("WebHome", page2Space);
+        LocalDocumentReference page2_1 =
+            new LocalDocumentReference("WebHome", new EntityReference("page2_1", EntityType.SPACE, page1Space));
+        LocalDocumentReference page2_2 =
+            new LocalDocumentReference("WebHome", new EntityReference("page2_2", EntityType.SPACE, page1Space));
+
+        getUtil().rest().savePage(page1, "content1", "");
+        getUtil().rest().savePage(page1_1, "content1_1", "");
+        getUtil().rest().savePage(page1_1_1, "content1_1_1", "");
+        getUtil().rest().savePage(page1_2, "content1_2", "");
+        getUtil().rest().savePage(page2, "content2", "");
+        getUtil().rest().savePage(page2_1, "content2_1", "");
+        getUtil().rest().savePage(page2_2, "content2_2", "");
+
+        ////////////////////////////////////
+        // Start ALL replication of page1.page1_1.WebHome
+        ////////////////////////////////////
+
+        // Set replication configuration
+        getUtil().switchExecutor(1);
+        setConfiguration(page1_1, DocumentReplicationLevel.ALL);
+
+        // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
+        getUtil().switchExecutor(0);
+        assertEqualsContentWithTimeout(page1_1, "content1_1");
+        assertDoesNotExistWithTimeout(page1_1_1);
+        // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
+        getUtil().switchExecutor(2);
+        assertEqualsContentWithTimeout(page1_1, "content1_1");
+        assertDoesNotExistWithTimeout(page1_1_1);
+
+        ////////////////////////////////////
+        // Switch to REFERENCE replication of page1.page1_1.WebHome
+        ////////////////////////////////////
+
+        // Set replication configuration
+        getUtil().switchExecutor(1);
+        setConfiguration(page1_1, DocumentReplicationLevel.REFERENCE);
+
+        // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
+        getUtil().switchExecutor(0);
+        assertEqualsContentWithTimeout(page1_1,
+            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+        assertDoesNotExistWithTimeout(page1_1_1);
+        // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
+        getUtil().switchExecutor(2);
+        assertEqualsContentWithTimeout(page1_1,
+            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+        assertDoesNotExistWithTimeout(page1_1_1);
+
+        ////////////////////////////////////
+        // STOP replication of page1_1 with all
+        ////////////////////////////////////
+
+        // Set replication configuration
+        getUtil().switchExecutor(1);
+        setConfiguration(page1_1, null);
+
+        // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
+        getUtil().switchExecutor(0);
+        assertDoesNotExistWithTimeout(page1_1);
+        assertDoesNotExistWithTimeout(page1_1_1);
+        // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
+        getUtil().switchExecutor(2);
+        assertDoesNotExistWithTimeout(page1_1);
+        assertDoesNotExistWithTimeout(page1_1_1);
+
+        ////////////////////////////////////
+        // Start REFERENCE replication of page1
+        ////////////////////////////////////
+
+        ////////////////////////////////////
+        // DOCUMENT: Change replication ALL -> REFERENCE
+        ////////////////////////////////////
+
+        ////////////////////////////////////
+        // DOCUMENT: Change replication REFERENCE -> ALL
+        ////////////////////////////////////
     }
 }
