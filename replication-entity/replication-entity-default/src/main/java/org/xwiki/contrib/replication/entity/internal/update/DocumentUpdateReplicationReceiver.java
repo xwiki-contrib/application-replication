@@ -31,19 +31,14 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerUtils;
 import org.xwiki.model.reference.DocumentReference;
-import org.xwiki.store.merge.MergeDocumentResult;
-import org.xwiki.store.merge.MergeManager;
 
 import com.google.common.base.Objects;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
-import com.xpn.xwiki.doc.DocumentRevisionProvider;
 import com.xpn.xwiki.doc.XWikiDocument;
-import com.xpn.xwiki.doc.merge.MergeConfiguration;
 
 /**
  * @version $Id$
@@ -57,16 +52,10 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     private DocumentUpdateLoaded loader;
 
     @Inject
-    private DocumentRevisionProvider revisionProvider;
-
-    @Inject
-    private MergeManager mergeManager;
-
-    @Inject
     private DocumentReplicationControllerUtils controllerUtils;
 
     @Inject
-    private DocumentReplicationController controller;
+    private DocumentUpdateConflictResolver conflictResolver;
 
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
@@ -135,7 +124,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             if (!Objects.equal(currentVersion, previousVersion)
                 || !Objects.equal(currentVersionDate, previousVersionDate)) {
                 // If not create and save a merged version of the document
-                merge(previousVersion, currentDocument, newDocument, xcontext);
+                this.conflictResolver.merge(previousVersion, currentDocument, newDocument, xcontext);
             }
         }
     }
@@ -153,55 +142,6 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             xcontext.getWiki().saveDocument(document, document.getComment(), document.isMinorEdit(), xcontext);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to save complete document", e);
-        }
-    }
-
-    private void merge(String previousVersion, XWikiDocument currentDocument, XWikiDocument newDocument,
-        XWikiContext xcontext)
-    {
-        // Get expected previous version from the history
-        XWikiDocument previousDocument;
-        if (previousVersion == null) {
-            // Previous version is an empty document
-            previousDocument = new XWikiDocument(newDocument.getDocumentReference(), newDocument.getLocale());
-        } else {
-            try {
-                previousDocument =
-                    this.revisionProvider.getRevision(newDocument.getDocumentReferenceWithLocale(), previousVersion);
-            } catch (XWikiException e) {
-                this.logger.error("Failed to access the expected previous version", e);
-
-                return;
-            }
-            // If the previous version does not exist anymore don't merge
-            if (previousDocument == null) {
-                return;
-            }
-        }
-
-        // Remember last version
-        String newVersion = newDocument.getVersion();
-
-        // Execute the merge
-        MergeDocumentResult mergeResult =
-            this.mergeManager.mergeDocument(previousDocument, currentDocument, newDocument, new MergeConfiguration());
-
-        // Save the merged version if anything changed
-        if (mergeResult.isModified()) {
-            try {
-                xcontext.getWiki().saveDocument(newDocument,
-                    "Merge [" + currentDocument.getVersion() + "] and [" + newVersion + "] versions", true, xcontext);
-            } catch (XWikiException e) {
-                this.logger.error("Failed to save merged document", e);
-            }
-        }
-
-        // Send the complete document with updated history to other instances so that they synchronize
-        try {
-            this.controller.sendCompleteDocument(newDocument);
-        } catch (ReplicationException e) {
-            this.logger.error("Failed to send back the corrected complete document for reference [{}]",
-                newDocument.getDocumentReferenceWithLocale(), e);
         }
     }
 
