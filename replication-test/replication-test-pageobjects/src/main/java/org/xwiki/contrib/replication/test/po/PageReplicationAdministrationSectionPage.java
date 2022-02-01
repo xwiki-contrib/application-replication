@@ -54,28 +54,35 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
 
     public DocumentReplicationLevel getSpaceLevel()
     {
-        return getLevel("space");
-    }
-
-    public void setSpaceLevel(DocumentReplicationLevel level)
-    {
-        setLevel("space", level);
+        return getLevel("space", null);
     }
 
     public DocumentReplicationLevel getDocumentLevel()
     {
-        return getLevel("document");
+        return getLevel("document", null);
     }
 
-    public void setDocumentLevel(DocumentReplicationLevel level)
+    private String getOptionId(String scope, boolean single)
     {
-        setLevel("document", level);
+        return scope + "_replication_instance_type_" + (single ? "single" : "all");
     }
 
-    private DocumentReplicationLevel getLevel(String scope)
+    private Select getLevelSelect(String scope, String instance)
+    {
+        WebElement levelElement;
+        if (instance == null) {
+            levelElement = getDriver().findElement(By.id(scope + "_replication_instance_level"));
+        } else {
+            levelElement = getDriver().findElement(By.xpath("//fieldset[input[@id=\"" + getOptionId(scope, instance != null)
+                + "\"]]//dd[input[@value=\"" + instance + "\"]]/select"));
+        }
+        return new Select(levelElement);
+    }
+
+    private DocumentReplicationLevel getLevel(String scope, String instance)
     {
         // Set the level
-        Select levelSelect = new Select(getDriver().findElement(By.id(scope + "_replication_instance_level")));
+        Select levelSelect = getLevelSelect(scope, instance);
         String value = levelSelect.getFirstSelectedOption().getAttribute("value");
         return StringUtils.isEmpty(value) ? null : DocumentReplicationLevel.valueOf(value);
     }
@@ -87,12 +94,12 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
             return "default";
         }
 
-        element = getDriver().findElement(By.id(scope + "_replication_instance_type_all"));
+        element = getDriver().findElement(By.id(getOptionId(scope, false)));
         if (element.isSelected()) {
             return "all";
         }
 
-        element = getDriver().findElement(By.id(scope + "_replication_instance_type_single"));
+        element = getDriver().findElement(By.id(getOptionId(scope, true)));
         if (element.isSelected()) {
             return "single";
         }
@@ -100,34 +107,34 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         return null;
     }
 
-    private void setLevel(String scope, DocumentReplicationLevel level)
+    public void setSpaceLevel(DocumentReplicationLevel level)
     {
-        // Make sure "All instances" option is selected
-        getDriver().findElement(By.id(scope + "_replication_instance_type_all")).click();
+        setLevel("space", null, level);
+    }
+
+    public void setDocumentLevel(DocumentReplicationLevel level)
+    {
+        setLevel("document", null, level);
+    }
+
+    public void setSpaceLevel(String instance, DocumentReplicationLevel level)
+    {
+        setLevel("space", instance, level);
+    }
+
+    public void setDocumentLevel(String instance, DocumentReplicationLevel level)
+    {
+        setLevel("document", instance, level);
+    }
+
+    private void setLevel(String scope, String instance, DocumentReplicationLevel level)
+    {
+        // Make sure the right option is selected
+        getDriver().findElement(By.id(getOptionId(scope, instance != null))).click();
 
         // Set the level
-        Select levelSelect = new Select(getDriver().findElement(By.id(scope + "_replication_instance_level")));
+        Select levelSelect = getLevelSelect(scope, instance);
         levelSelect.selectByValue(level != null ? StringUtils.capitalize(level.name()) : "");
-    }
-
-    public void setSpaceLevel(int index, DocumentReplicationLevel level)
-    {
-        setLevel("space", index, level);
-    }
-
-    public void setDocumentLevel(int index, DocumentReplicationLevel level)
-    {
-        setLevel("document", index, level);
-    }
-
-    private void setLevel(String scope, int index, DocumentReplicationLevel level)
-    {
-        // Make sure "All instances" option is selected
-        getDriver().findElement(By.id("space_replication_instance_type_single")).click();
-
-        // Set the level
-        Select levelSelect = new Select(getDriver().findElement(By.id(scope + "_replication_instance_level_" + index)));
-        levelSelect.selectByVisibleText(StringUtils.capitalize(level.name().toLowerCase()));
     }
 
     public void save()
