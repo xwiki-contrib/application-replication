@@ -253,7 +253,7 @@ public class EntityReplicationConfigurationUpdater
         for (SpaceReference space : spaces) {
             if (this.store.getHibernateEntityReplication(space) == null) {
                 // The space does not have any specific configuration
-                resolveDocuments(reference, documentsToUpdate);
+                resolveDocuments(space, documentsToUpdate);
             }
         }
 
