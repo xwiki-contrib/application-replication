@@ -20,7 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 -->
 
-<xwikidoc version="1.4" reference="XWiki.Replication.PageAdmin" locale="">
+<xwikidoc version="1.5" reference="XWiki.Replication.PageAdmin" locale="">
   <web>XWiki.Replication</web>
   <name>PageAdmin</name>
   <language/>
@@ -37,8 +37,14 @@
   <syntaxId>xwiki/2.1</syntaxId>
   <hidden>true</hidden>
   <content>{{velocity}}
+#if (!$replicationDocument)
+  #set ($replicationDocument = $doc.getDocumentReference())
+#end
 #set ($instances = $services.replication.getRegisteredInstances())
-#if (!$instances.isEmpty())
+#if ($instances.isEmpty())
+   #set ($wikiAdminURL = $xwiki.getURL('XWiki.XWikiPreferences', 'admin', $escapetool.url({'section' : 'Replication'})))
+  [[{{translation key="replication.admin.noinstance"/}}&gt;&gt;path:$wikiAdminURL]]
+#else
   #if ($request.replication_send)
     ## TODO: send all translations too
     #set ($void = $services.replication.document.replicateCompleteDocument($replicationDocument.documentReferenceWithLocale))
@@ -57,17 +63,15 @@
         &lt;/form&gt;
       {{/html}}
     #end
+  #else
+    {{translation key="replication.admin.page.notreplicated"/}}
   #end
   ## More
   #set ($uixs = $services.uix.getExtensions('replication.admin.page'))
   #if (!$uixs.isEmpty())
     ----
 
-    {{html}}
-      #foreach ($uix in $uixs)
-        $services.rendering.render($uix.execute(), 'html/5.0')
-      #end
-    {{/html}}
+    {{uiextensions extensionPoint="replication.admin.page"/}}
   #end
 #end
 {{/velocity}}</content>
