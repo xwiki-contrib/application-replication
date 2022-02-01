@@ -264,6 +264,10 @@ public class EntityReplicationStore
     public Collection<DocumentReplicationControllerInstance> getHibernateEntityReplication(EntityReference reference)
         throws XWikiException
     {
+        if (reference == null) {
+            return null;
+        }
+
         long entityId = this.cache.toEntityId(reference);
         String cacheKey = this.cache.toCacheKey(entityId);
 
