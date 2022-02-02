@@ -31,6 +31,7 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.notification.ReplicationDocumentConflictEvent;
+import org.xwiki.logging.LogLevel;
 import org.xwiki.observation.ObservationManager;
 import org.xwiki.store.merge.MergeDocumentResult;
 import org.xwiki.store.merge.MergeManager;
@@ -121,7 +122,28 @@ public class DocumentUpdateConflictResolver
             }
         }
 
-        // Find all authors involved
+        // Send the complete document with updated history to other instances so that they synchronize
+        try {
+            this.controller.sendCompleteDocument(newDocument);
+        } catch (ReplicationException e) {
+            this.logger.error("Failed to send back the corrected complete document for reference [{}]",
+                newDocument.getDocumentReferenceWithLocale(), e);
+        }
+
+        // Notify involved authors about the conflict resolution but only if the merge had a real conflict
+        if (mergeResult.getLog().hasLogLevel(LogLevel.ERROR)) {
+            // Find all authors involved
+            Set<String> authors = findAuthors(previousDocument, currentDocument, newDocument, xcontext);
+
+            this.observation.notify(
+                new ReplicationDocumentConflictEvent(newDocument.getDocumentReferenceWithLocale(), authors),
+                "replication", newDocument);
+        }
+    }
+
+    private Set<String> findAuthors(XWikiDocument previousDocument, XWikiDocument currentDocument,
+        XWikiDocument newDocument, XWikiContext xcontext) throws ReplicationException
+    {
         Set<String> authors = new HashSet<>();
         Collection<XWikiRCSNodeInfo> nodes;
         try {
@@ -136,17 +158,6 @@ public class DocumentUpdateConflictResolver
             authors.add(this.userSerializer.serialize(authorReference));
         }
 
-        // Send the complete document with updated history to other instances so that they synchronize
-        try {
-            this.controller.sendCompleteDocument(newDocument);
-        } catch (ReplicationException e) {
-            this.logger.error("Failed to send back the corrected complete document for reference [{}]",
-                newDocument.getDocumentReferenceWithLocale(), e);
-        }
-
-        // Notify involved authors about the conflict resolution
-        this.observation.notify(
-            new ReplicationDocumentConflictEvent(newDocument.getDocumentReferenceWithLocale(), authors), "replication",
-            newDocument);
+        return authors;
     }
 }
