@@ -75,32 +75,32 @@ public class DocumentUpdateConflictResolver
     private Logger logger;
 
     /**
-     * @param previousVersion the common previous version
+     * @param ancestorVersion the common previous version
      * @param currentDocument the current version
      * @param newDocument the received version
      * @param xcontext the XWiki context
      * @throws ReplicationException when failing to merge documents
      */
-    public void merge(String previousVersion, XWikiDocument currentDocument, XWikiDocument newDocument,
+    public void merge(String ancestorVersion, XWikiDocument currentDocument, XWikiDocument newDocument,
         XWikiContext xcontext) throws ReplicationException
     {
         // Get expected previous version from the history
-        XWikiDocument previousDocument;
-        if (previousVersion == null) {
+        XWikiDocument ancestorDocument;
+        if (ancestorVersion == null) {
             // Previous version is an empty document
-            previousDocument = new XWikiDocument(newDocument.getDocumentReference(), newDocument.getLocale());
+            ancestorDocument = new XWikiDocument(newDocument.getDocumentReference(), newDocument.getLocale());
         } else {
             // TODO: REPLICAT-57 search for the right previous version
             try {
-                previousDocument =
-                    this.revisionProvider.getRevision(newDocument.getDocumentReferenceWithLocale(), previousVersion);
+                ancestorDocument =
+                    this.revisionProvider.getRevision(newDocument.getDocumentReferenceWithLocale(), ancestorVersion);
             } catch (XWikiException e) {
                 this.logger.error("Failed to access the expected previous version", e);
 
                 return;
             }
             // If the previous version does not exist anymore don't merge
-            if (previousDocument == null) {
+            if (ancestorDocument == null) {
                 return;
             }
         }
@@ -110,7 +110,7 @@ public class DocumentUpdateConflictResolver
 
         // Execute the merge
         MergeDocumentResult mergeResult =
-            this.mergeManager.mergeDocument(previousDocument, currentDocument, newDocument, new MergeConfiguration());
+            this.mergeManager.mergeDocument(ancestorDocument, currentDocument, newDocument, new MergeConfiguration());
 
         // Save the merged version if anything changed
         if (mergeResult.isModified()) {
@@ -133,7 +133,7 @@ public class DocumentUpdateConflictResolver
         // Notify involved authors about the conflict resolution but only if the merge had a real conflict
         if (mergeResult.getLog().hasLogLevel(LogLevel.ERROR)) {
             // Find all authors involved
-            Set<String> authors = findAuthors(previousDocument, currentDocument, newDocument, xcontext);
+            Set<String> authors = findAuthors(ancestorDocument, currentDocument, newDocument, xcontext);
 
             this.observation.notify(
                 new ReplicationDocumentConflictEvent(newDocument.getDocumentReferenceWithLocale(), authors),
@@ -141,14 +141,14 @@ public class DocumentUpdateConflictResolver
         }
     }
 
-    private Set<String> findAuthors(XWikiDocument previousDocument, XWikiDocument currentDocument,
+    private Set<String> findAuthors(XWikiDocument ancestorDocument, XWikiDocument currentDocument,
         XWikiDocument newDocument, XWikiContext xcontext) throws ReplicationException
     {
         Set<String> authors = new HashSet<>();
         Collection<XWikiRCSNodeInfo> nodes;
         try {
             nodes = newDocument.getDocumentArchive(xcontext).getNodes(newDocument.getRCSVersion(),
-                previousDocument.getRCSVersion());
+                ancestorDocument.getRCSVersion());
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to get the document history", e);
         }
