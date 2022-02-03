@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationMessage;
+import org.xwiki.contrib.replication.internal.ReplicationUtils;
 import org.xwiki.environment.Environment;
 
 import com.xpn.xwiki.util.Util;
@@ -303,7 +304,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
     {
         configuration.setProperty(PROPERTY_ID, message.getId());
         configuration.setProperty(PROPERTY_TYPE, message.getType());
-        configuration.setProperty(PROPERTY_DATE, String.valueOf(message.getDate().getTime()));
+        configuration.setProperty(PROPERTY_DATE, ReplicationUtils.toString(message.getDate()));
         configuration.setProperty(PROPERTY_SOURCE, message.getSource());
     }
 

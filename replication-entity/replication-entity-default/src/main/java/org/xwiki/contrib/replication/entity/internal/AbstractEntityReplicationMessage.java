@@ -32,6 +32,7 @@ import org.xwiki.bridge.DocumentAccessBridge;
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.internal.ReplicationUtils;
 import org.xwiki.model.reference.AbstractLocalizedEntityReference;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.properties.ConverterManager;
@@ -127,7 +128,7 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
     {
         String stringValue;
         if (value instanceof Date) {
-            stringValue = String.valueOf(((Date) value).getTime());
+            stringValue = ReplicationUtils.toString((Date) value);
         } else {
             stringValue = this.converter.convert(String.class, value);
         }

@@ -240,7 +240,8 @@ public class DocumentReplicationControllerInstanceConverter
             return null;
         }
 
-        return values.stream().map(DocumentReplicationControllerInstance::toString).collect(Collectors.toList());
+        return values.stream().map(DocumentReplicationControllerInstanceConverter::toString)
+            .collect(Collectors.toList());
     }
 
     @Override

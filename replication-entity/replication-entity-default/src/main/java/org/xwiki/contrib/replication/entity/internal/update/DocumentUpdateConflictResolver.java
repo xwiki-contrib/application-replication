@@ -21,12 +21,15 @@ package org.xwiki.contrib.replication.entity.internal.update;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.slf4j.Logger;
+import org.suigeneris.jrcs.rcs.Version;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
@@ -43,6 +46,7 @@ import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.DocumentRevisionProvider;
 import com.xpn.xwiki.doc.XWikiDocument;
+import com.xpn.xwiki.doc.XWikiDocumentArchive;
 import com.xpn.xwiki.doc.merge.MergeConfiguration;
 import com.xpn.xwiki.doc.rcs.XWikiRCSNodeInfo;
 
@@ -75,34 +79,26 @@ public class DocumentUpdateConflictResolver
     private Logger logger;
 
     /**
-     * @param ancestorVersion the common previous version
+     * @param anscestors the previous version expected by the received update
      * @param currentDocument the current version
      * @param newDocument the received version
      * @param xcontext the XWiki context
      * @throws ReplicationException when failing to merge documents
      */
-    public void merge(String ancestorVersion, XWikiDocument currentDocument, XWikiDocument newDocument,
+    public void merge(List<DocumentAncestor> anscestors, XWikiDocument currentDocument, XWikiDocument newDocument,
         XWikiContext xcontext) throws ReplicationException
     {
         // Get expected previous version from the history
         XWikiDocument ancestorDocument;
-        if (ancestorVersion == null) {
-            // Previous version is an empty document
-            ancestorDocument = new XWikiDocument(newDocument.getDocumentReference(), newDocument.getLocale());
-        } else {
-            // TODO: REPLICAT-57 search for the right previous version
-            try {
-                ancestorDocument =
-                    this.revisionProvider.getRevision(newDocument.getDocumentReferenceWithLocale(), ancestorVersion);
-            } catch (XWikiException e) {
-                this.logger.error("Failed to access the expected previous version", e);
+        try {
+            ancestorDocument = getAncestorDocument(currentDocument, anscestors, xcontext);
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to load ancestor document", e);
+        }
 
-                return;
-            }
-            // If the previous version does not exist anymore don't merge
-            if (ancestorDocument == null) {
-                return;
-            }
+        // The the ancestor document cannot be found merge from an empty document
+        if (ancestorDocument == null) {
+            ancestorDocument = new XWikiDocument(currentDocument.getDocumentReference(), currentDocument.getLocale());
         }
 
         // Remember last version
@@ -139,6 +135,41 @@ public class DocumentUpdateConflictResolver
                 new ReplicationDocumentConflictEvent(newDocument.getDocumentReferenceWithLocale(), authors),
                 "replication", newDocument);
         }
+    }
+
+    private XWikiDocument getAncestorDocument(XWikiDocument currentDocument, List<DocumentAncestor> ancestors,
+        XWikiContext xcontext) throws XWikiException
+    {
+        XWikiDocumentArchive archive = currentDocument.getDocumentArchive(xcontext);
+
+        Collection<XWikiRCSNodeInfo> nodes = archive.getNodes();
+        Iterator<XWikiRCSNodeInfo> nodeIterator = nodes.iterator();
+
+        XWikiRCSNodeInfo node = null;
+        if (nodeIterator.hasNext()) {
+            node = nodeIterator.next();
+
+            for (DocumentAncestor ancestor : ancestors) {
+                Version ancestorVersion = new Version(ancestor.getVersion());
+
+                while (node != null && node.getVersion().isGreaterThan(ancestorVersion)) {
+                    if (nodeIterator.hasNext()) {
+                        node = nodeIterator.next();
+                    } else {
+                        // No common ancestor could be found
+                        return null;
+                    }
+                }
+
+                // Found the common ancestor
+                if (node.getVersion().equals(ancestorVersion) && node.getDate().equals(ancestor.getDate())) {
+                    return this.revisionProvider.getRevision(currentDocument, node.getVersion().toString());
+                }
+            }
+        }
+
+        // No common ancestor could be found
+        return null;
     }
 
     private Set<String> findAuthors(XWikiDocument ancestorDocument, XWikiDocument currentDocument,

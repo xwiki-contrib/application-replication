@@ -31,6 +31,7 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationMessageTool;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.user.UserReference;
 
 /**
  * @version $Id$
@@ -62,7 +63,7 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
      * @param creatorReference the reference of the creator of the document
      * @param metadata custom metadata to add to the message
      */
-    public void initialize(DocumentReference documentReference, DocumentReference creatorReference,
+    public void initialize(DocumentReference documentReference, UserReference creatorReference,
         Map<String, Collection<String>> metadata)
     {
         super.initialize(documentReference, metadata);
@@ -79,7 +80,7 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
     public void initialize(ReplicationReceiverMessage message) throws InvalidReplicationMessageException
     {
         initialize(this.documentMessageTool.getDocumentReference(message),
-            this.documentMessageTool.getMetadata(message, METADATA_CREATOR, true, DocumentReference.class));
+            this.documentMessageTool.getMetadata(message, METADATA_CREATOR, true, UserReference.class));
 
         // Relay the source information
         this.id = message.getId();

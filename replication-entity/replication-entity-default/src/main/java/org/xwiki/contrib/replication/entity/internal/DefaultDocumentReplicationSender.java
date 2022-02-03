@@ -135,19 +135,16 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
             message = this.documentReferenceMessageProvider.get();
 
             ((DocumentReferenceReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
-                document.getCreatorReference(), metadata);
+                document.getAuthors().getCreator(), metadata);
         } else {
             message = this.documentUpdateMessageProvider.get();
 
             if (complete) {
-                ((DocumentUpdateReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
-                    document.getCreatorReference(), document.getVersion(), metadata);
+                ((DocumentUpdateReplicationMessage) message).initializeComplete(
+                    document.getDocumentReferenceWithLocale(), document.getAuthors().getCreator(),
+                    document.getVersion(), metadata);
             } else {
-                // TODO: REPLICAT-57 send more version/date couples (1 week ? more ?)
-                ((DocumentUpdateReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
-                    document.getVersion(),
-                    document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getVersion(),
-                    document.getOriginalDocument().isNew() ? null : document.getOriginalDocument().getDate(),
+                ((DocumentUpdateReplicationMessage) message).initializeUpdate(document,
                     getModifiedAttachments(document), metadata);
             }
         }

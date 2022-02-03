@@ -34,6 +34,7 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.rendering.syntax.Syntax;
+import org.xwiki.user.UserReference;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
@@ -58,11 +59,12 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
         XWikiDocument document = new XWikiDocument(documentReference);
 
         // Just indicate who created it
-        DocumentReference creatorReference = this.documentMessageTool.getMetadata(message,
-            DocumentReferenceReplicationMessage.METADATA_CREATOR, true, DocumentReference.class);
-        document.setCreatorReference(creatorReference);
-        document.setAuthorReference(creatorReference);
-        document.setContentAuthorReference(creatorReference);
+        UserReference creatorReference = this.documentMessageTool.getMetadata(message,
+            DocumentReferenceReplicationMessage.METADATA_CREATOR, true, UserReference.class);
+        document.getAuthors().setCreator(creatorReference);
+        document.getAuthors().setContentAuthor(creatorReference);
+        document.getAuthors().setEffectiveMetadataAuthor(creatorReference);
+        document.getAuthors().setOriginalMetadataAuthor(creatorReference);
         // Those place holders should be hidden
         document.setHidden(true);
         // Set a message explaining what this document is

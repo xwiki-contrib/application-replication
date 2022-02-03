@@ -20,7 +20,10 @@
 package org.xwiki.contrib.replication.entity.internal.update;
 
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
@@ -35,7 +38,6 @@ import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplication
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerUtils;
 import org.xwiki.model.reference.DocumentReference;
 
-import com.google.common.base.Objects;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -81,11 +83,6 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     private void update(ReplicationReceiverMessage message, DocumentReference documentReference, XWikiDocument document,
         XWikiContext xcontext) throws ReplicationException
     {
-        String previousVersion = this.documentMessageTool.getMetadata(message,
-            DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION, false);
-        Date previousVersionDate = this.documentMessageTool.getMetadata(message,
-            DocumentUpdateReplicationMessage.METADATA_PREVIOUSVERSION_DATE, false, Date.class);
-
         // Load the current document
         XWikiDocument currentDocument;
         try {
@@ -101,9 +98,10 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         // Update the document
         newDocument.apply(document, true);
         // Also copy some revision related properties
-        newDocument.setAuthorReference(document.getAuthorReference());
-        newDocument.setContentAuthorReference(document.getContentAuthorReference());
-        newDocument.setCreatorReference(document.getCreatorReference());
+        newDocument.getAuthors().setCreator(document.getAuthors().getCreator());
+        newDocument.getAuthors().setContentAuthor(document.getAuthors().getContentAuthor());
+        newDocument.getAuthors().setEffectiveMetadataAuthor(document.getAuthors().getEffectiveMetadataAuthor());
+        newDocument.getAuthors().setOriginalMetadataAuthor(document.getAuthors().getOriginalMetadataAuthor());
         newDocument.setDate(document.getDate());
         newDocument.setContentUpdateDate(document.getContentUpdateDate());
 
@@ -116,15 +114,26 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
 
         // Deal with conflict if this instance is allowed to replicate content
         if (this.controllerUtils.isReplicated(documentReference)) {
-            // Get previous database version
-            String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
-            Date currentVersionDate = currentDocument.isNew() ? null : currentDocument.getDate();
+            Collection<String> values =
+                message.getCustomMetadata().get(DocumentUpdateReplicationMessage.METADATA_ANCESTORS);
 
-            // Check if the previous version is the expected one
-            if (!Objects.equal(currentVersion, previousVersion)
-                || !Objects.equal(currentVersionDate, previousVersionDate)) {
-                // If not create and save a merged version of the document
-                this.conflictResolver.merge(previousVersion, currentDocument, newDocument, xcontext);
+            // If no ancestor is provided we cannot really know if there is a conflict
+            if (values != null) {
+                // Get previous database version
+                String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
+                Date currentVersionDate = currentDocument.isNew() ? null : currentDocument.getDate();
+
+                List<DocumentAncestor> ancestors = DocumentAncestorConverter.toDocumentAncestors(values);
+
+                String previousAncestorVersion = ancestors.get(0).getVersion();
+                Date previousAncestorVersionDate = ancestors.get(0).getDate();
+
+                // Check if the previous version is the expected one
+                if (!Objects.equals(currentVersion, previousAncestorVersion)
+                    || !Objects.equals(currentVersionDate, previousAncestorVersionDate)) {
+                    // If not create and save a merged version of the document
+                    this.conflictResolver.merge(ancestors, currentDocument, newDocument, xcontext);
+                }
             }
         }
     }

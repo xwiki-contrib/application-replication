@@ -34,6 +34,7 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
+import org.xwiki.contrib.replication.internal.ReplicationUtils;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.DocumentReferenceResolver;
 import org.xwiki.model.reference.EntityReference;
@@ -148,7 +149,7 @@ public class DocumentReplicationMessageTool
         if (type != null) {
             if (type == Date.class) {
                 // Standard Date converter does not support Date -> String -> Date
-                return value != null ? (T) new Date(Long.parseLong(value)) : null;
+                return value != null ? (T) ReplicationUtils.toDate(value) : null;
             } else {
                 return this.converter.convert(type, value);
             }

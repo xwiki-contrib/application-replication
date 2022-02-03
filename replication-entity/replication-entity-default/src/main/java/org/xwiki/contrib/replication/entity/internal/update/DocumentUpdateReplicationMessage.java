@@ -21,26 +21,31 @@ package org.xwiki.contrib.replication.entity.internal.update;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.entity.internal.AbstractEntityReplicationMessage;
 import org.xwiki.filter.instance.input.DocumentInstanceInputProperties;
 import org.xwiki.filter.output.DefaultOutputStreamOutputTarget;
 import org.xwiki.filter.xar.output.XAROutputProperties;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.user.UserReference;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.DocumentRevisionProvider;
 import com.xpn.xwiki.doc.XWikiDocument;
+import com.xpn.xwiki.doc.XWikiDocumentArchive;
+import com.xpn.xwiki.doc.rcs.XWikiRCSNodeInfo;
 
 /**
  * @version $Id$
@@ -61,12 +66,7 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
     /**
      * The name of the metadata containing the previous version of the entity in the message.
      */
-    public static final String METADATA_PREVIOUSVERSION = METADATA_PREFIX + "PREVIOUSVERSION";
-
-    /**
-     * The name of the metadata containing the date of the previous version of the entity in the message.
-     */
-    public static final String METADATA_PREVIOUSVERSION_DATE = METADATA_PREFIX + "PREVIOUSVERSION_DATE";
+    public static final String METADATA_ANCESTORS = METADATA_PREFIX + "ANCESTORS";
 
     /**
      * The name of the metadata containing the previous version of the entity in the message.
@@ -79,6 +79,9 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
     @Inject
     private DocumentRevisionProvider revisionProvider;
 
+    @Inject
+    private Logger logger;
+
     private String version;
 
     private boolean complete;
@@ -88,22 +91,30 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
     /**
      * Initialize a message for a version replication.
      * 
-     * @param documentReference the reference of the document affected by this message
-     * @param version the version of the document
-     * @param previousVersion the previous version of the document
-     * @param previousVersionDate the date of the previous version of the document
+     * @param document the the document to send
      * @param attachments the attachments content to send
      * @param metadata custom metadata to add to the message
      */
-    public void initialize(DocumentReference documentReference, String version, String previousVersion,
-        Date previousVersionDate, Set<String> attachments, Map<String, Collection<String>> metadata)
+    public void initializeUpdate(XWikiDocument document, Set<String> attachments,
+        Map<String, Collection<String>> metadata)
     {
-        initialize(documentReference, version, false, metadata);
+        initialize(document.getDocumentReferenceWithLocale(), document.getVersion(), false, metadata);
 
         this.attachments = attachments;
 
-        putMetadata(METADATA_PREVIOUSVERSION, previousVersion);
-        putMetadata(METADATA_PREVIOUSVERSION_DATE, previousVersionDate);
+        XWikiContext xcontext = this.xcontextProvider.get();
+
+        try {
+            XWikiDocumentArchive archive = document.getDocumentArchive(xcontext);
+            Collection<XWikiRCSNodeInfo> nodes = archive.getNodes();
+            List<DocumentAncestor> ancestors = new ArrayList<>(nodes.size());
+            for (XWikiRCSNodeInfo node : nodes) {
+                ancestors.add(new DocumentAncestor(node.getVersion().toString(), node.getDate()));
+            }
+            this.metadata.put(METADATA_ANCESTORS, DocumentAncestorConverter.toStrings(ancestors));
+        } catch (XWikiException e) {
+            this.logger.error("Failed to get document ancestors", e);
+        }
 
         this.metadata = Collections.unmodifiableMap(this.metadata);
     }
@@ -116,7 +127,7 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
      * @param creator the user who created the document
      * @param metadata custom metadata to add to the message
      */
-    public void initialize(DocumentReference documentReference, DocumentReference creator, String version,
+    public void initializeComplete(DocumentReference documentReference, UserReference creator, String version,
         Map<String, Collection<String>> metadata)
     {
         initialize(documentReference, version, true, metadata);
