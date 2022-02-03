@@ -57,7 +57,7 @@ public interface ReplicationInstanceManager
 
     /**
      * @param instance the instance to add
-     * @return <tt>true</tt> if an instance was added as a result of this call
+     * @return true if an instance was added as a result of this call
      * @throws ReplicationException
      */
     boolean addInstance(ReplicationInstance instance) throws ReplicationException;
@@ -77,7 +77,7 @@ public interface ReplicationInstanceManager
 
     /**
      * @param uri the base URI of the instance to remove from the list of registered instances
-     * @return <tt>true</tt> if an instance was removed as a result of this call
+     * @return true if an instance was removed as a result of this call
      * @throws ReplicationException when failing to remove the instance
      */
     boolean removeRegisteredInstance(String uri) throws ReplicationException;
@@ -96,14 +96,14 @@ public interface ReplicationInstanceManager
 
     /**
      * @param uri the base URI of the instance to remove from the list of instance which did not yet accepted the link
-     * @return <tt>true</tt> if an instance was removed as a result of this call
+     * @return true if an instance was removed as a result of this call
      * @throws ReplicationException when failing to cancel the instance
      */
     boolean cancelRequestedInstance(String uri) throws ReplicationException;
 
     /**
      * @param instance the instance to add
-     * @return <tt>true</tt> if an instance was confirmed as a result of this call
+     * @return true if an instance was confirmed as a result of this call
      * @throws ReplicationException when failing to confirm the instance
      */
     boolean confirmRequestedInstance(ReplicationInstance instance) throws ReplicationException;
@@ -116,14 +116,14 @@ public interface ReplicationInstanceManager
 
     /**
      * @param uri the uri of the instance to accept
-     * @return <tt>true</tt> if an instance was created/modified as a result of this call
+     * @return true if an instance was created/modified as a result of this call
      * @throws ReplicationException when failing to accept the instance
      */
     boolean acceptRequestingInstance(String uri) throws ReplicationException;
 
     /**
      * @param uri the uri of the instance to decline
-     * @return <tt>true</tt> if an instance was removed as a result of this call
+     * @return true if an instance was removed as a result of this call
      * @throws ReplicationException when failing to remove the instance
      */
     boolean declineRequestingInstance(String uri) throws ReplicationException;
