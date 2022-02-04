@@ -31,7 +31,7 @@
   <groupId>org.xwiki.contrib.replication</groupId>
   <artifactId>replication</artifactId>
   <name>Replication</name>
-  <version>0.9-SNAPSHOT</version>
+  <version>0.8-SNAPSHOT</version>
   <packaging>pom</packaging>
   <description>Various tools to replicate data between XWiki instances</description>
 
