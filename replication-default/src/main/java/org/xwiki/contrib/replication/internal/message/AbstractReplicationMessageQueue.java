@@ -43,7 +43,11 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
 
     protected Thread thread;
 
+    protected Thread errorThread;
+
     protected final BlockingQueue<M> queue = new LinkedBlockingQueue<>(10000);
+
+    protected final BlockingQueue<M> errorQueue = new LinkedBlockingQueue<>(10000);
 
     @Inject
     protected Logger logger;
@@ -52,13 +56,21 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
 
     protected void initializeQueue()
     {
-        // Initialize handling thread
+        // Initialize messages handling thread
         this.thread = new Thread(this);
         this.thread.setName(getThreadName());
         this.thread.setPriority(Thread.NORM_PRIORITY - 2);
         // That thread can be stopped any time without really loosing anything
         this.thread.setDaemon(true);
         this.thread.start();
+
+        // Initialize failed messages handling thread
+        this.errorThread = new Thread(this::runError);
+        this.errorThread.setName("FAILED - " + getThreadName());
+        this.errorThread.setPriority(Thread.NORM_PRIORITY - 3);
+        // That thread can be stopped any time without really loosing anything
+        this.errorThread.setDaemon(true);
+        this.errorThread.start();
     }
 
     protected abstract String getThreadName();
@@ -130,8 +142,68 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
 
                 if (this.currentMessage != null) {
                     // Put back the message in the queue
-                    this.queue.add(this.currentMessage);
+                    this.errorQueue.add(this.currentMessage);
                 }
+            }
+        }
+    }
+
+    /**
+     * Handle previously failed messages.
+     */
+    public void runError()
+    {
+        while (!this.disposed) {
+            try {
+                M message = this.errorQueue.take();
+
+                // Wait 1h before handling the previously failed message
+                Thread.sleep(3600000);
+
+                List<M> messages = new ArrayList<>(this.errorQueue.size() + 1);
+                messages.add(message);
+                messages.addAll(this.errorQueue);
+
+                // Handle the message
+                handleFailed(messages);
+            } catch (InterruptedException e) {
+                this.logger.warn("The replication failed input message thread has been interrupted");
+
+                // Mark the thread as interrupted
+                this.thread.interrupt();
+
+                // Stop the loop
+                break;
+            } catch (Throwable t) {
+                this.logger.error(
+                    "An unexpected throwable was thrown while handling a previously failed replication message", t);
+
+                if (this.currentMessage != null) {
+                    // Put back the message in the queue
+                    this.errorQueue.add(this.currentMessage);
+                }
+            }
+        }
+    }
+
+    private void handleFailed(List<M> messages) throws InterruptedException
+    {
+        for (M message : messages) {
+            try {
+                // Handle the message
+                handle(message);
+
+                // Remove the message from the store
+                // TODO: put the remove in an async queue
+                removeFromStore(message);
+            } catch (InterruptedException e) {
+                throw e;
+            } catch (Throwable t) {
+                this.logger.error(
+                    "An unexpected throwable was thrown while handling previously failed replication message", t);
+
+                // Put back the message in the error queue
+                this.errorQueue.add(message);
             }
         }
     }
