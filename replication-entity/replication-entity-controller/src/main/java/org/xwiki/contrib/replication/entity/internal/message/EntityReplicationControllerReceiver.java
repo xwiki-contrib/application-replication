@@ -48,8 +48,8 @@ import com.xpn.xwiki.XWikiException;
  */
 @Component
 @Singleton
-@Named(EntityReplicatioControllerMessage.TYPE)
-public class EntityReplicatioControllerReceiver extends AbstractEntityReplicationReceiver
+@Named(EntityReplicationControllerMessage.TYPE)
+public class EntityReplicationControllerReceiver extends AbstractEntityReplicationReceiver
 {
     @Inject
     private EntityReplicationStore store;
@@ -78,7 +78,7 @@ public class EntityReplicatioControllerReceiver extends AbstractEntityReplicatio
         throws ReplicationException
     {
         Collection<String> values =
-            message.getCustomMetadata().get(EntityReplicatioControllerMessage.METADATA_CONFIGURATION);
+            message.getCustomMetadata().get(EntityReplicationControllerMessage.METADATA_CONFIGURATION);
         List<DocumentReplicationControllerInstance> configurations =
             DocumentReplicationControllerInstanceConverter.toControllerInstances(values, this.instances);
 

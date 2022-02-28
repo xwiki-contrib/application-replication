@@ -50,7 +50,7 @@ import org.xwiki.model.reference.EntityReference;
 public class EntityReplicationControllerSender
 {
     @Inject
-    private Provider<EntityReplicatioControllerMessage> messageProvider;
+    private Provider<EntityReplicationControllerMessage> messageProvider;
 
     @Inject
     private ReplicationInstanceManager instanceManager;
@@ -77,7 +77,7 @@ public class EntityReplicationControllerSender
 
         CompletableFuture<ReplicationSenderMessage> future;
         if (!instances.isEmpty()) {
-            EntityReplicatioControllerMessage message = this.messageProvider.get();
+            EntityReplicationControllerMessage message = this.messageProvider.get();
 
             message.initialize(reference, configuration);
 
@@ -109,7 +109,7 @@ public class EntityReplicationControllerSender
         if (!instances.isEmpty()) {
             // Change the configuration in the message
             Map<String, Collection<String>> metadata = new HashMap<>(message.getCustomMetadata());
-            EntityReplicatioControllerMessage.setConfiguration(metadata, configurations);
+            EntityReplicationControllerMessage.setConfiguration(metadata, configurations);
 
             // Send the new message
             future = this.relay.relay(message, metadata, instances);

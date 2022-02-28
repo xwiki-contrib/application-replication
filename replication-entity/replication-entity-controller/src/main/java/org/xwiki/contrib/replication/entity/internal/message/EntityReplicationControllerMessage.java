@@ -33,8 +33,8 @@ import org.xwiki.model.reference.EntityReference;
 /**
  * @version $Id$
  */
-@Component(roles = EntityReplicatioControllerMessage.class)
-public class EntityReplicatioControllerMessage extends AbstractNoContentEntityReplicationMessage<EntityReference>
+@Component(roles = EntityReplicationControllerMessage.class)
+public class EntityReplicationControllerMessage extends AbstractNoContentEntityReplicationMessage<EntityReference>
 {
     /**
      * The message type for these messages.
