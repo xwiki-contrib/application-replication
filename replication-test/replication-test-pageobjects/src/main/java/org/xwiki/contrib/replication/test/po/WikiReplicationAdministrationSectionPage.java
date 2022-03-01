@@ -34,6 +34,15 @@ import org.xwiki.administration.test.po.AdministrationSectionPage;
  */
 public class WikiReplicationAdministrationSectionPage extends AdministrationSectionPage
 {
+    @FindBy(id = "current_name")
+    private WebElement currentNameInput;
+
+    @FindBy(id = "current_uri")
+    private WebElement currentURIInput;
+
+    @FindBy(name = "current_save")
+    private WebElement sameButton;
+
     @FindBy(id = "requested_uri")
     private WebElement requestedInput;
 
@@ -54,8 +63,28 @@ public class WikiReplicationAdministrationSectionPage extends AdministrationSect
         return new WikiReplicationAdministrationSectionPage();
     }
 
+    public void setCurrentName(String name)
+    {
+        this.currentNameInput.clear();
+        this.currentNameInput.sendKeys(name);
+    }
+
+    public void setCurrentURI(String uri)
+    {
+        this.currentURIInput.clear();
+        this.currentURIInput.sendKeys(uri);
+    }
+
+    public WikiReplicationAdministrationSectionPage clickSaveButton()
+    {
+        this.sameButton.click();
+
+        return new WikiReplicationAdministrationSectionPage();
+    }
+
     public void setRequestedURI(String uri)
     {
+        this.requestedInput.clear();
         this.requestedInput.sendKeys(uri);
     }
 
