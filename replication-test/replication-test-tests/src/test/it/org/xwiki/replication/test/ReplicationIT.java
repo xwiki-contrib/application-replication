@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Rule;
 import org.junit.Test;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.test.po.PageReplicationAdministrationSectionPage;
@@ -42,6 +43,11 @@ import org.xwiki.rest.model.jaxb.Page;
 import org.xwiki.rest.resources.pages.PageResource;
 import org.xwiki.test.ui.AbstractTest;
 import org.xwiki.test.ui.TestUtils;
+
+import com.github.tomakehurst.wiremock.client.MappingBuilder;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -60,11 +66,32 @@ public class ReplicationIT extends AbstractTest
     private static final LocalDocumentReference REPLICATION_REFERENCE =
         new LocalDocumentReference("ReplicationREFERENCE", "WebHome");
 
+    @Rule
+    public WireMockRule proxy0 = new WireMockRule(WireMockConfiguration.options().port(8070));
+
+    @Rule
+    public WireMockRule proxy1 = new WireMockRule(WireMockConfiguration.options().port(8071));
+
+    @Rule
+    public WireMockRule proxy2 = new WireMockRule(WireMockConfiguration.options().port(8072));
+
     private String uri0;
 
     private String uri1;
 
     private String uri2;
+
+    private String proxyURI0;
+
+    private String proxyURI1;
+
+    private String proxyURI2;
+
+    MappingBuilder proxyStub0;
+
+    MappingBuilder proxyStub1;
+
+    MappingBuilder proxyStub2;
 
     private <T> void assertEqualsWithTimeout(T expected, Supplier<T> supplier) throws InterruptedException
     {
@@ -183,66 +210,84 @@ public class ReplicationIT extends AbstractTest
     @Test
     public void all() throws Exception
     {
-        // Authenticate on all nodes
         getUtil().switchExecutor(0);
         getUtil().loginAsSuperAdmin();
+        this.uri0 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
         getUtil().switchExecutor(1);
+        this.uri1 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
         getUtil().loginAsSuperAdmin();
         getUtil().switchExecutor(2);
+        this.uri2 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
         getUtil().loginAsSuperAdmin();
+
+        // Setup Wiremock
+        this.proxyURI0 = this.uri0.replace("8080", "8070");
+        this.proxyStub0 = WireMock.any(WireMock.urlMatching(".*"))
+            .willReturn(WireMock.aResponse().proxiedFrom(StringUtils.removeEnd(this.uri0, "/xwiki")));
+        this.proxy0.stubFor(this.proxyStub0);
+        this.proxyURI1 = this.uri1.replace("8081", "8071");
+        this.proxyStub1 = WireMock.any(WireMock.urlMatching(".*"))
+            .willReturn(WireMock.aResponse().proxiedFrom(StringUtils.removeEnd(this.uri1, "/xwiki")));
+        this.proxy1.stubFor(this.proxyStub1);
+        this.proxyURI2 = this.uri2.replace("8082", "8072");
+        this.proxyStub2 = WireMock.any(WireMock.urlMatching(".*"))
+            .willReturn(WireMock.aResponse().proxiedFrom(StringUtils.removeEnd(this.uri2, "/xwiki")));
+        this.proxy2.stubFor(this.proxyStub2);
 
         // Link two instances
         instances();
 
         // Configure replication
-        controller();
+        // controller();
 
         // Full replication a page between the 2 registered instances
-        replicateFull();
+        // replicateFull();
 
         // Reference replication
-        replicateEmpty();
+        // replicateEmpty();
 
         // Replication reaction to configuration change
-        changeController();
+        // changeController();
+
+        // Replication reliability
+        network();
     }
 
     private void instances() throws InterruptedException
     {
-        // Get instances uris
-        getUtil().switchExecutor(0);
-        this.uri0 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
-        getUtil().switchExecutor(1);
-        this.uri1 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
-        getUtil().switchExecutor(2);
-        this.uri2 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
-
         // Login on instance0
         getUtil().switchExecutor(0);
         WikiReplicationAdministrationSectionPage admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
+        // Update current URI
+        admin0.setCurrentURI(this.proxyURI0);
+        admin0 = admin0.clickSaveButton();
 
         // Link to instance1
-        admin0.setRequestedURI(this.uri1);
+        admin0.setRequestedURI(this.proxyURI1);
         admin0 = admin0.requestInstance();
 
         // Check if the instance has been added to requested instances
         List<RequestedInstancePane> requestedInstances = admin0.getRequestedInstances();
         assertEquals(1, requestedInstances.size());
-        assertEquals(this.uri1, requestedInstances.get(0).getURI());
+        assertEquals(this.proxyURI1, requestedInstances.get(0).getURI());
 
         // Go to instance1
         getUtil().switchExecutor(1);
         // Check if the instance has been added to requesting instances
         WikiReplicationAdministrationSectionPage admin1 = assertEqualsRequestingInstancesWithTimeout(1);
+        // Update current URI
+        admin1.setCurrentURI(this.proxyURI1);
+        admin1 = admin1.clickSaveButton();
+
         List<RequestingInstancePane> requestingInstances = admin1.getRequestingInstances();
         RequestingInstancePane requestingInstance = requestingInstances.get(0);
-        assertEquals(this.uri0, requestingInstance.getURI());
+        assertEquals(this.proxyURI0, requestingInstance.getURI());
 
         // Accept the instance
         admin1 = requestingInstance.accept();
 
         // Link to instance2
-        admin1.setRequestedURI(this.uri2);
+        admin1.setRequestedURI(this.proxyURI2);
         admin1 = admin1.requestInstance();
 
         // Check if the instance has been moved to registered instances
@@ -252,7 +297,7 @@ public class ReplicationIT extends AbstractTest
         // Check if the instance has been moved to registered instances
         List<RegisteredInstancePane> registeredInstances = admin1.getRegisteredInstances();
         assertEquals(1, registeredInstances.size());
-        assertEquals(this.uri0, registeredInstances.get(0).getURI());
+        assertEquals(this.proxyURI0, registeredInstances.get(0).getURI());
 
         // Go back to instance0
         getUtil().switchExecutor(0);
@@ -262,15 +307,19 @@ public class ReplicationIT extends AbstractTest
         // Check if the instance has been moved to registered instances
         registeredInstances = admin0.getRegisteredInstances();
         assertEquals(1, registeredInstances.size());
-        assertEquals(this.uri1, registeredInstances.get(0).getURI());
+        assertEquals(this.proxyURI1, registeredInstances.get(0).getURI());
 
         // Go to instance2
         getUtil().switchExecutor(2);
         // Check if the instance has been added to requesting instances
         WikiReplicationAdministrationSectionPage admin2 = assertEqualsRequestingInstancesWithTimeout(1);
+        // Update current URI
+        admin2.setCurrentURI(this.proxyURI2);
+        admin1 = admin2.clickSaveButton();
+
         requestingInstances = admin2.getRequestingInstances();
         requestingInstance = requestingInstances.get(0);
-        assertEquals(this.uri1, requestingInstance.getURI());
+        assertEquals(this.proxyURI1, requestingInstance.getURI());
 
         // Accept the instance
         requestingInstance.accept();
@@ -757,7 +806,7 @@ public class ReplicationIT extends AbstractTest
 
         // Set replication configuration
         getUtil().switchExecutor(1);
-        setConfiguration(page1Space, this.uri0, DocumentReplicationLevel.ALL);
+        setConfiguration(page1Space, this.proxyURI0, DocumentReplicationLevel.ALL);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
         getUtil().switchExecutor(0);
@@ -777,7 +826,7 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         getUtil().switchExecutor(1);
-        setConfiguration(page1Space, this.uri2, DocumentReplicationLevel.ALL);
+        setConfiguration(page1Space, this.proxyURI2, DocumentReplicationLevel.ALL);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
         getUtil().switchExecutor(0);
@@ -797,7 +846,7 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         getUtil().switchExecutor(1);
-        setConfiguration(page1Space, this.uri0, null);
+        setConfiguration(page1Space, this.proxyURI0, null);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
         getUtil().switchExecutor(0);
@@ -811,5 +860,31 @@ public class ReplicationIT extends AbstractTest
         assertDoesNotExistWithTimeout(page1_1);
         assertEqualsContentWithTimeout(page1_1_1, "content1_1_1");
         assertEqualsContentWithTimeout(page1_2, "content1_2");
+    }
+
+    private void network() throws Exception
+    {
+        Page page = new Page();
+        page.setSpace("Network");
+        page.setName("WebHome");
+
+        LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
+
+        // Clean any pre-existing
+        getUtil().rest().delete(documentReference);
+
+        // Stop the proxy in font of XWIKI 1
+        this.proxy1.removeStub(this.proxyStub1);
+
+        // Create a new page on XWIKI 0
+        getUtil().switchExecutor(0);
+        setConfiguration(documentReference, DocumentReplicationLevel.ALL);
+        getUtil().rest().savePage(documentReference, "content", "");
+
+        // Make sure the page is not replicated on XWIKI 1
+        getUtil().switchExecutor(1);
+        assertDoesNotExistWithTimeout(documentReference);
+
+        this.proxy1.stubFor(this.proxyStub1);
     }
 }
