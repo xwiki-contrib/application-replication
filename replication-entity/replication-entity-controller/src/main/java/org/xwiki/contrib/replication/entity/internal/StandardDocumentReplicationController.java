@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
@@ -48,8 +49,9 @@ import com.xpn.xwiki.doc.XWikiDocument;
  * @version $Id$
  */
 @Component
+@Named("standard")
 @Singleton
-public class DefaultDocumentReplicationController implements DocumentReplicationController
+public class StandardDocumentReplicationController implements DocumentReplicationController
 {
     @Inject
     private EntityReplicationStore store;

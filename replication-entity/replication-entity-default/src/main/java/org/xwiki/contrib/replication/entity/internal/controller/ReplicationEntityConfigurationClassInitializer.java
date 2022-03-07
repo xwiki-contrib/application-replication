@@ -17,17 +17,12 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal.instance;
+package org.xwiki.contrib.replication.entity.internal.controller;
 
-import java.util.List;
-
-import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.ReplicationInstance.Status;
-import org.xwiki.contrib.replication.ReplicationInstanceClassInitializer;
 import org.xwiki.contrib.replication.internal.ReplicationConstants;
 import org.xwiki.model.reference.LocalDocumentReference;
 
@@ -38,14 +33,14 @@ import com.xpn.xwiki.objects.classes.BaseClass;
  * @version $Id$
  */
 @Component
-@Named(StandardReplicationInstanceClassInitializer.CLASS_FULLNAME)
+@Named(ReplicationEntityConfigurationClassInitializer.CLASS_FULLNAME)
 @Singleton
-public class StandardReplicationInstanceClassInitializer extends AbstractMandatoryClassInitializer
+public class ReplicationEntityConfigurationClassInitializer extends AbstractMandatoryClassInitializer
 {
     /**
-     * The name of the class defining the object which contains a Replication Instance metadata.
+     * The name of the class defining the object which contains a Replication Entity configuration.
      */
-    public static final String CLASS_NAME = "InstanceClass";
+    public static final String CLASS_NAME = "EntityConfigurationClass";
 
     /**
      * The String reference of the class defining the object which contains a Replication Instance metadata.
@@ -59,48 +54,21 @@ public class StandardReplicationInstanceClassInitializer extends AbstractMandato
         new LocalDocumentReference(CLASS_NAME, ReplicationConstants.REPLICATION_HOME);
 
     /**
-     * The name of the property containing the Replication Instance URI.
+     * The name of the property containing the Replication Entity controller to use.
      */
-    public static final String FIELD_URI = "uri";
-
-    /**
-     * The name of the property containing the Replication Instance display name.
-     */
-    public static final String FIELD_NAME = "name";
-
-    /**
-     * The name of the property containing the Replication Instance status.
-     */
-    public static final String FIELD_STATUS = "status";
-
-    @Inject
-    private List<ReplicationInstanceClassInitializer> initializers;
+    public static final String FIELD_CONTROLLER = "controller";
 
     /**
      * Default constructor.
      */
-    public StandardReplicationInstanceClassInitializer()
+    public ReplicationEntityConfigurationClassInitializer()
     {
-        super(CLASS_REFERENCE, "Replication Instance Class");
-    }
-
-    @Override
-    public boolean isMainWikiOnly()
-    {
-        // Initialize it only for the main wiki.
-        return true;
+        super(CLASS_REFERENCE, "Replication Entity Configuration Class");
     }
 
     @Override
     protected void createClass(BaseClass xclass)
     {
-        xclass.addTextField(FIELD_URI, "URI", 30);
-        xclass.addTextField(FIELD_NAME, "Name", 30);
-
-        xclass.addStaticListField(FIELD_STATUS, "Status",
-            Status.REGISTERED.name() + '|' + Status.REQUESTED.name() + '|' + Status.REQUESTING.name());
-
-        // Extends the class
-        this.initializers.forEach(i -> i.extendClass(xclass));
+        xclass.addTextField(FIELD_CONTROLLER, "Controller", 30);
     }
 }

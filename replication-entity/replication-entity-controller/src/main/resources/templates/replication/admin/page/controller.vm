@@ -170,6 +170,6 @@
   </fieldset>
 
   #if (!$replicationDisabled && ($services.security.authorization.hasAccess('ADMIN', $replicationDocument.documentReference) || $services.security.authorization.hasAccess('ADMIN', $replicationDocument.documentReference.parent)))
-    <button id="replication_save" name="replication_save">$escapetool.xml($services.localization.render('replication.admin.page.button.save'))</button>
+    <button class="btn" id="replication_save" name="replication_save">$escapetool.xml($services.localization.render('replication.admin.page.button.save'))</button>
   #end
 </form>

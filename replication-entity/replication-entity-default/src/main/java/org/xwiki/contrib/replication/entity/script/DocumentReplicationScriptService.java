@@ -20,6 +20,8 @@
 package org.xwiki.contrib.replication.entity.script;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -30,7 +32,10 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfiguration;
+import org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfigurationStore;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.model.reference.EntityReference;
 import org.xwiki.script.service.ScriptService;
 
 import com.xpn.xwiki.XWikiContext;
@@ -48,10 +53,16 @@ import com.xpn.xwiki.doc.XWikiDocument;
 public class DocumentReplicationScriptService implements ScriptService
 {
     @Inject
-    private DocumentReplicationController controller;
+    private DocumentReplicationController defaultController;
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;
+
+    @Inject
+    private DocumentReplicationControllerConfiguration controllerConfiguration;
+
+    @Inject
+    private DocumentReplicationControllerConfigurationStore store;
 
     /**
      * Indicate the list of registered instances this document should be replicated to.
@@ -63,7 +74,7 @@ public class DocumentReplicationScriptService implements ScriptService
     public List<DocumentReplicationControllerInstance> getDocumentInstances(DocumentReference documentReference)
         throws ReplicationException
     {
-        return this.controller.getReplicationConfiguration(documentReference);
+        return this.defaultController.getReplicationConfiguration(documentReference);
     }
 
     /**
@@ -80,6 +91,58 @@ public class DocumentReplicationScriptService implements ScriptService
 
         XWikiDocument document = xcontext.getWiki().getDocument(documentReference, xcontext);
 
-        this.controller.sendCompleteDocument(document);
+        this.defaultController.sendCompleteDocument(document);
+    }
+
+    /**
+     * @return the available entity replication controllers
+     * @throws ReplicationException when failing to get the controllers
+     */
+    public Set<String> getDocumentReplicationControllers() throws ReplicationException
+    {
+        return this.controllerConfiguration.getControllers().keySet();
+    }
+
+    /**
+     * @param entityReference the reference of the entity to replicate
+     * @return the entity replication controller in charge of controlling the replication for the passed entity
+     * @throws ReplicationException when failing to get the controller
+     */
+    public String resolveDocumentReplicationController(EntityReference entityReference) throws ReplicationException
+    {
+        DocumentReplicationController entityController =
+            this.controllerConfiguration.resolveDocumentReplicationController(entityReference);
+
+        for (Map.Entry<String, DocumentReplicationController> entry : this.controllerConfiguration.getControllers()
+            .entrySet()) {
+            if (entry.getValue() == entityController) {
+                return entry.getKey();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param entityReference the reference of the entity for which to get the configured controller name
+     * @return the name of the configured controller
+     * @throws ReplicationException when failing to get the configuration
+     */
+    public String getDocumentReplicationController(EntityReference entityReference) throws ReplicationException
+    {
+        return entityReference != null ? this.store.getDocumentReplicationController(entityReference) : null;
+    }
+
+    /**
+     * Update the controller to use for the passed entity.
+     * 
+     * @param entityReference the reference of the entity
+     * @param controller the controller to set
+     * @throws ReplicationException
+     */
+    public void setDocumentReplicationController(EntityReference entityReference, String controller)
+        throws ReplicationException
+    {
+        this.store.setDocumentReplicationController(entityReference, controller);
     }
 }

@@ -36,13 +36,11 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
+import org.xwiki.contrib.replication.internal.ReplicationConstants;
 import org.xwiki.instance.InstanceIdManager;
-import org.xwiki.model.EntityType;
-import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.LocalDocumentReference;
 import org.xwiki.model.reference.WikiReference;
 
-import com.xpn.xwiki.XWiki;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -56,21 +54,10 @@ import com.xpn.xwiki.objects.BaseObject;
 public class ReplicationInstanceStore
 {
     /**
-     * The local reference of the space where all replication related information are stored.
-     */
-    public static final EntityReference REPLICATION_HOME =
-        new EntityReference("Replication", EntityType.SPACE, new EntityReference(XWiki.SYSTEM_SPACE, EntityType.SPACE));
-
-    /**
-     * The local reference of the space where all replication related information are stored as a String.
-     */
-    public static final String REPLICATION_HOME_STRING = XWiki.SYSTEM_SPACE + ".Replication";
-
-    /**
      * The local reference of the document containing the instances.
      */
     public static final LocalDocumentReference REPLICATION_INSTANCES =
-        new LocalDocumentReference("Instances", REPLICATION_HOME);
+        new LocalDocumentReference("Instances", ReplicationConstants.REPLICATION_HOME);
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;

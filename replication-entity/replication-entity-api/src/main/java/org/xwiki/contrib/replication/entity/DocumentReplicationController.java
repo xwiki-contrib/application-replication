@@ -94,6 +94,8 @@ public interface DocumentReplicationController
      * @param document the document to modify
      * @param message the received message
      * @return true if the document was modified
+     * @throws ReplicationException when failing to execute the controller
      */
-    boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message);
+    boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message)
+        throws ReplicationException;
 }
