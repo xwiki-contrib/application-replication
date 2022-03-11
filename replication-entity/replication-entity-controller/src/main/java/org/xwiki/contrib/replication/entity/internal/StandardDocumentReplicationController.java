@@ -131,7 +131,7 @@ public class StandardDocumentReplicationController implements DocumentReplicatio
     @Override
     public void onDocumentCreated(XWikiDocument document) throws ReplicationException
     {
-        this.sender.sendDocument(document, true, null, DocumentReplicationLevel.REFERENCE, null);
+        this.sender.sendDocument(document, true, true, null, DocumentReplicationLevel.REFERENCE, null);
     }
 
     @Override
@@ -139,7 +139,7 @@ public class StandardDocumentReplicationController implements DocumentReplicatio
     {
         // There is no point in sending a message for each update if the instance is only allowed to
         // replicate the reference
-        this.sender.sendDocument(document, false, null, DocumentReplicationLevel.ALL, null);
+        this.sender.sendDocument(document, false, false, null, DocumentReplicationLevel.ALL, null);
     }
 
     @Override
@@ -157,7 +157,7 @@ public class StandardDocumentReplicationController implements DocumentReplicatio
     @Override
     public void sendCompleteDocument(XWikiDocument document) throws ReplicationException
     {
-        this.sender.sendDocument(document, true, null, DocumentReplicationLevel.REFERENCE, null);
+        this.sender.sendDocument(document, true, false, null, DocumentReplicationLevel.REFERENCE, null);
     }
 
     @Override

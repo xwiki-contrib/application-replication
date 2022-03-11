@@ -37,26 +37,28 @@ public interface DocumentReplicationSender
     /**
      * @param documentReference the reference of the document to send
      * @param complete true if the complete document (with history and attachments content) should be sent
+     * @param create true if it's a document creation
      * @param metadata custom metadata to add to the message
      * @param minimumLevel the minimum level required from an instance configuration to receive the document
      * @param configurations the replication configuration to follow or null if it should be asked to the controller
      * @throws ReplicationException when failing to send the document
      */
-    void sendDocument(DocumentReference documentReference, boolean complete, Map<String, Collection<String>> metadata,
-        DocumentReplicationLevel minimumLevel, Collection<DocumentReplicationControllerInstance> configurations)
-        throws ReplicationException;
+    void sendDocument(DocumentReference documentReference, boolean complete, boolean create,
+        Map<String, Collection<String>> metadata, DocumentReplicationLevel minimumLevel,
+        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException;
 
     /**
      * @param document the document to send
      * @param complete true if the complete document (with history and attachments content) should be sent
+     * @param create true if it's a document creation
      * @param metadata custom metadata to add to the message
      * @param minimumLevel the minimum level required from an instance configuration to receive the document
      * @param configurations the replication configuration to follow or null if it should be asked to the controller
      * @throws ReplicationException when failing to send the document
      */
-    void sendDocument(XWikiDocument document, boolean complete, Map<String, Collection<String>> metadata,
-        DocumentReplicationLevel minimumLevel, Collection<DocumentReplicationControllerInstance> configurations)
-        throws ReplicationException;
+    void sendDocument(XWikiDocument document, boolean complete, boolean create,
+        Map<String, Collection<String>> metadata, DocumentReplicationLevel minimumLevel,
+        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException;
 
     /**
      * @param documentReference the reference of the document to delete

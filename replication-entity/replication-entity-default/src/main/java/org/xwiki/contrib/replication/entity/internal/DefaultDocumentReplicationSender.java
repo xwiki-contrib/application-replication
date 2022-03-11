@@ -40,6 +40,7 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
+import org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage;
@@ -68,6 +69,9 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
     private Provider<DocumentUpdateReplicationMessage> documentUpdateMessageProvider;
 
     @Inject
+    private Provider<DocumentCreateReplicationMessage> documentCreateMessageProvider;
+
+    @Inject
     private Provider<DocumentDeleteReplicationMessage> documentDeleteMessageProvider;
 
     @Inject
@@ -80,7 +84,7 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
     private Provider<XWikiContext> xcontextProvider;
 
     @Override
-    public void sendDocument(DocumentReference documentReference, boolean complete,
+    public void sendDocument(DocumentReference documentReference, boolean complete, boolean create,
         Map<String, Collection<String>> metadata, DocumentReplicationLevel minimumLevel,
         Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
     {
@@ -93,13 +97,13 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
             throw new ReplicationException("Failed to get the document content", e);
         }
 
-        sendDocument(document, complete, metadata, minimumLevel, configurations);
+        sendDocument(document, complete, create, metadata, minimumLevel, configurations);
     }
 
     @Override
-    public void sendDocument(XWikiDocument document, boolean complete, Map<String, Collection<String>> metadata,
-        DocumentReplicationLevel minimumLevel, Collection<DocumentReplicationControllerInstance> inputConfigurations)
-        throws ReplicationException
+    public void sendDocument(XWikiDocument document, boolean complete, boolean create,
+        Map<String, Collection<String>> metadata, DocumentReplicationLevel minimumLevel,
+        Collection<DocumentReplicationControllerInstance> inputConfigurations) throws ReplicationException
     {
         Collection<DocumentReplicationControllerInstance> configurations = inputConfigurations;
         if (configurations == null) {
@@ -107,14 +111,15 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
         }
 
         // The message to send to instances allowed to receive full document
-        sendDocument(document, complete, metadata, DocumentReplicationLevel.ALL, minimumLevel, configurations);
+        sendDocument(document, complete, create, metadata, DocumentReplicationLevel.ALL, minimumLevel, configurations);
 
         // The message to send to instances allowed to receive only the reference
-        sendDocument(document, complete, metadata, DocumentReplicationLevel.REFERENCE, minimumLevel, configurations);
+        sendDocument(document, complete, create, metadata, DocumentReplicationLevel.REFERENCE, minimumLevel,
+            configurations);
     }
 
-    private void sendDocument(XWikiDocument document, boolean complete, Map<String, Collection<String>> metadata,
-        DocumentReplicationLevel level, DocumentReplicationLevel minimumLevel,
+    private void sendDocument(XWikiDocument document, boolean complete, boolean create,
+        Map<String, Collection<String>> metadata, DocumentReplicationLevel level, DocumentReplicationLevel minimumLevel,
         Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
     {
         if (level.ordinal() < minimumLevel.ordinal()) {
@@ -131,12 +136,24 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
 
         ReplicationSenderMessage message;
 
+        if (create) {
+            // TODO: register as owner of the document
+        }
+
         if (level == DocumentReplicationLevel.REFERENCE) {
+            // Sending a document place holder
             message = this.documentReferenceMessageProvider.get();
 
             ((DocumentReferenceReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
-                document.getAuthors().getCreator(), metadata);
+                document.getAuthors().getCreator(), create, metadata);
+        } else if (create) {
+            // Sending the creation of a new fulldocument
+            message = this.documentCreateMessageProvider.get();
+
+            ((DocumentCreateReplicationMessage) message).initializeComplete(document.getDocumentReferenceWithLocale(),
+                document.getAuthors().getCreator(), document.getVersion(), metadata);
         } else {
+            // Sending the update of a document
             message = this.documentUpdateMessageProvider.get();
 
             if (complete) {

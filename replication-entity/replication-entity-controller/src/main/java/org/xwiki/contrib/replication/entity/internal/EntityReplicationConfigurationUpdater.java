@@ -217,7 +217,7 @@ public class EntityReplicationConfigurationUpdater
             XWikiDocument document = xcontext.getWiki().getDocument(documentReference, xcontext);
 
             if (!document.isNew()) {
-                this.documentSender.sendDocument(document, true, null, DocumentReplicationLevel.REFERENCE,
+                this.documentSender.sendDocument(document, true, true, null, DocumentReplicationLevel.REFERENCE,
                     newInstances);
             }
         }
