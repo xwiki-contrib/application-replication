@@ -35,7 +35,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
-import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerUtils;
+import org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.XWikiContext;
@@ -54,7 +54,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     private DocumentUpdateLoaded loader;
 
     @Inject
-    private DocumentReplicationControllerUtils controllerUtils;
+    private DocumentReplicationUtils controllerUtils;
 
     @Inject
     private DocumentUpdateConflictResolver conflictResolver;
@@ -112,8 +112,8 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             throw new ReplicationException("Failed to save document update", e);
         }
 
-        // Deal with conflict if this instance is allowed to replicate content
-        if (this.controllerUtils.isReplicated(documentReference)) {
+        // Deal with conflict only if the current instance is the document owner (others just wait for the correction)
+        if (this.controllerUtils.isOwner(documentReference)) {
             Collection<String> values =
                 message.getCustomMetadata().get(DocumentUpdateReplicationMessage.METADATA_ANCESTORS);
 

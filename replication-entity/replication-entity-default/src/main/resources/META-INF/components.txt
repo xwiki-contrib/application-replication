@@ -2,6 +2,7 @@ org.xwiki.contrib.replication.entity.internal.DefaultDocumentReplicationSender
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationListener
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationMessageTool
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationRelay
+org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils
 org.xwiki.contrib.replication.entity.internal.controller.DefaultDocumentReplicationController
 org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfiguration
 org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfigurationInvalidator
@@ -13,6 +14,8 @@ org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMe
 org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteReplicationMessage
 org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryReplicationReceiver
+org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentInitializer
+org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore
 org.xwiki.contrib.replication.entity.internal.notification.ReplicationDocumentConflictDescriptor
 org.xwiki.contrib.replication.entity.internal.notification.ReplicationDocumentConflictEventConverter
 org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage

@@ -19,12 +19,14 @@
  */
 package org.xwiki.contrib.replication.entity.internal.create;
 
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
 
@@ -38,12 +40,16 @@ import com.xpn.xwiki.XWikiContext;
 @Named(DocumentCreateReplicationMessage.TYPE)
 public class DocumentCreateReplicationReceiver extends DocumentUpdateReplicationReceiver
 {
+    @Inject
+    private ReplicationDocumentStore documentStore;
+
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
     {
         super.receiveDocument(message, documentReference, xcontext);
 
-        // TODO: Update the document owner
+        // Update the document owner
+        this.documentStore.create(documentReference, message.getSource());
     }
 }

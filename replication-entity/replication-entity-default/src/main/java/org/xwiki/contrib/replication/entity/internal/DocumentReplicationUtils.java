@@ -24,7 +24,10 @@ import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.model.reference.DocumentReference;
 
 /**
@@ -32,12 +35,18 @@ import org.xwiki.model.reference.DocumentReference;
  * 
  * @version $Id$
  */
-@Component(roles = DocumentReplicationControllerUtils.class)
+@Component(roles = DocumentReplicationUtils.class)
 @Singleton
-public class DocumentReplicationControllerUtils
+public class DocumentReplicationUtils
 {
     @Inject
     private DocumentReplicationController controller;
+
+    @Inject
+    private ReplicationDocumentStore documentStore;
+
+    @Inject
+    private ReplicationInstanceManager instances;
 
     /**
      * @param reference the reference of the document
@@ -47,5 +56,19 @@ public class DocumentReplicationControllerUtils
     public boolean isReplicated(DocumentReference reference) throws ReplicationException
     {
         return !this.controller.getReplicationConfiguration(reference).isEmpty();
+    }
+
+    /**
+     * @param reference the reference of the document
+     * @return true if the current instance is the owner of the passed document
+     * @throws ReplicationException when failing to get the configuration
+     */
+    public boolean isOwner(DocumentReference reference) throws ReplicationException
+    {
+        String owner = this.documentStore.getOwner(reference);
+
+        ReplicationInstance ownerInstance = this.instances.getInstanceByURI(owner);
+
+        return ownerInstance != null && ownerInstance.getStatus() == null;
     }
 }

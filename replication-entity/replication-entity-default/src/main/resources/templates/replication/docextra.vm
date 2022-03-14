@@ -24,16 +24,40 @@
 
     #if ($resolvedInstances.size() > 0)
       <dl>
+        <dt>$escapetool.xml($services.localization.render("replication.entity.docextra.owner"))</dt>
+        <dd>
+          #set ($ownerURI = $services.replication.document.getOwner($doc.documentReference))
+          #if ($ownerURI)
+            #set ($ownerInstance = $services.replication.getInstanceByURI($ownerURI))
+            #if ($ownerInstance)
+              #set ($currentInstance = $services.replication.getCurrentInstance())
+              #if ($ownerInstance == $currentInstance)
+                $escapetool.xml($services.localization.render("replication.admin.instance.CURRENT"))
+              #else
+                $escapetool.xml($ownerInstance.name) (<a href="$ownerInstance.uRI">$ownerInstance.uRI</a>)
+              #end
+            #else
+              $ownerURI
+            #end
+          #else
+            $escapetool.xml($services.localization.render("replication.entity.docextra.owner.unknown"))
+          #end
+        </dd>
+
+        <dt>$escapetool.xml($services.localization.render("replication.entity.docextra.instances"))</dt>
+        <dd><dl>
         #foreach($resolvedInstance in $resolvedInstances)
-          <dt>$resolvedInstance.instance.name (<a href="$resolvedInstance.instance.uRI">$resolvedInstance.instance.uRI</a>)</dt>
-          <dd>
+            <dt>$escapetool.xml($resolvedInstance.instance.name) (<a href="$resolvedInstance.instance.uRI">$resolvedInstance.instance.uRI</a>)</dt>
+            <dd>
             #if ($resolvedInstance.level)
               $escapetool.xml($services.localization.render("replication.entity.level.${resolvedInstance.level}.description"))
             #else
               $escapetool.xml($services.localization.render('replication.entity.docextra.notreplicated'))
             #end
-          </dd>
+            </dd>
+          </li>
         #end
+        </dl></dd>
       </dl>
     #else
       $escapetool.xml($services.localization.render("replication.entity.docextra.notreplicated"))

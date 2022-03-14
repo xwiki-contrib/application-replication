@@ -22,6 +22,7 @@ package org.xwiki.contrib.replication.entity.internal;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
@@ -43,6 +45,7 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
 import org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
@@ -79,6 +82,12 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
 
     @Inject
     private Provider<DocumentReplicationController> controllerProvider;
+
+    @Inject
+    private ReplicationDocumentStore documentStore;
+
+    @Inject
+    private ReplicationInstanceManager instanceManager;
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;
@@ -136,8 +145,10 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
 
         ReplicationSenderMessage message;
 
-        if (create) {
-            // TODO: register as owner of the document
+        if (create && document.getLocale().equals(Locale.ROOT)) {
+            // Register as owner of the document the instance which created that document
+            this.documentStore.create(document.getDocumentReference(),
+                this.instanceManager.getCurrentInstance().getURI());
         }
 
         if (level == DocumentReplicationLevel.REFERENCE) {
