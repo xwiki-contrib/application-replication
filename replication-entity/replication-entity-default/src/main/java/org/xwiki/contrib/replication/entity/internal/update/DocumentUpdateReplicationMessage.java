@@ -137,7 +137,7 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
         this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 
-    private void initialize(DocumentReference documentReference, String version, boolean complete,
+    protected void initialize(DocumentReference documentReference, String version, boolean complete,
         Map<String, Collection<String>> metadata)
     {
         super.initialize(documentReference, metadata);

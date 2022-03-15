@@ -95,6 +95,16 @@ public class ReplicationScriptService implements ScriptService
         return this.instances.getCurrentInstance();
     }
 
+    /**
+     * @param uri the uri of the instance
+     * @return the instance
+     * @throws ReplicationException when failing to load the instances
+     */
+    public ReplicationInstance getInstanceByURI(String uri) throws ReplicationException
+    {
+        return this.instances.getInstanceByURI(uri);
+    }
+
     private ReplicationSenderMessageQueue getQueue(ReplicationInstance instance)
     {
         if (this.sender instanceof DefaultReplicationSender) {

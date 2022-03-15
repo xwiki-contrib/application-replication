@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
@@ -48,8 +49,9 @@ import com.xpn.xwiki.doc.XWikiDocument;
  * @version $Id$
  */
 @Component
+@Named("standard")
 @Singleton
-public class DefaultDocumentReplicationController implements DocumentReplicationController
+public class StandardDocumentReplicationController implements DocumentReplicationController
 {
     @Inject
     private EntityReplicationStore store;
@@ -129,7 +131,7 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     @Override
     public void onDocumentCreated(XWikiDocument document) throws ReplicationException
     {
-        this.sender.sendDocument(document, true, null, DocumentReplicationLevel.REFERENCE, null);
+        this.sender.sendDocument(document, true, true, null, DocumentReplicationLevel.REFERENCE, null);
     }
 
     @Override
@@ -137,7 +139,7 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     {
         // There is no point in sending a message for each update if the instance is only allowed to
         // replicate the reference
-        this.sender.sendDocument(document, false, null, DocumentReplicationLevel.ALL, null);
+        this.sender.sendDocument(document, false, false, null, DocumentReplicationLevel.ALL, null);
     }
 
     @Override
@@ -155,7 +157,7 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     @Override
     public void sendCompleteDocument(XWikiDocument document) throws ReplicationException
     {
-        this.sender.sendDocument(document, true, null, DocumentReplicationLevel.REFERENCE, null);
+        this.sender.sendDocument(document, true, false, null, DocumentReplicationLevel.REFERENCE, null);
     }
 
     @Override

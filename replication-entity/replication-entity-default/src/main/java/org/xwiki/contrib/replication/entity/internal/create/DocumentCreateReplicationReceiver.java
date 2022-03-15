@@ -17,59 +17,39 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.ui;
-
-import java.util.Collections;
-import java.util.Map;
+package org.xwiki.contrib.replication.entity.internal.create;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.rendering.block.Block;
-import org.xwiki.template.TemplateManager;
-import org.xwiki.uiextension.UIExtension;
+import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
+import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationReceiver;
+import org.xwiki.model.reference.DocumentReference;
+
+import com.xpn.xwiki.XWikiContext;
 
 /**
- * Inject a UI under each document to control what is replicated.
- * 
  * @version $Id$
  */
 @Component
-@Named(DocumentControllerUIExtension.ID)
 @Singleton
-public class DocumentControllerUIExtension implements UIExtension
+@Named(DocumentCreateReplicationMessage.TYPE)
+public class DocumentCreateReplicationReceiver extends DocumentUpdateReplicationReceiver
 {
-    /**
-     * The id of the UI extension.
-     */
-    public static final String ID = "replication.admin.page.controller";
-
     @Inject
-    private TemplateManager templates;
+    private ReplicationDocumentStore documentStore;
 
     @Override
-    public String getId()
+    protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
+        XWikiContext xcontext) throws ReplicationException
     {
-        return ID;
-    }
+        super.receiveDocument(message, documentReference, xcontext);
 
-    @Override
-    public String getExtensionPointId()
-    {
-        return "replication.admin.page.standard";
-    }
-
-    @Override
-    public Map<String, String> getParameters()
-    {
-        return Collections.emptyMap();
-    }
-
-    @Override
-    public Block execute()
-    {
-        return this.templates.executeNoException("replication/admin/page/controller.vm");
+        // Update the document owner
+        this.documentStore.create(documentReference, message.getSource());
     }
 }

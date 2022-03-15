@@ -17,35 +17,30 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
+package org.xwiki.contrib.replication.entity.internal.create;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.entity.DocumentReplicationController;
-import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 
 /**
- * Various helpers around {@link DocumentReplicationController}.
- * 
  * @version $Id$
  */
-@Component(roles = DocumentReplicationControllerUtils.class)
-@Singleton
-public class DocumentReplicationControllerUtils
+@Component(roles = DocumentCreateReplicationMessage.class)
+public class DocumentCreateReplicationMessage extends DocumentUpdateReplicationMessage
 {
-    @Inject
-    private DocumentReplicationController controller;
+    /**
+     * The message type for these messages.
+     */
+    public static final String TYPE = TYPE_PREFIX + "create";
 
     /**
-     * @param reference the reference of the document
-     * @return true if the current instance is configured to directly replicate changes made to the passed document
-     * @throws ReplicationException when failing to get the configuration
+     * The prefix in front of all entity metadata properties.
      */
-    public boolean isReplicated(DocumentReference reference) throws ReplicationException
+    public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
+
+    @Override
+    public String getType()
     {
-        return !this.controller.getReplicationConfiguration(reference).isEmpty();
+        return TYPE;
     }
 }

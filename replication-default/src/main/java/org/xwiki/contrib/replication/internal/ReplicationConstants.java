@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!--
+/*
  * See the NOTICE file distributed with this work for additional
  * information regarding copyright ownership.
  *
@@ -18,24 +16,29 @@
  * License along with this software; if not, write to the Free
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
--->
+ */
+package org.xwiki.contrib.replication.internal;
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.xwiki.contrib.replication</groupId>
-    <artifactId>replication</artifactId>
-    <version>0.10-SNAPSHOT</version>
-  </parent>
+import org.xwiki.model.EntityType;
+import org.xwiki.model.reference.EntityReference;
 
-  <artifactId>replication-entity</artifactId>
-  <name>Replication API</name>
-  <packaging>pom</packaging>
-  <description>Tools to replicate wiki entities between XWiki instances</description>
+import com.xpn.xwiki.XWiki;
 
-  <modules>
-    <module>replication-entity-api</module>
-    <module>replication-entity-default</module>
-    <module>replication-entity-controller</module>
-  </modules>
-</project>
+/**
+ * Various common constants related to replication.
+ * 
+ * @version $Id$
+ */
+public interface ReplicationConstants
+{
+    /**
+     * The local reference of the space where all replication related information are stored.
+     */
+    EntityReference REPLICATION_HOME =
+        new EntityReference("Replication", EntityType.SPACE, new EntityReference(XWiki.SYSTEM_SPACE, EntityType.SPACE));
+
+    /**
+     * The local reference of the space where all replication related information are stored as a String.
+     */
+    String REPLICATION_HOME_STRING = XWiki.SYSTEM_SPACE + ".Replication";
+}

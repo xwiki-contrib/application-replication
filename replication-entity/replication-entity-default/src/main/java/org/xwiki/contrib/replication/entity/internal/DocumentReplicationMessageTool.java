@@ -133,6 +133,37 @@ public class DocumentReplicationMessageTool
     public <T> T getMetadata(ReplicationReceiverMessage message, String key, boolean mandatory, Type type)
         throws InvalidReplicationMessageException
     {
+        return getMetadata(message, key, mandatory, type, null);
+    }
+
+    /**
+     * @param <T> the type of the metadata
+     * @param message the received message
+     * @param key the key metadata in the message
+     * @param mandatory true of the property is mandatory
+     * @param def the default value to return if none could be found
+     * @return the metadata value
+     * @throws InvalidReplicationMessageException when failing to parse the message
+     */
+    public <T> T getMetadata(ReplicationReceiverMessage message, String key, boolean mandatory, T def)
+        throws InvalidReplicationMessageException
+    {
+        return getMetadata(message, key, mandatory, def != null ? def.getClass() : null, def);
+    }
+
+    /**
+     * @param <T> the type of the metadata
+     * @param message the received message
+     * @param key the key metadata in the message
+     * @param mandatory true of the property is mandatory
+     * @param type the type to convert the metadata to
+     * @param def the default value to return if none could be found
+     * @return the metadata value
+     * @throws InvalidReplicationMessageException when failing to parse the message
+     */
+    public <T> T getMetadata(ReplicationReceiverMessage message, String key, boolean mandatory, Type type, T def)
+        throws InvalidReplicationMessageException
+    {
         Collection<String> values = message.getCustomMetadata().get(key);
 
         if (CollectionUtils.isEmpty(values)) {
@@ -140,7 +171,7 @@ public class DocumentReplicationMessageTool
                 throw new InvalidReplicationMessageException("Received an invalid document message with id ["
                     + message.getId() + "]: missing mandatory metadata [" + key + "]");
             } else {
-                return null;
+                return def;
             }
         }
 

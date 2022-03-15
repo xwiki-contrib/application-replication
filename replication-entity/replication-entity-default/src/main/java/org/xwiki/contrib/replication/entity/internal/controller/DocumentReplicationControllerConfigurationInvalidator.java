@@ -17,59 +17,47 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.ui;
-
-import java.util.Collections;
-import java.util.Map;
+package org.xwiki.contrib.replication.entity.internal.controller;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.rendering.block.Block;
-import org.xwiki.template.TemplateManager;
-import org.xwiki.uiextension.UIExtension;
+import org.xwiki.observation.AbstractEventListener;
+import org.xwiki.observation.event.Event;
+
+import com.xpn.xwiki.doc.XWikiDocument;
+import com.xpn.xwiki.objects.BaseObjectReference;
 
 /**
- * Inject a UI under each document to control what is replicated.
- * 
  * @version $Id$
  */
 @Component
-@Named(DocumentControllerUIExtension.ID)
+@Named(DocumentReplicationControllerConfigurationInvalidator.NAME)
 @Singleton
-public class DocumentControllerUIExtension implements UIExtension
+public class DocumentReplicationControllerConfigurationInvalidator extends AbstractEventListener
 {
     /**
-     * The id of the UI extension.
+     * The name of the listener.
      */
-    public static final String ID = "replication.admin.page.controller";
+    public static final String NAME = "DocumentReplicationControllerConfigurationInvalidator";
 
     @Inject
-    private TemplateManager templates;
+    private Provider<DocumentReplicationControllerConfiguration> configurationProvider;
 
-    @Override
-    public String getId()
+    /**
+     * Setup the listener.
+     */
+    public DocumentReplicationControllerConfigurationInvalidator()
     {
-        return ID;
+        super(NAME, BaseObjectReference.anyEvents(ReplicationEntityConfigurationClassInitializer.CLASS_FULLNAME));
     }
 
     @Override
-    public String getExtensionPointId()
+    public void onEvent(Event event, Object source, Object data)
     {
-        return "replication.admin.page.standard";
-    }
-
-    @Override
-    public Map<String, String> getParameters()
-    {
-        return Collections.emptyMap();
-    }
-
-    @Override
-    public Block execute()
-    {
-        return this.templates.executeNoException("replication/admin/page/controller.vm");
+        this.configurationProvider.get().invalidate(((XWikiDocument) source).getDocumentReference().getParent());
     }
 }

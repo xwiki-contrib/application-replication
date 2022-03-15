@@ -19,7 +19,6 @@
  */
 package org.xwiki.contrib.replication.internal.message.log;
 
-import java.io.Serializable;
 import java.util.Date;
 
 import org.xwiki.contrib.replication.ReplicationMessage;
@@ -27,10 +26,8 @@ import org.xwiki.contrib.replication.ReplicationMessage;
 /**
  * @version $Id$
  */
-public class HibernateReplicationMessage implements Serializable
+public class HibernateReplicationMessage
 {
-    private static final long serialVersionUID = 1L;
-
     private String id;
 
     private Date date;
