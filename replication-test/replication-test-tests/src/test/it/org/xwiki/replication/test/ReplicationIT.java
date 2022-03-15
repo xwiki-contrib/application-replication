@@ -48,6 +48,7 @@ import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -87,11 +88,17 @@ public class ReplicationIT extends AbstractTest
 
     private String proxyURI2;
 
-    MappingBuilder proxyStub0;
+    MappingBuilder proxyStubBuilder0;
 
-    MappingBuilder proxyStub1;
+    StubMapping proxyStub0;
 
-    MappingBuilder proxyStub2;
+    MappingBuilder proxyStubBuilder1;
+
+    StubMapping proxyStub1;
+
+    MappingBuilder proxyStubBuilder2;
+
+    StubMapping proxyStub2;
 
     private <T> void assertEqualsWithTimeout(T expected, Supplier<T> supplier) throws InterruptedException
     {
@@ -222,32 +229,32 @@ public class ReplicationIT extends AbstractTest
 
         // Setup Wiremock
         this.proxyURI0 = this.uri0.replace("8080", "8070");
-        this.proxyStub0 = WireMock.any(WireMock.urlMatching(".*"))
+        this.proxyStubBuilder0 = WireMock.any(WireMock.urlMatching(".*"))
             .willReturn(WireMock.aResponse().proxiedFrom(StringUtils.removeEnd(this.uri0, "/xwiki")));
-        this.proxy0.stubFor(this.proxyStub0);
+        this.proxyStub0 = this.proxy0.stubFor(this.proxyStubBuilder0);
         this.proxyURI1 = this.uri1.replace("8081", "8071");
-        this.proxyStub1 = WireMock.any(WireMock.urlMatching(".*"))
+        this.proxyStubBuilder1 = WireMock.any(WireMock.urlMatching(".*"))
             .willReturn(WireMock.aResponse().proxiedFrom(StringUtils.removeEnd(this.uri1, "/xwiki")));
-        this.proxy1.stubFor(this.proxyStub1);
+        this.proxyStub1 = this.proxy1.stubFor(this.proxyStubBuilder1);
         this.proxyURI2 = this.uri2.replace("8082", "8072");
-        this.proxyStub2 = WireMock.any(WireMock.urlMatching(".*"))
+        this.proxyStubBuilder2 = WireMock.any(WireMock.urlMatching(".*"))
             .willReturn(WireMock.aResponse().proxiedFrom(StringUtils.removeEnd(this.uri2, "/xwiki")));
-        this.proxy2.stubFor(this.proxyStub2);
+        this.proxyStub2 = this.proxy2.stubFor(this.proxyStubBuilder2);
 
         // Link two instances
         instances();
 
         // Configure replication
-        // controller();
+        controller();
 
         // Full replication a page between the 2 registered instances
-        // replicateFull();
+        replicateFull();
 
         // Reference replication
-        // replicateEmpty();
+        replicateEmpty();
 
         // Replication reaction to configuration change
-        // changeController();
+        changeController();
 
         // Replication reliability
         network();
@@ -885,6 +892,6 @@ public class ReplicationIT extends AbstractTest
         getUtil().switchExecutor(1);
         assertDoesNotExistWithTimeout(documentReference);
 
-        this.proxy1.stubFor(this.proxyStub1);
+        this.proxy1.stubFor(this.proxyStubBuilder1);
     }
 }
