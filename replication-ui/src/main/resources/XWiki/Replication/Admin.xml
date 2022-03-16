@@ -108,8 +108,8 @@
 #elseif ($request.current_save)
   #set($void = $instanceManager.saveCurrentInstance($request.name, $request.uri))
 #elseif ($request.instance)
-  #set ($instance = $services.replication.getRegisteredInstances($request.instance))
-  #if ($instance)
+  #set ($instance = $services.replication.getInstanceByURI($request.instance))
+  #if ($instance.status.name() == 'REGISTERED')
     #if ($request.replication_wakeup)
       #set ($void = $services.replication.wakeUpQueue($instance))
     #end
