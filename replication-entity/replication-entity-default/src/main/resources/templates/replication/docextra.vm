@@ -25,7 +25,7 @@
     #if ($resolvedInstances.size() > 0)
       <dl>
         <dt>$escapetool.xml($services.localization.render("replication.entity.docextra.owner"))</dt>
-        <dd>
+        <dd data-key="owner">
           #set ($ownerURI = $services.replication.document.getOwner($doc.documentReference))
           #if ($ownerURI)
             #set ($ownerInstance = $services.replication.getInstanceByURI($ownerURI))
@@ -47,7 +47,7 @@
         <dt>$escapetool.xml($services.localization.render("replication.entity.docextra.instances"))</dt>
         <dd><dl>
         #foreach($resolvedInstance in $resolvedInstances)
-            <dt>$escapetool.xml($resolvedInstance.instance.name) (<a href="$resolvedInstance.instance.uRI">$resolvedInstance.instance.uRI</a>)</dt>
+            <dt><label>$escapetool.xml($resolvedInstance.instance.name) (<a href="$resolvedInstance.instance.uRI">$resolvedInstance.instance.uRI</a>)</label></dt>
             <dd>
             #if ($resolvedInstance.level)
               $escapetool.xml($services.localization.render("replication.entity.level.${resolvedInstance.level}.description"))

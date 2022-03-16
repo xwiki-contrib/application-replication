@@ -32,6 +32,7 @@ import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
+import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.rendering.syntax.Syntax;
 import org.xwiki.user.UserReference;
@@ -48,6 +49,9 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Named(DocumentReferenceReplicationMessage.TYPE)
 public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
+    @Inject
+    private ReplicationDocumentStore documentStore;
+
     @Inject
     private DocumentReplicationController controller;
 
@@ -81,6 +85,12 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
             xcontext.getWiki().saveDocument(document, xcontext);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to save the document", e);
+        }
+
+        // Set the document owner
+        if (this.documentMessageTool.getMetadata(message, DocumentReferenceReplicationMessage.METADATA_CREATOR, true,
+            true)) {
+            this.documentStore.create(documentReference, message.getSource());
         }
     }
 
