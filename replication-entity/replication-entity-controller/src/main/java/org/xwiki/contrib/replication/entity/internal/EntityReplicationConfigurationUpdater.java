@@ -123,7 +123,8 @@ public class EntityReplicationConfigurationUpdater
         }
 
         // Send add messages according to configuration diff
-        sendAddMessages(documentsToUpdate, newInstances, xcontext);
+        sendAddMessages(documentsToUpdate, newInstances, preConfigurations == null || preConfigurations.isEmpty(),
+            xcontext);
     }
 
     private DocumentReplicationControllerInstance get(Map<String, DocumentReplicationControllerInstance> configurations,
@@ -210,14 +211,14 @@ public class EntityReplicationConfigurationUpdater
     }
 
     private void sendAddMessages(List<DocumentReference> documentsToUpdate,
-        List<DocumentReplicationControllerInstance> newInstances, XWikiContext xcontext)
+        List<DocumentReplicationControllerInstance> newInstances, boolean create, XWikiContext xcontext)
         throws XWikiException, ReplicationException
     {
         for (DocumentReference documentReference : documentsToUpdate) {
             XWikiDocument document = xcontext.getWiki().getDocument(documentReference, xcontext);
 
             if (!document.isNew()) {
-                this.documentSender.sendDocument(document, true, true, null, DocumentReplicationLevel.REFERENCE,
+                this.documentSender.sendDocument(document, true, create, null, DocumentReplicationLevel.REFERENCE,
                     newInstances);
             }
         }

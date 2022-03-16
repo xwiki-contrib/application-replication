@@ -88,7 +88,7 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
     {
         initialize(this.documentMessageTool.getDocumentReference(message),
             this.documentMessageTool.getMetadata(message, METADATA_CREATOR, true, UserReference.class),
-            this.documentMessageTool.getMetadata(message, METADATA_CREATOR, true, true), message.getCustomMetadata());
+            this.documentMessageTool.getMetadata(message, METADATA_CREATE, false, true), message.getCustomMetadata());
 
         // Relay the source information
         this.id = message.getId();

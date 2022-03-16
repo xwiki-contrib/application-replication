@@ -16,6 +16,7 @@ org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteRepli
 org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentInitializer
 org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore
+org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStoreCleanerListener
 org.xwiki.contrib.replication.entity.internal.notification.ReplicationDocumentConflictDescriptor
 org.xwiki.contrib.replication.entity.internal.notification.ReplicationDocumentConflictEventConverter
 org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage

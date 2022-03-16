@@ -19,6 +19,8 @@
  */
 package org.xwiki.contrib.replication.test.po;
 
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
 import org.xwiki.test.ui.po.BaseElement;
 
 /**
@@ -28,5 +30,11 @@ import org.xwiki.test.ui.po.BaseElement;
  */
 public class ReplicationDocExtraPane extends BaseElement
 {
+    @FindBy(css = "dd[data-key='owner']")
+    private WebElement ownerDD;
 
+    public String getOwner()
+    {
+        return this.ownerDD.getText();
+    }
 }

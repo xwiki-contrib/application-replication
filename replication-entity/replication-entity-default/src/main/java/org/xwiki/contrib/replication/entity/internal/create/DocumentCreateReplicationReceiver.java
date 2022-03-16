@@ -49,7 +49,7 @@ public class DocumentCreateReplicationReceiver extends DocumentUpdateReplication
     {
         super.receiveDocument(message, documentReference, xcontext);
 
-        // Update the document owner
+        // Set the document owner
         this.documentStore.create(documentReference, message.getSource());
     }
 }

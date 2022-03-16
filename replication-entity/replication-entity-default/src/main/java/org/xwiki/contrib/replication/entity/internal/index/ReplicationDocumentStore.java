@@ -58,22 +58,22 @@ public class ReplicationDocumentStore
     private Provider<XWikiContext> xcontextProvider;
 
     /**
-     * @param entity the identifier of the document
+     * @param document the reference of the document
      * @param owner the owner instance of the document
      * @throws ReplicationException when failing to create the document entry
      */
-    public void create(EntityReference entity, String owner) throws ReplicationException
+    public void create(DocumentReference document, String owner) throws ReplicationException
     {
-        executeWrite(session -> saveHibernateReplicationDocument(toEntityId(entity), owner, session));
+        executeWrite(session -> saveHibernateReplicationDocument(toEntityId(document.withoutLocale()), owner, session));
     }
 
     /**
-     * @param entity the identifier of the document
+     * @param document the reference of the document
      * @throws ReplicationException when failing to delete the document entry
      */
-    public void deleteDocument(EntityReference entity) throws ReplicationException
+    public void deleteDocument(DocumentReference document) throws ReplicationException
     {
-        executeWrite(session -> deleteHibernateReplicationDocument(toEntityId(entity), session));
+        executeWrite(session -> deleteHibernateReplicationDocument(toEntityId(document.withoutLocale()), session));
     }
 
     /**

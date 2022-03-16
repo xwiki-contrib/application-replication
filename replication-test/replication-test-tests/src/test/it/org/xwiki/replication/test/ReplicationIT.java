@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.test.po.PageReplicationAdministrationSectionPage;
 import org.xwiki.contrib.replication.test.po.RegisteredInstancePane;
+import org.xwiki.contrib.replication.test.po.ReplicationPage;
 import org.xwiki.contrib.replication.test.po.RequestedInstancePane;
 import org.xwiki.contrib.replication.test.po.RequestingInstancePane;
 import org.xwiki.contrib.replication.test.po.WikiReplicationAdministrationSectionPage;
@@ -66,6 +67,12 @@ public class ReplicationIT extends AbstractTest
 
     private static final LocalDocumentReference REPLICATION_REFERENCE =
         new LocalDocumentReference("ReplicationREFERENCE", "WebHome");
+
+    private static final String INSTANCE_NAME_0 = "Instance 0";
+
+    private static final String INSTANCE_NAME_1 = "Instance 1";
+
+    private static final String INSTANCE_NAME_2 = "Instance 2";
 
     @Rule
     public WireMockRule proxy0 = new WireMockRule(WireMockConfiguration.options().port(8070));
@@ -212,6 +219,13 @@ public class ReplicationIT extends AbstractTest
             getUtil().getCurrentWiki(), documentReference.getParent().getName(), documentReference.getName());
     }
 
+    private ReplicationPage gotoPage(EntityReference reference)
+    {
+        getUtil().gotoPage(reference);
+
+        return new ReplicationPage();
+    }
+
     // Tests
 
     @Test
@@ -223,9 +237,11 @@ public class ReplicationIT extends AbstractTest
         getUtil().switchExecutor(1);
         this.uri1 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
         getUtil().loginAsSuperAdmin();
+        this.uri1 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
         getUtil().switchExecutor(2);
         this.uri2 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
         getUtil().loginAsSuperAdmin();
+        this.uri2 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
 
         // Setup Wiremock
         this.proxyURI0 = this.uri0.replace("8080", "8070");
@@ -265,7 +281,8 @@ public class ReplicationIT extends AbstractTest
         // Login on instance0
         getUtil().switchExecutor(0);
         WikiReplicationAdministrationSectionPage admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
-        // Update current URI
+        // Set custom name and URI
+        admin0.setCurrentName(INSTANCE_NAME_0);
         admin0.setCurrentURI(this.proxyURI0);
         admin0 = admin0.clickSaveButton();
 
@@ -282,7 +299,8 @@ public class ReplicationIT extends AbstractTest
         getUtil().switchExecutor(1);
         // Check if the instance has been added to requesting instances
         WikiReplicationAdministrationSectionPage admin1 = assertEqualsRequestingInstancesWithTimeout(1);
-        // Update current URI
+        // Set custom name and URI
+        admin1.setCurrentName(INSTANCE_NAME_1);
         admin1.setCurrentURI(this.proxyURI1);
         admin1 = admin1.clickSaveButton();
 
@@ -320,9 +338,10 @@ public class ReplicationIT extends AbstractTest
         getUtil().switchExecutor(2);
         // Check if the instance has been added to requesting instances
         WikiReplicationAdministrationSectionPage admin2 = assertEqualsRequestingInstancesWithTimeout(1);
-        // Update current URI
+        // Set custom name and URI
+        admin2.setCurrentName(INSTANCE_NAME_2);
         admin2.setCurrentURI(this.proxyURI2);
-        admin1 = admin2.clickSaveButton();
+        admin2 = admin2.clickSaveButton();
 
         requestingInstances = admin2.getRequestingInstances();
         requestingInstance = requestingInstances.get(0);
@@ -386,18 +405,22 @@ public class ReplicationIT extends AbstractTest
         page.setContent("content");
         getUtil().rest().save(page);
         assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
+        assertEquals("Current instance", gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
 
         // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
         getUtil().switchExecutor(1);
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        assertEquals(INSTANCE_NAME_0 + " (" + this.uri0 + ")",
+            gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
 
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
         getUtil().switchExecutor(2);
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        assertEquals(this.uri0, gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
 
         ////////////////////////////////////
         // Minor edit on XWiki 0
