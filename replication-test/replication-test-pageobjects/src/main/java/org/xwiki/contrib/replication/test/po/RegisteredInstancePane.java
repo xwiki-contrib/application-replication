@@ -19,6 +19,8 @@
  */
 package org.xwiki.contrib.replication.test.po;
 
+import java.util.List;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.xwiki.test.ui.po.BaseElement;
@@ -47,9 +49,22 @@ public class RegisteredInstancePane extends BaseElement
 
     public String getURI()
     {
-        WebElement uriElement = this.container.findElement(By.tagName("a"));
+        return getDriver().findElementWithoutWaiting(this.container, By.tagName("a")).getText();
+    }
 
-        return uriElement.getText();
+    public String getWarning()
+    {
+        List<WebElement> elements =
+            getDriver().findElementsWithoutWaiting(this.container, By.className("warningmessage"));
+
+        return elements.isEmpty() ? null : elements.get(0).getText();
+    }
+
+    public WikiReplicationAdministrationSectionPage clickRetry()
+    {
+        getDriver().findElementWithoutWaiting(this.container, By.name("replication_wakeup")).click();
+
+        return new WikiReplicationAdministrationSectionPage();
     }
 
     public WikiReplicationAdministrationSectionPage remove()

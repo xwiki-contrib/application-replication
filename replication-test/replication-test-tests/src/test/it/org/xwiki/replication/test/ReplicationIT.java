@@ -107,6 +107,8 @@ public class ReplicationIT extends AbstractTest
 
     StubMapping proxyStub2;
 
+    MappingBuilder proxyFailingBuilder;
+
     private <T> void assertEqualsWithTimeout(T expected, Supplier<T> supplier) throws InterruptedException
     {
         long t2;
@@ -158,12 +160,19 @@ public class ReplicationIT extends AbstractTest
         });
     }
 
-    private PageReplicationAdministrationSectionPage assertReplicationMode(LocalDocumentReference documentReference,
-        String scope, String value) throws InterruptedException
+    private PageReplicationAdministrationSectionPage assertReplicationModeWithTimeout(EntityReference reference,
+        String value) throws InterruptedException
     {
+        String scope;
+        if (reference.getType() == EntityType.SPACE) {
+            scope = "space";
+        } else {
+            scope = "document";
+        }
+
         assertEqualsWithTimeout(value, () -> {
             try {
-                return PageReplicationAdministrationSectionPage.gotoPage(documentReference).getMode(scope);
+                return PageReplicationAdministrationSectionPage.gotoPage(reference).getMode(scope);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -256,21 +265,23 @@ public class ReplicationIT extends AbstractTest
         this.proxyStubBuilder2 = WireMock.any(WireMock.urlMatching(".*"))
             .willReturn(WireMock.aResponse().proxiedFrom(StringUtils.removeEnd(this.uri2, "/xwiki")));
         this.proxyStub2 = this.proxy2.stubFor(this.proxyStubBuilder2);
+        this.proxyFailingBuilder =
+            WireMock.any(WireMock.urlMatching(".*")).willReturn(WireMock.aResponse().withStatus(500));
 
         // Link two instances
         instances();
 
         // Configure replication
-        controller();
+        // controller();
 
         // Full replication a page between the 2 registered instances
-        replicateFull();
+        // replicateFull();
 
         // Reference replication
-        replicateEmpty();
+        // replicateEmpty();
 
         // Replication reaction to configuration change
-        changeController();
+        // changeController();
 
         // Replication reliability
         network();
@@ -366,12 +377,12 @@ public class ReplicationIT extends AbstractTest
 
         // Make sure the configuration is replicated on instance1
         getUtil().switchExecutor(1);
-        replicationPageAdmin = assertReplicationMode(REPLICATION_ALL, "space", "all");
+        replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL.getParent(), "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
 
         // Make sure the configuration is replicated on instance2
         getUtil().switchExecutor(2);
-        replicationPageAdmin = assertReplicationMode(REPLICATION_ALL, "space", "all");
+        replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL.getParent(), "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
 
         ////////////////////////
@@ -412,7 +423,7 @@ public class ReplicationIT extends AbstractTest
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
-        assertEquals(INSTANCE_NAME_0 + " (" + this.uri0 + ")",
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")",
             gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
 
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
@@ -420,7 +431,7 @@ public class ReplicationIT extends AbstractTest
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
-        assertEquals(this.uri0, gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
+        assertEquals(this.proxyURI0, gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
 
         ////////////////////////////////////
         // Minor edit on XWiki 0
@@ -901,20 +912,42 @@ public class ReplicationIT extends AbstractTest
         LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
 
         // Clean any pre-existing
+        getUtil().switchExecutor(0);
         getUtil().rest().delete(documentReference);
 
-        // Stop the proxy in font of XWIKI 1
-        this.proxy1.removeStub(this.proxyStub1);
+        // Configure replication
+        setConfiguration(documentReference, DocumentReplicationLevel.ALL);
+        // Make sure to wait until the configuration is replicated
+        getUtil().switchExecutor(1);
+        assertReplicationModeWithTimeout(documentReference, "all");
+
+        // Block the proxy
+        this.proxy1.stubFor(this.proxyFailingBuilder);
 
         // Create a new page on XWIKI 0
         getUtil().switchExecutor(0);
-        setConfiguration(documentReference, DocumentReplicationLevel.ALL);
         getUtil().rest().savePage(documentReference, "content", "");
 
         // Make sure the page is not replicated on XWIKI 1
         getUtil().switchExecutor(1);
         assertDoesNotExistWithTimeout(documentReference);
 
+        // Make sure the UI indicate this waiting message
+        getUtil().switchExecutor(0);
+        WikiReplicationAdministrationSectionPage admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
+        List<RegisteredInstancePane> instances = admin0.getRegisteredInstances();
+        RegisteredInstancePane instance = instances.get(0);
+        assertEquals("1 messages still waiting to be sent to the replication instance", instance.getWarning());
+
+        // Proxy is back
         this.proxy1.stubFor(this.proxyStubBuilder1);
+
+        // Force pushing waiting messages
+        instance.clickRetry();
+
+        // Make sure the document is finally replicated on XWIKI 1
+        getUtil().switchExecutor(1);
+        assertEqualsContentWithTimeout(documentReference, "content");
+        page = getUtil().rest().<Page>get(documentReference);
     }
 }
