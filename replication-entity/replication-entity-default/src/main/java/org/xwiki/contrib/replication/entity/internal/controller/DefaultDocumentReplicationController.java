@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.entity.internal.controller;
 
+import java.util.Collection;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -93,6 +94,13 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     public void sendCompleteDocument(XWikiDocument document) throws ReplicationException
     {
         getController(document.getDocumentReference()).sendCompleteDocument(document);
+    }
+
+    @Override
+    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors)
+        throws ReplicationException
+    {
+        getController(document.getDocumentReference()).sendDocumentRepair(document, authors);
     }
 
     @Override

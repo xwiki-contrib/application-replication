@@ -61,6 +61,17 @@ public interface DocumentReplicationSender
         Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException;
 
     /**
+     * @param document the document to send
+     * @param authors the users involved in the conflict
+     * @param metadata custom metadata to add to the message
+     * @param configurations the replication configuration to follow or null if it should be asked to the controller
+     * @throws ReplicationException when failing to send the document
+     */
+    void sendDocumentRepair(XWikiDocument document, Collection<String> authors,
+        Map<String, Collection<String>> metadata, Collection<DocumentReplicationControllerInstance> configurations)
+        throws ReplicationException;
+
+    /**
      * @param documentReference the reference of the document to delete
      * @param metadata custom metadata to add to the message
      * @param configurations the replication configuration to follow or null if it should be asked to the controller

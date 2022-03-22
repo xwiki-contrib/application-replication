@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.entity;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.xwiki.component.annotation.Role;
@@ -87,6 +88,15 @@ public interface DocumentReplicationController
      * @throws ReplicationException when failing to replicate the document
      */
     void sendCompleteDocument(XWikiDocument document) throws ReplicationException;
+
+    /**
+     * Force pushing a complete document to allowed instances.
+     * 
+     * @param document the document to send
+     * @param authors the users involved in the conflict
+     * @throws ReplicationException when failing to replicate the document
+     */
+    void sendDocumentRepair(XWikiDocument document, Collection<String> authors) throws ReplicationException;
 
     /**
      * Give a chance to the controller to modify the document created for REFERENCE level replication before it's saved.

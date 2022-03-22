@@ -21,6 +21,8 @@ org.xwiki.contrib.replication.entity.internal.notification.ReplicationDocumentCo
 org.xwiki.contrib.replication.entity.internal.notification.ReplicationDocumentConflictEventConverter
 org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage
 org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationReceiver
+org.xwiki.contrib.replication.entity.internal.repair.DocumentRepairReplicationMessage
+org.xwiki.contrib.replication.entity.internal.repair.DocumentRepairReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.ui.DocumentReplicationUIExtension
 org.xwiki.contrib.replication.entity.internal.update.DocumentAncestorConverter
 org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateConflictResolver

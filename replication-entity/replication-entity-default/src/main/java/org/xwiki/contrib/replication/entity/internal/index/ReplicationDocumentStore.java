@@ -28,7 +28,6 @@ import org.hibernate.Session;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.model.reference.DocumentReference;
-import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.EntityReferenceSerializer;
 
 import com.xpn.xwiki.XWikiContext;
@@ -64,7 +63,7 @@ public class ReplicationDocumentStore
      */
     public void create(DocumentReference document, String owner) throws ReplicationException
     {
-        executeWrite(session -> saveHibernateReplicationDocument(toEntityId(document.withoutLocale()), owner, session));
+        executeWrite(session -> saveHibernateReplicationDocument(toEntityId(document), owner, session));
     }
 
     /**
@@ -73,7 +72,7 @@ public class ReplicationDocumentStore
      */
     public void deleteDocument(DocumentReference document) throws ReplicationException
     {
-        executeWrite(session -> deleteHibernateReplicationDocument(toEntityId(document.withoutLocale()), session));
+        executeWrite(session -> deleteHibernateReplicationDocument(toEntityId(document), session));
     }
 
     /**
@@ -81,14 +80,14 @@ public class ReplicationDocumentStore
      * @param owner the owner instance of the document
      * @throws ReplicationException when failing to update the owner
      */
-    public void setOwner(EntityReference entity, String owner) throws ReplicationException
+    public void setOwner(DocumentReference entity, String owner) throws ReplicationException
     {
         executeWrite(session -> saveHibernateReplicationDocument(toEntityId(entity), owner, session));
     }
 
     private Void saveHibernateReplicationDocument(long docId, String owner, Session session)
     {
-        session.save(new HibernateReplicationDocument(docId, owner));
+        session.saveOrUpdate(new HibernateReplicationDocument(docId, owner));
 
         return null;
     }
@@ -104,9 +103,9 @@ public class ReplicationDocumentStore
      * @param reference the reference of the entity
      * @return the id of the entity
      */
-    private long toEntityId(EntityReference reference)
+    private long toEntityId(DocumentReference reference)
     {
-        return Util.getHash(reference.getType().name() + ':' + this.idSerializer.serialize(reference));
+        return Util.getHash(reference.getType().name() + ':' + this.idSerializer.serialize(reference.withoutLocale()));
     }
 
     /**

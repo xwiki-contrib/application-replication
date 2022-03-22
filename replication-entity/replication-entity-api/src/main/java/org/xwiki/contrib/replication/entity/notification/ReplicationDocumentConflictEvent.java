@@ -19,6 +19,8 @@
  */
 package org.xwiki.contrib.replication.entity.notification;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.xwiki.eventstream.RecordableEvent;
@@ -60,10 +62,10 @@ public class ReplicationDocumentConflictEvent implements RecordableEvent, Target
      * @param documentReference the reference of the conflicting document
      * @param authors the users involved in the conflict
      */
-    public ReplicationDocumentConflictEvent(DocumentReference documentReference, Set<String> authors)
+    public ReplicationDocumentConflictEvent(DocumentReference documentReference, Collection<String> authors)
     {
         this.documentReference = documentReference;
-        this.targets = authors;
+        this.targets = new HashSet<>(authors);
     }
 
     /**

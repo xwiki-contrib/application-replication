@@ -110,7 +110,22 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
     }
 
     @Override
+    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors,
+        Map<String, Collection<String>> metadata, Collection<DocumentReplicationControllerInstance> configurations)
+        throws ReplicationException
+    {
+        sendDocument(document, true, false, authors, metadata, DocumentReplicationLevel.ALL, configurations);
+    }
+
+    @Override
     public void sendDocument(XWikiDocument document, boolean complete, boolean create,
+        Map<String, Collection<String>> metadata, DocumentReplicationLevel minimumLevel,
+        Collection<DocumentReplicationControllerInstance> inputConfigurations) throws ReplicationException
+    {
+        sendDocument(document, complete, create, null, metadata, minimumLevel, inputConfigurations);
+    }
+
+    private void sendDocument(XWikiDocument document, boolean complete, boolean create, Collection<String> authors,
         Map<String, Collection<String>> metadata, DocumentReplicationLevel minimumLevel,
         Collection<DocumentReplicationControllerInstance> inputConfigurations) throws ReplicationException
     {

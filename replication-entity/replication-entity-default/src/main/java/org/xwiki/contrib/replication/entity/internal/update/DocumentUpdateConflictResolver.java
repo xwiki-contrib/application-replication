@@ -118,22 +118,26 @@ public class DocumentUpdateConflictResolver
             }
         }
 
-        // Send the complete document with updated history to other instances so that they synchronize
-        try {
-            this.controller.sendCompleteDocument(newDocument);
-        } catch (ReplicationException e) {
-            this.logger.error("Failed to send back the corrected complete document for reference [{}]",
-                newDocument.getDocumentReferenceWithLocale(), e);
-        }
+        Set<String> authors;
 
         // Notify involved authors about the conflict resolution but only if the merge had a real conflict
         if (mergeResult.getLog().hasLogLevel(LogLevel.ERROR)) {
             // Find all authors involved
-            Set<String> authors = findAuthors(ancestorDocument, currentDocument, newDocument, xcontext);
+            authors = findAuthors(ancestorDocument, currentDocument, newDocument, xcontext);
 
-            this.observation.notify(
-                new ReplicationDocumentConflictEvent(newDocument.getDocumentReferenceWithLocale(), authors),
-                "replication", newDocument);
+            // Notify about the conflict
+            notifyConflict(newDocument, authors);
+        } else {
+            // Not a real conflict so no need to send the authors
+            authors = null;
+        }
+
+        // Send the complete document with updated history to other instances so that they synchronize
+        try {
+            this.controller.sendDocumentRepair(newDocument, authors);
+        } catch (ReplicationException e) {
+            this.logger.error("Failed to send back a conflict repair for document[{}]",
+                newDocument.getDocumentReferenceWithLocale(), e);
         }
     }
 
@@ -190,5 +194,21 @@ public class DocumentUpdateConflictResolver
         }
 
         return authors;
+    }
+
+    /**
+     * Notify about a conflict in a specific document.
+     * 
+     * @param document the document involved in the conflict
+     * @param authors the authors
+     */
+    public void notifyConflict(XWikiDocument document, Collection<String> authors)
+    {
+        // Create a notification
+        this.observation.notify(
+            new ReplicationDocumentConflictEvent(document.getDocumentReferenceWithLocale(), authors), "replication",
+            document);
+
+        // TODO: mark the document as in conflict
     }
 }

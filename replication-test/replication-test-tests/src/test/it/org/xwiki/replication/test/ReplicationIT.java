@@ -272,19 +272,21 @@ public class ReplicationIT extends AbstractTest
         instances();
 
         // Configure replication
-        // controller();
+        controller();
 
         // Full replication a page between the 2 registered instances
-        // replicateFull();
+        replicateFull();
 
         // Reference replication
-        // replicateEmpty();
+        replicateEmpty();
 
         // Replication reaction to configuration change
-        // changeController();
+        changeController();
 
         // Replication reliability
         network();
+
+        conflict();
     }
 
     private void instances() throws InterruptedException
@@ -905,11 +907,7 @@ public class ReplicationIT extends AbstractTest
 
     private void network() throws Exception
     {
-        Page page = new Page();
-        page.setSpace("Network");
-        page.setName("WebHome");
-
-        LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
+        LocalDocumentReference documentReference = new LocalDocumentReference("Network", "WebHome");
 
         // Clean any pre-existing
         getUtil().switchExecutor(0);
@@ -927,6 +925,7 @@ public class ReplicationIT extends AbstractTest
         // Create a new page on XWIKI 0
         getUtil().switchExecutor(0);
         getUtil().rest().savePage(documentReference, "content", "");
+        Page page0 = getUtil().rest().<Page>get(documentReference);
 
         // Make sure the page is not replicated on XWIKI 1
         getUtil().switchExecutor(1);
@@ -939,6 +938,10 @@ public class ReplicationIT extends AbstractTest
         RegisteredInstancePane instance = instances.get(0);
         assertEquals("1 messages still waiting to be sent to the replication instance", instance.getWarning());
 
+        // Make sure that at there is at least 1s between the save and the replication to have an impact on the stored
+        // date
+        Thread.sleep(1000);
+
         // Proxy is back
         this.proxy1.stubFor(this.proxyStubBuilder1);
 
@@ -948,6 +951,78 @@ public class ReplicationIT extends AbstractTest
         // Make sure the document is finally replicated on XWIKI 1
         getUtil().switchExecutor(1);
         assertEqualsContentWithTimeout(documentReference, "content");
-        page = getUtil().rest().<Page>get(documentReference);
+        Page page1 = getUtil().rest().<Page>get(documentReference);
+
+        // Make sure the initial date is kept
+        assertEquals(page1.getModified(), page0.getModified());
+    }
+
+    private void conflict() throws Exception
+    {
+        LocalDocumentReference documentReference = new LocalDocumentReference("Conflict", "WebHome");
+
+        // Clean any pre-existing
+        getUtil().switchExecutor(0);
+        getUtil().rest().delete(documentReference);
+
+        // Configure replication
+        setConfiguration(documentReference, DocumentReplicationLevel.ALL);
+        // Make sure to wait until the configuration is replicated
+        getUtil().switchExecutor(1);
+        assertReplicationModeWithTimeout(documentReference, "all");
+
+        // Create a new page on XWIKI 0
+        getUtil().switchExecutor(0);
+        getUtil().rest().savePage(documentReference, "content", "");
+        assertEqualsHistorySizeWithTimeout(documentReference, 1);
+
+        // Make sure the page is replicated
+        getUtil().switchExecutor(1);
+        assertEqualsContentWithTimeout(documentReference, "content");
+        assertEqualsHistorySizeWithTimeout(documentReference, 1);
+
+        // Block network 0 <-> 1
+        this.proxy0.stubFor(this.proxyFailingBuilder);
+        this.proxy1.stubFor(this.proxyFailingBuilder);
+
+        // Modify the page in XWIKI 0
+        getUtil().switchExecutor(0);
+        getUtil().rest().savePage(documentReference, "content0", "");
+
+        // Modify the page in XWIKI 1
+        getUtil().switchExecutor(1);
+        getUtil().rest().savePage(documentReference, "content1", "");
+
+        // Make sure that at there is at least 1s between the save and the replication to have an impact on the stored
+        // date
+        Thread.sleep(1000);
+
+        // Make sure the message are blocked
+        getUtil().switchExecutor(0);
+        assertEqualsHistorySizeWithTimeout(documentReference, 2);
+        getUtil().switchExecutor(1);
+        assertEqualsHistorySizeWithTimeout(documentReference, 2);
+
+        // Enabled back network
+        this.proxy0.stubFor(this.proxyStubBuilder0);
+        this.proxy1.stubFor(this.proxyStubBuilder1);
+
+        // Force pushing waiting messages on XWIKI 0
+        getUtil().switchExecutor(0);
+        WikiReplicationAdministrationSectionPage.gotoPage().getRegisteredInstances().get(0).clickRetry();
+        getUtil().switchExecutor(1);
+        WikiReplicationAdministrationSectionPage.gotoPage().getRegisteredInstances().get(0).clickRetry();
+
+        // Wait for the conflict resolution
+        getUtil().switchExecutor(0);
+        assertEqualsHistorySizeWithTimeout(documentReference, 3);
+        getUtil().switchExecutor(1);
+        assertEqualsHistorySizeWithTimeout(documentReference, 3);
+
+        // Check the result of the conflict resolution is the same on both instances
+        getUtil().switchExecutor(0);
+        assertEqualsContentWithTimeout(documentReference, "content1");
+        getUtil().switchExecutor(1);
+        assertEqualsContentWithTimeout(documentReference, "content1");
     }
 }
