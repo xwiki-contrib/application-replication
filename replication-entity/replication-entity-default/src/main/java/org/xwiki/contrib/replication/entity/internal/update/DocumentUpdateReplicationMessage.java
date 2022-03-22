@@ -109,7 +109,10 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
             Collection<XWikiRCSNodeInfo> nodes = archive.getNodes();
             List<DocumentAncestor> ancestors = new ArrayList<>(nodes.size());
             for (XWikiRCSNodeInfo node : nodes) {
-                ancestors.add(new DocumentAncestor(node.getVersion().toString(), node.getDate()));
+                String nodeVersion = node.getVersion().toString();
+                if (!nodeVersion.equals(document.getVersion())) {
+                    ancestors.add(new DocumentAncestor(nodeVersion, node.getDate()));
+                }
             }
             this.metadata.put(METADATA_ANCESTORS, DocumentAncestorConverter.toStrings(ancestors));
         } catch (XWikiException e) {
