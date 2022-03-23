@@ -286,6 +286,7 @@ public class ReplicationIT extends AbstractTest
         // Replication reliability
         network();
 
+        // Replication conflict handling
         conflict();
     }
 
