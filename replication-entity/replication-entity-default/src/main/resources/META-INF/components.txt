@@ -3,6 +3,7 @@ org.xwiki.contrib.replication.entity.internal.DocumentReplicationListener
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationMessageTool
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationRelay
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils
+org.xwiki.contrib.replication.entity.internal.EntityReplicationMessageEventInitializer
 org.xwiki.contrib.replication.entity.internal.controller.DefaultDocumentReplicationController
 org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfiguration
 org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfigurationInvalidator

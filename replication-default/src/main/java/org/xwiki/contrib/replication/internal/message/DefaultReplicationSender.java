@@ -49,6 +49,7 @@ import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageStore.FileReplicationSenderMessage;
+import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
 
 /**
  * @version $Id$
@@ -72,6 +73,9 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
     @Inject
     private Provider<ReplicationSenderMessageQueue> sendQueueProvider;
+
+    @Inject
+    private ReplicationMessageLogStore logStore;
 
     @Inject
     private Logger logger;
@@ -227,14 +231,19 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
             try {
                 FileReplicationSenderMessage fileMessage = this.store.store(entry.message, targets);
 
+                // Log the message
+                this.logStore.saveAsync(fileMessage);
+
                 // Notify that the message is stored
                 entry.future.complete(fileMessage);
 
                 // Put the stored message in the sending queue
                 addSend(fileMessage, fileMessage.getTargets());
             } catch (Exception e) {
-                this.logger.error("Failed to store the message with id [" + entry.message.getId() + "] on disk."
-                    + " Might be lost if it cannot be sent to the target instance before next restart.", e);
+                this.logger.error(
+                    "Failed to store the message with id [{}] on disk."
+                        + " Might be lost if it cannot be sent to the target instance before next restart.",
+                    entry.message.getId(), e);
 
                 // Unlock those waiting for the future even if the message is not really stored
                 entry.future.complete(entry.message);

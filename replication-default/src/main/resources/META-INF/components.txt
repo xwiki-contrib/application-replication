@@ -17,6 +17,5 @@ org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageQueue
 org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageStore
 org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageQueue
 org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageStore
-org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogInitializer
 org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore
 org.xwiki.contrib.replication.script.ReplicationScriptService

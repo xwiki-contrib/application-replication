@@ -32,7 +32,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
-import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.contrib.replication.internal.ReplicationUtils;
 import org.xwiki.model.reference.DocumentReference;
@@ -64,8 +64,7 @@ public class DocumentReplicationMessageTool
      * @return the document associated with the message
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
-    public DocumentReference getDocumentReference(ReplicationReceiverMessage message)
-        throws InvalidReplicationMessageException
+    public DocumentReference getDocumentReference(ReplicationMessage message) throws InvalidReplicationMessageException
     {
         return getDocumentReference(message, getEntityReference(message));
     }
@@ -76,7 +75,7 @@ public class DocumentReplicationMessageTool
      * @return the document associated with the message
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
-    public DocumentReference getDocumentReference(ReplicationReceiverMessage message, EntityReference reference)
+    public DocumentReference getDocumentReference(ReplicationMessage message, EntityReference reference)
         throws InvalidReplicationMessageException
     {
         Locale locale = getMetadata(message, AbstractEntityReplicationMessage.METADATA_LOCALE, true, Locale.class);
@@ -89,11 +88,22 @@ public class DocumentReplicationMessageTool
      * @return the entity associated with the message
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
-    public EntityReference getEntityReference(ReplicationReceiverMessage message)
+    public EntityReference getEntityReference(ReplicationMessage message) throws InvalidReplicationMessageException
+    {
+        return getEntityReference(message, true);
+    }
+
+    /**
+     * @param message the received message
+     * @param mandatory true of the property is mandatory
+     * @return the entity associated with the message
+     * @throws InvalidReplicationMessageException when failing to parse the message
+     */
+    public EntityReference getEntityReference(ReplicationMessage message, boolean mandatory)
         throws InvalidReplicationMessageException
     {
         EntityReference reference =
-            getMetadata(message, AbstractEntityReplicationMessage.METADATA_REFERENCE, true, EntityReference.class);
+            getMetadata(message, AbstractEntityReplicationMessage.METADATA_REFERENCE, mandatory, EntityReference.class);
 
         return this.currentEntityResolver.resolve(reference, reference.getType());
     }
@@ -103,7 +113,7 @@ public class DocumentReplicationMessageTool
      * @return true if the document in the message is complete
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
-    public boolean isComplete(ReplicationReceiverMessage message) throws InvalidReplicationMessageException
+    public boolean isComplete(ReplicationMessage message) throws InvalidReplicationMessageException
     {
         return BooleanUtils.toBoolean(getMetadata(message, DocumentUpdateReplicationMessage.METADATA_COMPLETE, false));
     }
@@ -115,7 +125,7 @@ public class DocumentReplicationMessageTool
      * @return the metadata value
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
-    public String getMetadata(ReplicationReceiverMessage message, String key, boolean mandatory)
+    public String getMetadata(ReplicationMessage message, String key, boolean mandatory)
         throws InvalidReplicationMessageException
     {
         return getMetadata(message, key, mandatory, null);
@@ -130,7 +140,7 @@ public class DocumentReplicationMessageTool
      * @return the metadata value
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
-    public <T> T getMetadata(ReplicationReceiverMessage message, String key, boolean mandatory, Type type)
+    public <T> T getMetadata(ReplicationMessage message, String key, boolean mandatory, Type type)
         throws InvalidReplicationMessageException
     {
         return getMetadata(message, key, mandatory, type, null);
@@ -145,7 +155,7 @@ public class DocumentReplicationMessageTool
      * @return the metadata value
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
-    public <T> T getMetadata(ReplicationReceiverMessage message, String key, boolean mandatory, T def)
+    public <T> T getMetadata(ReplicationMessage message, String key, boolean mandatory, T def)
         throws InvalidReplicationMessageException
     {
         return getMetadata(message, key, mandatory, def != null ? def.getClass() : null, def);
@@ -161,7 +171,7 @@ public class DocumentReplicationMessageTool
      * @return the metadata value
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
-    public <T> T getMetadata(ReplicationReceiverMessage message, String key, boolean mandatory, Type type, T def)
+    public <T> T getMetadata(ReplicationMessage message, String key, boolean mandatory, Type type, T def)
         throws InvalidReplicationMessageException
     {
         Collection<String> values = message.getCustomMetadata().get(key);

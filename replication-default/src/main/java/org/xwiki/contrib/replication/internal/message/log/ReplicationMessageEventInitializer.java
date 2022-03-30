@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!--
+/*
  * See the NOTICE file distributed with this work for additional
  * information regarding copyright ownership.
  *
@@ -18,16 +16,22 @@
  * License along with this software; if not, write to the Free
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
--->
+ */
+package org.xwiki.contrib.replication.internal.message.log;
 
-<!DOCTYPE hibernate-mapping PUBLIC
-"-//Hibernate/Hibernate Mapping DTD//EN"
-"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
-<hibernate-mapping>
-  <class name="org.xwiki.contrib.replication.internal.message.log.HibernateReplicationMessage" table="replication_messages">
-    <id name="id" type="string" unsaved-value="undefined">
-      <column name="id" length="255" not-null="true" />
-      <generator class="assigned" />
-    </id>
-  </class>
-</hibernate-mapping>
+import org.xwiki.component.annotation.Role;
+import org.xwiki.contrib.replication.ReplicationMessage;
+import org.xwiki.eventstream.Event;
+
+/**
+ * @version $Id$
+ */
+@Role
+public interface ReplicationMessageEventInitializer
+{
+    /**
+     * @param message the message to read
+     * @param event the event to write
+     */
+    void initialize(ReplicationMessage message, Event event);
+}

@@ -19,24 +19,30 @@
  */
 package org.xwiki.contrib.replication.internal.message.log;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
 
-import org.hibernate.Session;
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.component.manager.ComponentManager;
+import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationMessage;
+import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageStore.FileReplicationSenderMessage;
+import org.xwiki.eventstream.Event;
+import org.xwiki.eventstream.Event.Importance;
+import org.xwiki.eventstream.EventFactory;
+import org.xwiki.eventstream.EventStore;
+import org.xwiki.eventstream.EventStreamException;
+import org.xwiki.model.reference.DocumentReference;
 
-import com.xpn.xwiki.XWikiContext;
-import com.xpn.xwiki.XWikiException;
-import com.xpn.xwiki.store.XWikiHibernateBaseStore;
-import com.xpn.xwiki.store.XWikiHibernateBaseStore.HibernateCallback;
-import com.xpn.xwiki.store.XWikiHibernateStore;
-import com.xpn.xwiki.store.XWikiStoreInterface;
+import com.xpn.xwiki.user.api.XWikiRightService;
 
 /**
  * @version $Id$
@@ -45,73 +51,111 @@ import com.xpn.xwiki.store.XWikiStoreInterface;
 @Singleton
 public class ReplicationMessageLogStore
 {
-    @Inject
-    @Named(XWikiHibernateBaseStore.HINT)
-    private XWikiStoreInterface hibernateStore;
+    private static final DocumentReference SUPERADMIN =
+        new DocumentReference("xwiki", "XWiki", XWikiRightService.SUPERADMIN_USER);
+
+    private static final String APPLICATION = "replication.message";
 
     @Inject
-    private Provider<XWikiContext> xcontextProvider;
+    private EventStore store;
+
+    @Inject
+    private EventFactory eventFactory;
+
+    @Inject
+    @Named("context")
+    private ComponentManager componentManager;
+
+    @Inject
+    private Logger logger;
 
     /**
      * @param messageId the identifier of the message
      * @return true if the message was found
-     * @throws XWikiException when failing to search for the message
+     * @throws EventStreamException when failing to search for the message
      */
-    public boolean exist(String messageId) throws XWikiException
+    public boolean exist(String messageId) throws EventStreamException
     {
-        XWikiContext xcontext = this.xcontextProvider.get();
-        XWikiHibernateStore store = (XWikiHibernateStore) this.hibernateStore;
-
-        return store.executeRead(xcontext, session -> exist(messageId, session));
-    }
-
-    private boolean exist(String messageId, Session session)
-    {
-        CriteriaBuilder builder = session.getCriteriaBuilder();
-        CriteriaQuery<Long> query = builder.createQuery(Long.class);
-        Root<HibernateReplicationMessage> from = query.from(HibernateReplicationMessage.class);
-        query.select(builder.count(from)).where(builder.equal(from.get("id"), messageId));
-
-        return session.createQuery(query).uniqueResult() > 0;
+        return this.store.getEvent(messageId).isPresent();
     }
 
     /**
      * @param message the message to save
-     * @throws XWikiException when failing to save the message
+     * @throws EventStreamException when failing to save the message
+     * @throws InterruptedException if the current thread was interrupted while waiting
      */
-    public void save(ReplicationMessage message) throws XWikiException
+    public void save(ReplicationMessage message) throws EventStreamException, InterruptedException
     {
-        executeWrite(session -> saveHibernateReplicationMessage(message, session));
+        // Save the event synchronously
+        try {
+            saveAsync(message).get();
+        } catch (InterruptedException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new EventStreamException("Failed to save the message in the event store", e);
+        }
+    }
+
+    /**
+     * @param message the message to save
+     * @return the new {@link CompletableFuture} providing the added {@link Event}
+     */
+    public CompletableFuture<Event> saveAsync(ReplicationMessage message)
+    {
+        Event event = this.eventFactory.createRawEvent();
+
+        // We don't want this even to go through pre filtering so we mark it as done
+        event.setPrefiltered(true);
+        // We want to hide this event as much as possible
+        event.setHidden(true);
+
+        event.setId(message.getId());
+        event.setUser(SUPERADMIN);
+        event.setApplication(APPLICATION);
+        event.setImportance(Importance.BACKGROUND);
+
+        event.setDate(message.getDate());
+        event.setType("replication_message_" + message.getType());
+
+        Map<String, Object> properties = new HashMap<>();
+
+        // Standard metadata
+        properties.put("id", message.getId());
+        properties.put("source", message.getSource());
+        properties.put("type", message.getType());
+
+        // Add targets
+        if (message instanceof FileReplicationSenderMessage) {
+            FileReplicationSenderMessage senderMessage = (FileReplicationSenderMessage) message;
+            properties.put("targets",
+                senderMessage.getTargets().stream().map(ReplicationInstance::getURI).collect(Collectors.toList()));
+        }
+
+        // Add custom metadata
+        for (Map.Entry<String, Collection<String>> entry : message.getCustomMetadata().entrySet()) {
+            properties.put("custom_" + entry.getKey(), entry);
+        }
+
+        event.setCustom(properties);
+
+        // Call extended event initializers
+        try {
+            this.componentManager
+                .<ReplicationMessageEventInitializer>getInstanceList(ReplicationMessageEventInitializer.class)
+                .forEach(i -> i.initialize(message, event));
+        } catch (Exception e) {
+            this.logger.error("Failed to execute event initializers for message with id [{}]", message.getId(), e);
+        }
+
+        // Save the event asynchronously
+        return this.store.saveEvent(event);
     }
 
     /**
      * @param messageId the identifier of the message to delete
-     * @throws XWikiException when failing to save the message
      */
-    public void delete(String messageId) throws XWikiException
+    public void delete(String messageId)
     {
-        executeWrite(session -> deleteHibernateReplicationMessage(messageId, session));
-    }
-
-    private Object saveHibernateReplicationMessage(ReplicationMessage message, Session session)
-    {
-        session.save(new HibernateReplicationMessage(message));
-
-        return null;
-    }
-
-    private Object deleteHibernateReplicationMessage(String messageId, Session session)
-    {
-        session.delete(new HibernateReplicationMessage(messageId));
-
-        return null;
-    }
-
-    private void executeWrite(HibernateCallback<Object> callback) throws XWikiException
-    {
-        XWikiContext xcontext = this.xcontextProvider.get();
-        XWikiHibernateStore store = (XWikiHibernateStore) this.hibernateStore;
-
-        store.executeWrite(xcontext, callback);
+        this.store.deleteEvent(messageId);
     }
 }

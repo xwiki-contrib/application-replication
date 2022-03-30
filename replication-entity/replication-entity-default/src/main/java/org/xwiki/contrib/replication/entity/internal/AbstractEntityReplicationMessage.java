@@ -120,7 +120,7 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
         putMetadata(METADATA_CONTEXT_USER, this.documentAccessBridge.getCurrentUserReference());
 
         // Make sure the id is unique but not too big
-        this.id = getType() + '-' + UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().toString();
     }
 
     /**
