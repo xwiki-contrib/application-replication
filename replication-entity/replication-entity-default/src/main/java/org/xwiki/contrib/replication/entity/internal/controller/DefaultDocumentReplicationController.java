@@ -30,7 +30,9 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
+import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.doc.XWikiDocument;
 
@@ -47,23 +49,23 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     @Inject
     private DocumentReplicationControllerConfiguration configuration;
 
-    private DocumentReplicationController getController(DocumentReference documentReference) throws ReplicationException
+    private DocumentReplicationController getController(EntityReference documentReference) throws ReplicationException
     {
         return this.configuration.resolveDocumentReplicationController(documentReference);
     }
 
     @Override
-    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(DocumentReference documentReference)
+    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference)
         throws ReplicationException
     {
-        return getController(documentReference).getReplicationConfiguration(documentReference);
+        return getController(entityReference).getReplicationConfiguration(entityReference);
     }
 
     @Override
-    public List<DocumentReplicationControllerInstance> getRelayConfiguration(DocumentReference documentReference)
+    public List<DocumentReplicationControllerInstance> getRelayConfiguration(EntityReference entityReference)
         throws ReplicationException
     {
-        return getController(documentReference).getRelayConfiguration(documentReference);
+        return getController(entityReference).getRelayConfiguration(entityReference);
     }
 
     @Override
@@ -91,14 +93,20 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     }
 
     @Override
+    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
+        DocumentReplicationLevel minimumLevel) throws ReplicationException
+    {
+        getController(entityReference).send(messageProducer, entityReference, minimumLevel);
+    }
+
+    @Override
     public void sendCompleteDocument(XWikiDocument document) throws ReplicationException
     {
         getController(document.getDocumentReference()).sendCompleteDocument(document);
     }
 
     @Override
-    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors)
-        throws ReplicationException
+    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors) throws ReplicationException
     {
         getController(document.getDocumentReference()).sendDocumentRepair(document, authors);
     }

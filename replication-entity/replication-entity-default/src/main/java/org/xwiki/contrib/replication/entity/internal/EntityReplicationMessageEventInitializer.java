@@ -53,6 +53,17 @@ public class EntityReplicationMessageEventInitializer implements ReplicationMess
     public void initialize(ReplicationMessage message, Event event)
     {
         setRelatedEntity(message, event);
+        setUser(message, event);
+    }
+
+    private void setUser(ReplicationMessage message, Event event)
+    {
+        try {
+            event.setUser(this.documentMessageTool.getContextUser(message));
+        } catch (InvalidReplicationMessageException e) {
+            // Should never happen since it's not mandatory
+            this.logger.error("Failed to extract the context user from the message with id [{}]", message.getId(), e);
+        }
     }
 
     private void setRelatedEntity(ReplicationMessage message, Event event)

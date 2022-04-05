@@ -21,12 +21,14 @@ package org.xwiki.contrib.replication.internal.message;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -50,6 +52,7 @@ import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageStore.FileReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
+import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 
 /**
  * @version $Id$
@@ -232,7 +235,15 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
                 FileReplicationSenderMessage fileMessage = this.store.store(entry.message, targets);
 
                 // Log the message
-                this.logStore.saveAsync(fileMessage);
+                this.logStore.saveAsync(fileMessage, (m, e) -> {
+                    Map<String, Object> custom = new HashMap<>(e.getCustom());
+
+                    custom.put(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_STORED);
+                    custom.put(ReplicationMessageEventQuery.KEY_TARGETS, fileMessage.getTargets().stream()
+                        .map(ReplicationInstance::getURI).collect(Collectors.toList()));
+
+                    e.setCustom(custom);
+                });
 
                 // Notify that the message is stored
                 entry.future.complete(fileMessage);

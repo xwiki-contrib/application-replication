@@ -44,6 +44,11 @@
       <version>${platform.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.xwiki.platform</groupId>
+      <artifactId>xwiki-platform-like-api</artifactId>
+      <version>${platform.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.xwiki.contrib.replication</groupId>
       <artifactId>replication-entity-api</artifactId>
       <version>${project.version}</version>

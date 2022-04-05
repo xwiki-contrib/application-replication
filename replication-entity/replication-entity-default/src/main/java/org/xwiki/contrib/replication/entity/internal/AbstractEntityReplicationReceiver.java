@@ -62,7 +62,6 @@ public abstract class AbstractEntityReplicationReceiver extends AbstractReplicat
     protected DocumentReference getContextUserReference(ReplicationReceiverMessage message)
         throws InvalidReplicationMessageException
     {
-        return this.documentMessageTool.getMetadata(message, AbstractEntityReplicationMessage.METADATA_CONTEXT_USER,
-            false, DocumentReference.class);
+        return this.documentMessageTool.getContextUser(message);
     }
 }

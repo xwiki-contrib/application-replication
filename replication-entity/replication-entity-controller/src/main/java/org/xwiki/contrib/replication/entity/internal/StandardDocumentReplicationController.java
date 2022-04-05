@@ -38,7 +38,8 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
-import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
+import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -63,36 +64,36 @@ public class StandardDocumentReplicationController implements DocumentReplicatio
     private DocumentReplicationSender sender;
 
     @Override
-    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(DocumentReference documentReference)
+    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference)
         throws ReplicationException
     {
-        return getConfiguration(documentReference, false);
+        return getConfiguration(entityReference, false);
     }
 
     @Override
-    public List<DocumentReplicationControllerInstance> getRelayConfiguration(DocumentReference documentReference)
+    public List<DocumentReplicationControllerInstance> getRelayConfiguration(EntityReference entityReference)
         throws ReplicationException
     {
-        return getConfiguration(documentReference, true);
+        return getConfiguration(entityReference, true);
     }
 
-    private DocumentReplicationControllerInstance getConfiguration(DocumentReference documentReference,
+    private DocumentReplicationControllerInstance getConfiguration(EntityReference entityReference,
         ReplicationInstance instance) throws ReplicationException
     {
         try {
-            return this.store.resolveHibernateEntityReplication(documentReference, instance);
+            return this.store.resolveHibernateEntityReplication(entityReference, instance);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to retrieve configuration for instance [" + instance.getURI() + "]",
                 e);
         }
     }
 
-    private List<DocumentReplicationControllerInstance> getConfiguration(DocumentReference documentReference,
-        boolean relay) throws ReplicationException
+    private List<DocumentReplicationControllerInstance> getConfiguration(EntityReference entityReference, boolean relay)
+        throws ReplicationException
     {
         // Get current instance configuration
         DocumentReplicationControllerInstance currentInstance =
-            getConfiguration(documentReference, this.instanceManager.getCurrentInstance());
+            getConfiguration(entityReference, this.instanceManager.getCurrentInstance());
 
         // Don't replicate anything if the instance is not a relay and is forbidden from modifying the
         // document
@@ -104,7 +105,7 @@ public class StandardDocumentReplicationController implements DocumentReplicatio
         // Get full configuration
         Collection<DocumentReplicationControllerInstance> instances;
         try {
-            instances = this.store.resolveHibernateEntityReplication(documentReference);
+            instances = this.store.resolveHibernateEntityReplication(entityReference);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to retrieve instances from the store", e);
         }
@@ -152,6 +153,13 @@ public class StandardDocumentReplicationController implements DocumentReplicatio
     public void onDocumentHistoryDelete(XWikiDocument document, String from, String to) throws ReplicationException
     {
         this.sender.sendDocumentHistoryDelete(document.getDocumentReferenceWithLocale(), from, to, null, null);
+    }
+
+    @Override
+    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
+        DocumentReplicationLevel minimumLevel) throws ReplicationException
+    {
+        this.sender.send(messageProducer, entityReference, minimumLevel, null, null);
     }
 
     @Override

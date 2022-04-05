@@ -21,6 +21,8 @@ package org.xwiki.contrib.replication.internal.message;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -35,6 +37,8 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.event.ReplicationSenderMessageEvent;
 import org.xwiki.contrib.replication.internal.ReplicationClient;
+import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
+import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.observation.ObservationManager;
 
 /**
@@ -54,6 +58,9 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
 
     @Inject
     private ObservationManager observation;
+
+    @Inject
+    private ReplicationMessageLogStore logStore;
 
     /**
      * Used to wait for a ping or a timeout.
@@ -115,6 +122,17 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
             try {
                 // Send the data to the instance
                 this.client.sendMessage(message, this.instance);
+
+                // Log the successfully sent message
+                this.logStore.saveAsync(message, (m, e) -> {
+                    Map<String, Object> custom = new HashMap<>();
+
+                    custom.put(ReplicationMessageEventQuery.KEY_STATUS_SENT_DATE, new Date());
+                    custom.put(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_SENT);
+                    custom.put(ReplicationMessageEventQuery.KEY_TARGET, this.instance.getURI());
+
+                    e.setCustom(custom);
+                });
 
                 // Stop the loop
                 break;

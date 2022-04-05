@@ -25,7 +25,7 @@ import java.util.List;
 import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.doc.XWikiDocument;
 
@@ -38,21 +38,22 @@ public interface DocumentReplicationController
     /**
      * Indicate the list of registered instances this document should be replicated to.
      * 
-     * @param documentReference the reference of the document about to be replicated
+     * @param entityReference the reference of the entity for which we want to know the replication configuration
      * @return the registered instances on which to replicate the document
      * @throws ReplicationException when failing to get the configuration
      */
-    List<DocumentReplicationControllerInstance> getReplicationConfiguration(DocumentReference documentReference)
+    List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference)
         throws ReplicationException;
 
     /**
      * Indicate the list of registered instances this document's messages should be relayed to.
      * 
-     * @param documentReference the reference of the document about to be replicated
+     * @param entityReference the reference of the entity for which we want to know the replication configuration in the
+     *            case of a relay
      * @return the registered instances on which to replicate the document
      * @throws ReplicationException when failing to get the configuration
      */
-    List<DocumentReplicationControllerInstance> getRelayConfiguration(DocumentReference documentReference)
+    List<DocumentReplicationControllerInstance> getRelayConfiguration(EntityReference entityReference)
         throws ReplicationException;
 
     /**
@@ -80,6 +81,15 @@ public interface DocumentReplicationController
      * @throws ReplicationException when failing to replicate the document history delete
      */
     void onDocumentHistoryDelete(XWikiDocument document, String from, String to) throws ReplicationException;
+
+    /**
+     * @param messageProducer called to generate the message to send
+     * @param entityReference the entity associated with the message
+     * @param minimumLevel the minimum level required from an instance configuration to receive the document
+     * @throws ReplicationException when failing to send the message
+     */
+    void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
+        DocumentReplicationLevel minimumLevel) throws ReplicationException;
 
     /**
      * Force pushing a complete document to allowed instances.

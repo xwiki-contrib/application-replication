@@ -25,6 +25,7 @@ import java.util.Map;
 import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.doc.XWikiDocument;
 
@@ -34,6 +35,18 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Role
 public interface DocumentReplicationSender
 {
+    /**
+     * @param messageProducer called to generate the message to send
+     * @param entityReference the reference of the document to send
+     * @param minimumLevel the minimum level required from an instance configuration to receive the document
+     * @param configurations the replication configuration to follow or null if it should be asked to the controller
+     * @param metadata custom metadata to add to the message
+     * @throws ReplicationException when failing to send the document
+     */
+    void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
+        DocumentReplicationLevel minimumLevel, Map<String, Collection<String>> metadata,
+        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException;
+
     /**
      * @param documentReference the reference of the document to send
      * @param complete true if the complete document (with history and attachments content) should be sent

@@ -1,3 +1,11 @@
+package org.xwiki.contrib.replication.entity;
+
+import java.util.Collection;
+import java.util.Map;
+
+import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
+
 /*
  * See the NOTICE file distributed with this work for additional
  * information regarding copyright ownership.
@@ -17,22 +25,17 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal.message.log;
-
-import org.xwiki.component.annotation.Role;
-import org.xwiki.contrib.replication.ReplicationMessage;
-import org.xwiki.eventstream.Event;
 
 /**
  * @version $Id$
  */
-@Role
 @FunctionalInterface
-public interface ReplicationMessageEventInitializer
+public interface ReplicationSenderMessageProducer
 {
     /**
-     * @param message the message to read
-     * @param event the event to write
+     * @param metadata custom metadata to add to the message
+     * @return the message to send
+     * @throws ReplicationException when failing to produce the message to send
      */
-    void initialize(ReplicationMessage message, Event event);
+    ReplicationSenderMessage produce(Map<String, Collection<String>> metadata) throws ReplicationException;
 }

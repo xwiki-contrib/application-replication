@@ -110,6 +110,17 @@ public class DocumentReplicationMessageTool
 
     /**
      * @param message the received message
+     * @return the user reference from the context when the message was created
+     * @throws InvalidReplicationMessageException when failing to parse the message
+     */
+    public DocumentReference getContextUser(ReplicationMessage message) throws InvalidReplicationMessageException
+    {
+        return getMetadata(message, AbstractEntityReplicationMessage.METADATA_CONTEXT_USER, false,
+            DocumentReference.class);
+    }
+
+    /**
+     * @param message the received message
      * @return true if the document in the message is complete
      * @throws InvalidReplicationMessageException when failing to parse the message
      */

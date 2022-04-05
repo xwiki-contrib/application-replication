@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -32,9 +31,8 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentManager;
-import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationMessage;
-import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageStore.FileReplicationSenderMessage;
+import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.eventstream.Event;
 import org.xwiki.eventstream.Event.Importance;
 import org.xwiki.eventstream.EventFactory;
@@ -53,8 +51,6 @@ public class ReplicationMessageLogStore
 {
     private static final DocumentReference SUPERADMIN =
         new DocumentReference("xwiki", "XWiki", XWikiRightService.SUPERADMIN_USER);
-
-    private static final String APPLICATION = "replication.message";
 
     @Inject
     private EventStore store;
@@ -88,7 +84,7 @@ public class ReplicationMessageLogStore
     {
         // Save the event synchronously
         try {
-            saveAsync(message).get();
+            saveAsync(message, null).get();
         } catch (InterruptedException e) {
             throw e;
         } catch (Exception e) {
@@ -98,9 +94,11 @@ public class ReplicationMessageLogStore
 
     /**
      * @param message the message to save
+     * @param initializer custom initializer
      * @return the new {@link CompletableFuture} providing the added {@link Event}
      */
-    public CompletableFuture<Event> saveAsync(ReplicationMessage message)
+    public CompletableFuture<Event> saveAsync(ReplicationMessage message,
+        ReplicationMessageEventInitializer initializer)
     {
         Event event = this.eventFactory.createRawEvent();
 
@@ -111,7 +109,7 @@ public class ReplicationMessageLogStore
 
         event.setId(message.getId());
         event.setUser(SUPERADMIN);
-        event.setApplication(APPLICATION);
+        event.setApplication(ReplicationMessageEventQuery.VALUE_APPLICATION);
         event.setImportance(Importance.BACKGROUND);
 
         event.setDate(message.getDate());
@@ -120,23 +118,21 @@ public class ReplicationMessageLogStore
         Map<String, Object> properties = new HashMap<>();
 
         // Standard metadata
-        properties.put("id", message.getId());
-        properties.put("source", message.getSource());
-        properties.put("type", message.getType());
-
-        // Add targets
-        if (message instanceof FileReplicationSenderMessage) {
-            FileReplicationSenderMessage senderMessage = (FileReplicationSenderMessage) message;
-            properties.put("targets",
-                senderMessage.getTargets().stream().map(ReplicationInstance::getURI).collect(Collectors.toList()));
-        }
+        properties.put(ReplicationMessageEventQuery.KEY_ID, message.getId());
+        properties.put(ReplicationMessageEventQuery.KEY_SOURCE, message.getSource());
+        properties.put(ReplicationMessageEventQuery.KEY_TYPE, message.getType());
 
         // Add custom metadata
         for (Map.Entry<String, Collection<String>> entry : message.getCustomMetadata().entrySet()) {
-            properties.put("custom_" + entry.getKey(), entry);
+            properties.put(ReplicationMessageEventQuery.PREFIX_CUSTOM_METADATA + entry.getKey(), entry);
         }
 
         event.setCustom(properties);
+
+        // Call custom initializer
+        if (initializer != null) {
+            initializer.initialize(message, event);
+        }
 
         // Call extended event initializers
         try {
