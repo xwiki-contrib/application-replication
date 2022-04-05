@@ -124,7 +124,7 @@ public class ReplicationMessageLogStore
 
         // Add custom metadata
         for (Map.Entry<String, Collection<String>> entry : message.getCustomMetadata().entrySet()) {
-            properties.put(ReplicationMessageEventQuery.PREFIX_CUSTOM_METADATA + entry.getKey(), entry);
+            properties.put(ReplicationMessageEventQuery.PREFIX_CUSTOM_METADATA + entry.getKey(), entry.getValue());
         }
 
         event.setCustom(properties);
