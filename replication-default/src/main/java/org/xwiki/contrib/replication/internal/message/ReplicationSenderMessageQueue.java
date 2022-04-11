@@ -23,6 +23,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -125,7 +126,10 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
 
                 // Log the successfully sent message
                 this.logStore.saveAsync(message, (m, e) -> {
-                    Map<String, Object> custom = new HashMap<>();
+                    Map<String, Object> custom = new HashMap<>(e.getCustom());
+
+                    // Generate a new id to avoid overwriting the stored one
+                    e.setId(UUID.randomUUID().toString());
 
                     custom.put(ReplicationMessageEventQuery.KEY_STATUS_SENT_DATE, new Date());
                     custom.put(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_SENT);
