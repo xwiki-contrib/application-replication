@@ -65,7 +65,7 @@ public class ReplicationDocumentConflictEvent implements RecordableEvent, Target
     public ReplicationDocumentConflictEvent(DocumentReference documentReference, Collection<String> authors)
     {
         this.documentReference = documentReference;
-        this.targets = new HashSet<>(authors);
+        this.targets = authors != null ? new HashSet<>(authors) : null;
     }
 
     /**
