@@ -36,6 +36,7 @@ import org.xwiki.contrib.replication.test.po.ReplicationPage;
 import org.xwiki.contrib.replication.test.po.RequestedInstancePane;
 import org.xwiki.contrib.replication.test.po.RequestingInstancePane;
 import org.xwiki.contrib.replication.test.po.WikiReplicationAdministrationSectionPage;
+import org.xwiki.like.test.po.LikeButton;
 import org.xwiki.model.EntityType;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.LocalDocumentReference;
@@ -213,6 +214,23 @@ public class ReplicationIT extends AbstractTest
         });
 
         return new WikiReplicationAdministrationSectionPage();
+    }
+
+    private ReplicationPage assertEqualsLikeWithTimeout(LocalDocumentReference documentReference, int likes)
+        throws InterruptedException
+    {
+        assertEqualsWithTimeout(likes, () -> {
+            try {
+                getUtil().gotoPage(documentReference);
+                LikeButton likeButton = new LikeButton();
+
+                return likeButton.getLikeNumber();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return new ReplicationPage();
     }
 
     private void saveMinor(Page page) throws Exception
@@ -906,6 +924,42 @@ public class ReplicationIT extends AbstractTest
         assertDoesNotExistWithTimeout(page1_1);
         assertEqualsContentWithTimeout(page1_1_1, "content1_1_1");
         assertEqualsContentWithTimeout(page1_2, "content1_2");
+    }
+
+    private void like() throws Exception
+    {
+        LocalDocumentReference reference = new LocalDocumentReference("Like", "WebHome");
+
+        // Clean any pre-existing
+        getUtil().switchExecutor(0);
+        getUtil().rest().delete(reference);
+
+        // Configure replication
+        setConfiguration(reference, DocumentReplicationLevel.ALL);
+        // Make sure to wait until the configuration is replicated
+        getUtil().switchExecutor(1);
+        assertReplicationModeWithTimeout(reference, "all");
+
+        // Create a new page on XWIKI 0
+        getUtil().switchExecutor(0);
+        getUtil().rest().savePage(reference, "content", "");
+        getUtil().rest().<Page>get(reference);
+
+        // Make sure the page replicated on XWIKI 1
+        getUtil().switchExecutor(1);
+        assertEqualsContentWithTimeout(reference, "content");
+        getUtil().rest().<Page>get(reference);
+
+        // Set like on XWIKI 0
+        getUtil().switchExecutor(0);
+        getUtil().gotoPage(reference);
+        LikeButton like = new LikeButton();
+        like.clickToLike();
+        assertEqualsLikeWithTimeout(reference, 1);
+
+        // Make sure the like is replicated
+        getUtil().switchExecutor(1);
+        assertEqualsLikeWithTimeout(reference, 1);
     }
 
     private void network() throws Exception
