@@ -33,6 +33,7 @@ import org.suigeneris.jrcs.rcs.Version;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.contrib.replication.entity.notification.ReplicationDocumentConflictEvent;
 import org.xwiki.logging.LogLevel;
 import org.xwiki.observation.ObservationManager;
@@ -74,6 +75,9 @@ public class DocumentUpdateConflictResolver
 
     @Inject
     private MergeManager mergeManager;
+
+    @Inject
+    private ReplicationDocumentStore store;
 
     @Inject
     private Logger logger;
@@ -209,6 +213,11 @@ public class DocumentUpdateConflictResolver
             new ReplicationDocumentConflictEvent(document.getDocumentReferenceWithLocale(), authors), "replication",
             document);
 
-        // TODO: mark the document as in conflict
+        // Mark the document as conflicting
+        try {
+            this.store.setConflict(document.getDocumentReferenceWithLocale(), true);
+        } catch (ReplicationException e) {
+            this.logger.error("Failed to mark the document has conflicting", e);
+        }
     }
 }

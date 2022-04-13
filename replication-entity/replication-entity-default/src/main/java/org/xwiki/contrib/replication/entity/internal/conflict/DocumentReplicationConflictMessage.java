@@ -17,26 +17,26 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.repair;
+package org.xwiki.contrib.replication.entity.internal.conflict;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
-import org.xwiki.user.UserReference;
 
 /**
  * @version $Id$
  */
-@Component(roles = DocumentRepairReplicationMessage.class)
-public class DocumentRepairReplicationMessage extends DocumentUpdateReplicationMessage
+@Component(roles = DocumentReplicationConflictMessage.class)
+public class DocumentReplicationConflictMessage extends AbstractNoContentEntityReplicationMessage<DocumentReference>
 {
     /**
      * The message type for these messages.
      */
-    public static final String TYPE = TYPE_PREFIX + "repair";
+    public static final String TYPE = TYPE_PREFIX + "conflict";
 
     /**
      * The prefix in front of all entity metadata properties.
@@ -44,9 +44,9 @@ public class DocumentRepairReplicationMessage extends DocumentUpdateReplicationM
     public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
 
     /**
-     * The name of the metadata containing the authors involved in the conflict.
+     * The name of the metadata indicating if the conflict marker should be set or removed.
      */
-    public static final String METADATA_CONFLICT_AUTHORS = METADATA_PREFIX + "AUTHORS";
+    public static final String METADATA_CONFLICT = METADATA_PREFIX + "CONFLICT";
 
     @Override
     public String getType()
@@ -55,19 +55,17 @@ public class DocumentRepairReplicationMessage extends DocumentUpdateReplicationM
     }
 
     /**
-     * Initialize a message for a complete replication.
-     * 
-     * @param documentReference the reference of the document affected by this message
-     * @param creator the user who created the document
-     * @param version the version of the document
-     * @param authors the users involved in the conflict
+     * @param documentReference the reference of the document for which to replicated the conflict status
+     * @param conflict true if the document has a replication conflict
      * @param metadata custom metadata to add to the message
      */
-    public void initializeRepair(DocumentReference documentReference, UserReference creator, String version,
-        Collection<String> authors, Map<String, Collection<String>> metadata)
+    public void initialize(DocumentReference documentReference, boolean conflict,
+        Map<String, Collection<String>> metadata)
     {
-        initialize(documentReference, version, true, creator, metadata);
+        super.initialize(documentReference, metadata);
 
-        putMetadata(METADATA_CONFLICT_AUTHORS, authors);
+        putMetadata(METADATA_CONFLICT, conflict);
+
+        this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 }

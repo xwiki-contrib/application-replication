@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.test.po.PageReplicationAdministrationSectionPage;
 import org.xwiki.contrib.replication.test.po.RegisteredInstancePane;
+import org.xwiki.contrib.replication.test.po.ReplicationConflictPane;
 import org.xwiki.contrib.replication.test.po.ReplicationPage;
 import org.xwiki.contrib.replication.test.po.RequestedInstancePane;
 import org.xwiki.contrib.replication.test.po.RequestingInstancePane;
@@ -52,6 +53,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
@@ -994,8 +996,8 @@ public class ReplicationIT extends AbstractTest
         getUtil().switchExecutor(1);
         getUtil().rest().savePage(documentReference, "content1", "");
 
-        // Make sure that at there is at least 1s between the save and the replication to have an impact on the stored
-        // date
+        // Make sure that at there is at least 1 second between the save and the replication to have an impact on the
+        // stored date
         Thread.sleep(1000);
 
         // Make sure the message are blocked
@@ -1025,5 +1027,15 @@ public class ReplicationIT extends AbstractTest
         assertEqualsContentWithTimeout(documentReference, "content1");
         getUtil().switchExecutor(1);
         assertEqualsContentWithTimeout(documentReference, "content1");
+
+        // Make sure a warning is shown in case of conflict
+        getUtil().switchExecutor(0);
+        ReplicationPage page0 = gotoPage(documentReference);
+        ReplicationConflictPane conflict0 = page0.getReplicationConflictPane();
+        assertNotNull(conflict0);
+        getUtil().switchExecutor(1);
+        ReplicationPage page1 = gotoPage(documentReference);
+        ReplicationConflictPane conflict1 = page1.getReplicationConflictPane();
+        assertNotNull(conflict1);
     }
 }

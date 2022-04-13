@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!--
+/*
  * See the NOTICE file distributed with this work for additional
  * information regarding copyright ownership.
  *
@@ -18,19 +16,27 @@
  * License along with this software; if not, write to the Free
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
--->
+ */
+package org.xwiki.contrib.replication.test.po;
 
-<!DOCTYPE hibernate-mapping PUBLIC
-"-//Hibernate/Hibernate Mapping DTD//EN"
-"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
-<hibernate-mapping>
-  <class name="org.xwiki.contrib.replication.entity.internal.index.HibernateReplicationDocument"
-    table="replication_document">
-    <id name="docId" type="long" unsaved-value="undefined">
-      <column name="docid" not-null="true" />
-      <generator class="assigned" />
-    </id>
-    <property name="owner" type="string" length="768" not-null="true" />
-    <property name="conflict" type="boolean" not-null="true" />
-  </class>
-</hibernate-mapping>
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.FindBy;
+import org.xwiki.test.ui.po.BaseElement;
+
+/**
+ * Represents the warning shown in a page with a replication conflict.
+ * 
+ * @version $Id: eea4af2078bb390fbfe0bbb883a0e5313bb9d4c9 $
+ */
+public class ReplicationConflictPane extends BaseElement
+{
+    @FindBy(id = "replication_conflict_resolve")
+    private WebElement resolveButon;
+
+    public ReplicationPage clickResolve()
+    {
+        this.resolveButon.click();
+
+        return new ReplicationPage();
+    }
+}

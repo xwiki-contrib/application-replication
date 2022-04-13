@@ -42,6 +42,7 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstanc
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
 import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
+import org.xwiki.contrib.replication.entity.internal.conflict.DocumentReplicationConflictMessage;
 import org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteReplicationMessage;
@@ -89,6 +90,9 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
     private Provider<DocumentRepairReplicationMessage> repairMessageProvider;
 
     @Inject
+    private Provider<DocumentReplicationConflictMessage> conflictMessageProvider;
+
+    @Inject
     private ReplicationDocumentStore documentStore;
 
     @Inject
@@ -122,8 +126,8 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
         send(m -> {
             DocumentRepairReplicationMessage message = this.repairMessageProvider.get();
 
-            message.initializeComplete(document.getDocumentReferenceWithLocale(), document.getAuthors().getCreator(),
-                document.getVersion(), m);
+            message.initializeRepair(document.getDocumentReferenceWithLocale(), document.getAuthors().getCreator(),
+                document.getVersion(), authors, m);
 
             return message;
         }, document.getDocumentReference(), DocumentReplicationLevel.ALL, metadata, configurations);

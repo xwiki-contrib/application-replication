@@ -33,16 +33,13 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
-import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.AbstractDocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
-import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
-import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
 import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.XWikiException;
-import com.xpn.xwiki.doc.XWikiDocument;
 
 /**
  * Default implementation of {@link DocumentReplicationController}.
@@ -52,16 +49,13 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Component
 @Named("standard")
 @Singleton
-public class StandardDocumentReplicationController implements DocumentReplicationController
+public class StandardDocumentReplicationController extends AbstractDocumentReplicationController
 {
     @Inject
     private EntityReplicationStore store;
 
     @Inject
     private ReplicationInstanceManager instanceManager;
-
-    @Inject
-    private DocumentReplicationSender sender;
 
     @Override
     public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference)
@@ -127,57 +121,5 @@ public class StandardDocumentReplicationController implements DocumentReplicatio
     private int ordinal(DocumentReplicationLevel level)
     {
         return level != null ? level.ordinal() : -1;
-    }
-
-    @Override
-    public void onDocumentCreated(XWikiDocument document) throws ReplicationException
-    {
-        this.sender.sendDocument(document, true, true, null, DocumentReplicationLevel.REFERENCE, null);
-    }
-
-    @Override
-    public void onDocumentUpdated(XWikiDocument document) throws ReplicationException
-    {
-        // There is no point in sending a message for each update if the instance is only allowed to
-        // replicate the reference
-        this.sender.sendDocument(document, false, false, null, DocumentReplicationLevel.ALL, null);
-    }
-
-    @Override
-    public void onDocumentDeleted(XWikiDocument document) throws ReplicationException
-    {
-        this.sender.sendDocumentDelete(document.getDocumentReferenceWithLocale(), null, null);
-    }
-
-    @Override
-    public void onDocumentHistoryDelete(XWikiDocument document, String from, String to) throws ReplicationException
-    {
-        this.sender.sendDocumentHistoryDelete(document.getDocumentReferenceWithLocale(), from, to, null, null);
-    }
-
-    @Override
-    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
-        DocumentReplicationLevel minimumLevel) throws ReplicationException
-    {
-        this.sender.send(messageProducer, entityReference, minimumLevel, null, null);
-    }
-
-    @Override
-    public void sendCompleteDocument(XWikiDocument document) throws ReplicationException
-    {
-        this.sender.sendDocument(document, true, false, null, DocumentReplicationLevel.REFERENCE, null);
-    }
-
-    @Override
-    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors) throws ReplicationException
-    {
-        this.sender.sendDocumentRepair(document, authors, null, null);
-    }
-
-    @Override
-    public boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message)
-    {
-        // Nothing to do
-        return false;
     }
 }

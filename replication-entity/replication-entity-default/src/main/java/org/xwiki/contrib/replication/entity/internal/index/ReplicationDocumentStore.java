@@ -25,6 +25,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.hibernate.Session;
+import org.hibernate.query.Query;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.model.reference.DocumentReference;
@@ -45,6 +46,10 @@ import com.xpn.xwiki.util.Util;
 @Singleton
 public class ReplicationDocumentStore
 {
+    private static final String PROP_OWNER = "owner";
+
+    private static final String PROP_CONFLICT = "conflict";
+
     @Inject
     @Named(XWikiHibernateBaseStore.HINT)
     private XWikiStoreInterface hibernateStore;
@@ -63,7 +68,7 @@ public class ReplicationDocumentStore
      */
     public void create(DocumentReference document, String owner) throws ReplicationException
     {
-        executeWrite(session -> saveHibernateReplicationDocument(toEntityId(document), owner, session));
+        executeWrite(session -> saveHibernateReplicationDocument(toDocumentId(document), owner, session));
     }
 
     /**
@@ -72,22 +77,43 @@ public class ReplicationDocumentStore
      */
     public void deleteDocument(DocumentReference document) throws ReplicationException
     {
-        executeWrite(session -> deleteHibernateReplicationDocument(toEntityId(document), session));
+        executeWrite(session -> deleteHibernateReplicationDocument(toDocumentId(document), session));
     }
 
     /**
-     * @param entity the identifier of the document
+     * @param document the identifier of the document
      * @param owner the owner instance of the document
      * @throws ReplicationException when failing to update the owner
      */
-    public void setOwner(DocumentReference entity, String owner) throws ReplicationException
+    public void setOwner(DocumentReference document, String owner) throws ReplicationException
     {
-        executeWrite(session -> saveHibernateReplicationDocument(toEntityId(entity), owner, session));
+        executeWrite(session -> saveHibernateReplicationDocument(toDocumentId(document), owner, session));
+    }
+
+    /**
+     * @param document the identifier of the document
+     * @param conflict true if the document has a replication conflict
+     * @throws ReplicationException when failing to update the conflict marker
+     */
+    public void setConflict(DocumentReference document, boolean conflict) throws ReplicationException
+    {
+        executeWrite(session -> updateConflict(toDocumentId(document), conflict, session));
     }
 
     private Void saveHibernateReplicationDocument(long docId, String owner, Session session)
     {
         session.saveOrUpdate(new HibernateReplicationDocument(docId, owner));
+
+        return null;
+    }
+
+    private Void updateConflict(long docId, boolean conflict, Session session)
+    {
+        Query query =
+            session.createQuery("UPDATE HibernateReplicationDocument SET conflict=:conflict WHERE docId=:docId");
+        query.setParameter(PROP_CONFLICT, conflict);
+        query.setParameter("docId", docId);
+        query.executeUpdate();
 
         return null;
     }
@@ -100,12 +126,12 @@ public class ReplicationDocumentStore
     }
 
     /**
-     * @param reference the reference of the entity
-     * @return the id of the entity
+     * @param document the reference of the document
+     * @return the id of the document
      */
-    private long toEntityId(DocumentReference reference)
+    private long toDocumentId(DocumentReference document)
     {
-        return Util.getHash(reference.getType().name() + ':' + this.idSerializer.serialize(reference.withoutLocale()));
+        return Util.getHash(document.getType().name() + ':' + this.idSerializer.serialize(document.withoutLocale()));
     }
 
     /**
@@ -115,7 +141,19 @@ public class ReplicationDocumentStore
      */
     public String getOwner(DocumentReference documentReference) throws ReplicationException
     {
-        return get(documentReference, "owner");
+        return get(documentReference, PROP_OWNER);
+    }
+
+    /**
+     * @param documentReference the reference of the document
+     * @return true if the document has a replication conflict
+     * @throws ReplicationException when failing to access the owner
+     */
+    public boolean getConflict(DocumentReference documentReference) throws ReplicationException
+    {
+        Boolean conflict = get(documentReference, PROP_CONFLICT);
+
+        return Boolean.TRUE.equals(conflict);
     }
 
     private void executeWrite(HibernateCallback<Void> callback) throws ReplicationException
@@ -137,7 +175,7 @@ public class ReplicationDocumentStore
 
         try {
             return store.executeRead(xcontext, s -> (T) s.createQuery("select " + property
-                + " from HibernateReplicationDocument where docId = '" + toEntityId(reference) + "'").uniqueResult());
+                + " from HibernateReplicationDocument where docId = '" + toDocumentId(reference) + "'").uniqueResult());
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to execute the read", e);
         }

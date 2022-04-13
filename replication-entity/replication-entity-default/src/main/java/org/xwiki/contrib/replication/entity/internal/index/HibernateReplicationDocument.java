@@ -28,6 +28,8 @@ public class HibernateReplicationDocument
 
     private String owner;
 
+    private boolean conflict;
+
     HibernateReplicationDocument()
     {
 
@@ -79,5 +81,21 @@ public class HibernateReplicationDocument
     public void setOwner(String owner)
     {
         this.owner = owner;
+    }
+
+    /**
+     * @return true if the document has a conflict
+     */
+    public boolean isConflict()
+    {
+        return this.conflict;
+    }
+
+    /**
+     * @param conflict if the document has a conflict
+     */
+    public void setConflict(boolean conflict)
+    {
+        this.conflict = conflict;
     }
 }

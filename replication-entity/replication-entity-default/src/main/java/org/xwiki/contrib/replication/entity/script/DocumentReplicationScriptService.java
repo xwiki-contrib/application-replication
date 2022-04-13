@@ -33,6 +33,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils;
 import org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfiguration;
 import org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfigurationStore;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
@@ -58,7 +59,7 @@ import com.xpn.xwiki.doc.XWikiDocument;
 public class DocumentReplicationScriptService implements ScriptService
 {
     @Inject
-    private DocumentReplicationController defaultController;
+    private DocumentReplicationController controller;
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;
@@ -75,6 +76,9 @@ public class DocumentReplicationScriptService implements ScriptService
     @Inject
     private ContextualAuthorizationManager authorization;
 
+    @Inject
+    private DocumentReplicationUtils replicationUtils;
+
     /**
      * Indicate the list of registered instances this document should be replicated to.
      * 
@@ -85,7 +89,7 @@ public class DocumentReplicationScriptService implements ScriptService
     public List<DocumentReplicationControllerInstance> getDocumentInstances(DocumentReference documentReference)
         throws ReplicationException
     {
-        return this.defaultController.getReplicationConfiguration(documentReference);
+        return this.controller.getReplicationConfiguration(documentReference);
     }
 
     /**
@@ -105,7 +109,7 @@ public class DocumentReplicationScriptService implements ScriptService
 
         XWikiDocument document = xcontext.getWiki().getDocument(documentReference, xcontext);
 
-        this.defaultController.sendCompleteDocument(document);
+        this.controller.sendCompleteDocument(document);
     }
 
     /**
@@ -176,8 +180,8 @@ public class DocumentReplicationScriptService implements ScriptService
     /**
      * @param documentReference the reference of the document
      * @param owner the owner instance of the document
-     * @throws ReplicationException when the update of the owner fail
      * @throws AccessDeniedException when the current author is not allowed to use this API
+     * @throws ReplicationException when the update of the owner fail
      */
     public void setOwner(DocumentReference documentReference, ReplicationInstance owner)
         throws ReplicationException, AccessDeniedException
@@ -185,5 +189,35 @@ public class DocumentReplicationScriptService implements ScriptService
         this.authorization.checkAccess(Right.PROGRAM);
 
         this.documentStore.setOwner(documentReference, owner.getURI());
+    }
+
+    /**
+     * @param documentReference the reference of the document
+     * @return true if the document has a replication conflict
+     * @throws ReplicationException when failing to get the owner
+     */
+    public boolean getConflict(DocumentReference documentReference) throws ReplicationException
+    {
+        return this.documentStore.getConflict(documentReference);
+    }
+
+    /**
+     * @param documentReference the identifier of the document
+     * @param conflict true if the document has a replication conflict
+     * @throws AccessDeniedException when the current author is not allowed to use this API
+     * @throws ReplicationException when failing to update the conflict marker
+     */
+    public void setConflict(DocumentReference documentReference, boolean conflict)
+        throws AccessDeniedException, ReplicationException
+    {
+        this.authorization.checkAccess(Right.PROGRAM);
+
+        if (this.documentStore.getConflict(documentReference) != conflict) {
+            // Update the conflict status
+            this.documentStore.setConflict(documentReference, conflict);
+
+            // Indicate the change to other instances
+            this.replicationUtils.sendDocumentConflict(documentReference, conflict);
+        }
     }
 }

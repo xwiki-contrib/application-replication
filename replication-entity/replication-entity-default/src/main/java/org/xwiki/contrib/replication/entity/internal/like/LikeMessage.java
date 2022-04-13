@@ -45,7 +45,7 @@ public class LikeMessage extends AbstractNoContentEntityReplicationMessage<Entit
     public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
 
     /**
-     * The name of the metadata indicating of it's a like or an unlike.
+     * The name of the metadata indicating if it's a like or an unlike.
      */
     public static final String METADATA_LIKE = METADATA_PREFIX + "LIKE";
 

@@ -98,7 +98,7 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
     public void initializeUpdate(XWikiDocument document, Set<String> attachments,
         Map<String, Collection<String>> metadata)
     {
-        initialize(document.getDocumentReferenceWithLocale(), document.getVersion(), false, metadata);
+        initialize(document.getDocumentReferenceWithLocale(), document.getVersion(), false, null, metadata);
 
         this.attachments = attachments;
 
@@ -126,22 +126,20 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
      * Initialize a message for a complete replication.
      * 
      * @param documentReference the reference of the document affected by this message
-     * @param version the version of the document
      * @param creator the user who created the document
+     * @param version the version of the document
      * @param metadata custom metadata to add to the message
      */
     public void initializeComplete(DocumentReference documentReference, UserReference creator, String version,
         Map<String, Collection<String>> metadata)
     {
-        initialize(documentReference, version, true, metadata);
-
-        putMetadata(METADATA_CREATOR, creator);
+        initialize(documentReference, version, true, creator, metadata);
 
         this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 
     protected void initialize(DocumentReference documentReference, String version, boolean complete,
-        Map<String, Collection<String>> metadata)
+        UserReference creator, Map<String, Collection<String>> metadata)
     {
         super.initialize(documentReference, metadata);
 
@@ -150,6 +148,10 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
         this.version = version;
 
         putMetadata(METADATA_COMPLETE, this.complete);
+
+        if (creator != null) {
+            putMetadata(METADATA_CREATOR, creator);
+        }
     }
 
     @Override

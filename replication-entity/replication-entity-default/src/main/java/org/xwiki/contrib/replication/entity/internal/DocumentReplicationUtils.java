@@ -20,13 +20,17 @@
 package org.xwiki.contrib.replication.entity.internal;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.internal.conflict.DocumentReplicationConflictMessage;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.model.reference.DocumentReference;
 
@@ -47,6 +51,12 @@ public class DocumentReplicationUtils
 
     @Inject
     private ReplicationInstanceManager instances;
+
+    @Inject
+    private Provider<DocumentReplicationConflictMessage> conflictMessageProvider;
+
+    @Inject
+    private Logger logger;
 
     /**
      * @param reference the reference of the document
@@ -70,5 +80,25 @@ public class DocumentReplicationUtils
         ReplicationInstance ownerInstance = this.instances.getInstanceByURI(owner);
 
         return ownerInstance != null && ownerInstance.getStatus() == null;
+    }
+
+    /**
+     * @param documentReference the reference of the document for which to share the conflict status
+     * @param conflict true if the document has a replication conflict
+     */
+    public void sendDocumentConflict(DocumentReference documentReference, boolean conflict)
+    {
+        try {
+            this.controller.send(m -> {
+                DocumentReplicationConflictMessage message = this.conflictMessageProvider.get();
+
+                message.initialize(documentReference, conflict, m);
+
+                return message;
+            }, documentReference, DocumentReplicationLevel.ALL);
+        } catch (ReplicationException e) {
+            this.logger.error("Failed to send a replication message for conflict [{}] on document [{}]", conflict,
+                documentReference);
+        }
     }
 }

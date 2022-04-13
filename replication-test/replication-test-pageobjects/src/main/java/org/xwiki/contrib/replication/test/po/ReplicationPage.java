@@ -33,6 +33,16 @@ public class ReplicationPage extends ViewPage
     {
         getDriver().findElement(By.id("replication.docextralink")).click();
         waitForDocExtraPaneActive("replication.docextra");
+
         return new ReplicationDocExtraPane();
+    }
+
+    public ReplicationConflictPane getReplicationConflictPane()
+    {
+        if (!getDriver().findElementsWithoutWaiting(By.id("replication_conflict")).isEmpty()) {
+            return new ReplicationConflictPane();
+        }
+
+        return null;
     }
 }
