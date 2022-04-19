@@ -23,7 +23,10 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -58,6 +61,11 @@ public class ReplicationInstanceStore
      */
     public static final LocalDocumentReference REPLICATION_INSTANCES =
         new LocalDocumentReference("Instances", ReplicationConstants.REPLICATION_HOME);
+
+    private static final Set<String> STANDARD_PROPERTIES =
+        Set.of(StandardReplicationInstanceClassInitializer.FIELD_NAME,
+            StandardReplicationInstanceClassInitializer.FIELD_STATUS,
+            StandardReplicationInstanceClassInitializer.FIELD_URI);
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;
@@ -100,7 +108,7 @@ public class ReplicationInstanceStore
                 String currentURI = getDefaultCurrentURI();
                 String currentName = getDefaultCurrentName();
 
-                this.currentInstance = new DefaultReplicationInstance(currentName, currentURI, null);
+                this.currentInstance = new DefaultReplicationInstance(currentName, currentURI, null, null);
             } catch (Exception e) {
                 throw new ReplicationException("Failed to get the current instance URI", e);
             }
@@ -194,6 +202,25 @@ public class ReplicationInstanceStore
         instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_STATUS, status.name());
     }
 
+    private Map<String, Object> getProperties(BaseObject instanceObject)
+    {
+        Map<String, Object> properties = new HashMap<>();
+        for (String propertyKey : instanceObject.getPropertyList()) {
+            if (!STANDARD_PROPERTIES.contains(propertyKey)) {
+                properties.put(propertyKey, instanceObject.safeget(propertyKey));
+            }
+        }
+
+        return properties;
+    }
+
+    private void setProperties(BaseObject instanceObject, Map<String, Object> properties, XWikiContext xcontext)
+    {
+        for (Map.Entry<String, Object> entry : properties.entrySet()) {
+            instanceObject.set(entry.getKey(), entry.getValue(), xcontext);
+        }
+    }
+
     /**
      * @param instanceObject the object to parse
      * @return the {@link ReplicationInstance}
@@ -201,7 +228,7 @@ public class ReplicationInstanceStore
     public ReplicationInstance toReplicationInstance(BaseObject instanceObject)
     {
         return new DefaultReplicationInstance(getName(instanceObject), getURI(instanceObject),
-            getStatus(instanceObject));
+            getStatus(instanceObject), getProperties(instanceObject));
     }
 
     private void setReplicationInstance(ReplicationInstance instance, BaseObject instanceObject)
@@ -244,7 +271,7 @@ public class ReplicationInstanceStore
                                 uri = getDefaultCurrentURI();
                             }
 
-                            this.currentInstance = new DefaultReplicationInstance(name, uri, null);
+                            this.currentInstance = new DefaultReplicationInstance(name, uri, null, null);
                         } catch (Exception e) {
                             // Skip invalid instance
                             this.logger.error("Failed to load instance from xobject with reference [{}]",

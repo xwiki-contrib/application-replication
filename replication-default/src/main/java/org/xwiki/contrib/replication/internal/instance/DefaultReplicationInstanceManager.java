@@ -21,8 +21,9 @@ package org.xwiki.contrib.replication.internal.instance;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -84,7 +85,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public Collection<ReplicationInstance> getInstances() throws ReplicationException
     {
-        return Collections.unmodifiableCollection(getInternalInstancesByURI().values());
+        return getInternalInstancesByURI().values();
     }
 
     @Override
@@ -119,6 +120,22 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         }
 
         return instance;
+    }
+
+    @Override
+    public ReplicationInstance getInstanceByProperty(String key, Object value) throws ReplicationException
+    {
+        if (key == null) {
+            return null;
+        }
+
+        for (ReplicationInstance instance : getInstances()) {
+            if (Objects.equals(instance.getProperties().get(key), value)) {
+                return instance;
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -183,7 +200,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         }
 
         // Create the new instance
-        ReplicationInstance instance = new DefaultReplicationInstance(null, cleanURI, status);
+        ReplicationInstance instance = new DefaultReplicationInstance(null, cleanURI, status, null);
 
         // Add instance to the store
         this.store.addInstance(instance);
@@ -345,13 +362,13 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     @Override
     public void reload() throws ReplicationException
     {
-        Map<String, ReplicationInstance> newInstancesByURI = new ConcurrentHashMap<>();
+        Map<String, ReplicationInstance> newInstancesByURI = new HashMap<>();
         this.store.loadInstances().forEach(i -> newInstancesByURI.put(i.getURI(), i));
 
-        Map<String, ReplicationInstance> newInstancesByName = new ConcurrentHashMap<>();
+        Map<String, ReplicationInstance> newInstancesByName = new HashMap<>();
         this.store.loadInstances().forEach(i -> newInstancesByName.put(i.getName(), i));
 
-        this.instancesByURI = newInstancesByURI;
-        this.instancesByName = newInstancesByName;
+        this.instancesByURI = Collections.unmodifiableMap(newInstancesByURI);
+        this.instancesByName = Collections.unmodifiableMap(newInstancesByName);
     }
 }

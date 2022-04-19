@@ -56,6 +56,14 @@ public interface ReplicationInstanceManager
     ReplicationInstance getInstanceByName(String name) throws ReplicationException;
 
     /**
+     * @param key the name of the custom property
+     * @param value the value of the custom property
+     * @return the instance
+     * @throws ReplicationException when failing to load the instances
+     */
+    ReplicationInstance getInstanceByProperty(String key, Object value) throws ReplicationException;
+
+    /**
      * @param instance the instance to add
      * @return true if an instance was added as a result of this call
      * @throws ReplicationException

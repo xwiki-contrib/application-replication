@@ -19,6 +19,10 @@
  */
 package org.xwiki.contrib.replication.internal.instance;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.lang3.StringUtils;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.text.XWikiToStringBuilder;
@@ -34,16 +38,20 @@ public class DefaultReplicationInstance implements ReplicationInstance
 
     private Status status;
 
+    private Map<String, Object> properties;
+
     /**
      * @param name the display name of the instance
      * @param uri the base URI of the instance (generally of the form https://www.xwiki.org/xwiki/)
      * @param status the status of the instance
+     * @param properties the custom propertie
      */
-    public DefaultReplicationInstance(String name, String uri, Status status)
+    public DefaultReplicationInstance(String name, String uri, Status status, Map<String, Object> properties)
     {
         this.name = name;
         this.uri = cleanURI(uri);
         this.status = status;
+        setProperties(properties);
     }
 
     /**
@@ -51,9 +59,7 @@ public class DefaultReplicationInstance implements ReplicationInstance
      */
     public DefaultReplicationInstance(ReplicationInstance instance)
     {
-        this.name = instance.getName();
-        this.uri = instance.getURI();
-        this.status = instance.getStatus();
+        this(instance.getName(), instance.getURI(), instance.getStatus(), instance.getProperties());
     }
 
     /**
@@ -95,13 +101,29 @@ public class DefaultReplicationInstance implements ReplicationInstance
     }
 
     @Override
+    public Map<String, Object> getProperties()
+    {
+        return this.properties;
+    }
+
+    /**
+     * @param properties the custom properties
+     */
+    public void setProperties(Map<String, Object> properties)
+    {
+        this.properties =
+            properties != null ? Collections.unmodifiableMap(new HashMap<>(properties)) : Collections.emptyMap();
+    }
+
+    @Override
     public String toString()
     {
         XWikiToStringBuilder builder = new XWikiToStringBuilder(this);
 
-        builder.append(getName());
-        builder.append(getURI());
-        builder.append(getStatus());
+        builder.append("name", getName());
+        builder.append("uri", getURI());
+        builder.append("status", getStatus());
+        builder.append("properties", getProperties());
 
         return builder.build();
     }

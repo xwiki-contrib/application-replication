@@ -48,7 +48,7 @@ class DocumentReplicationControllerInstanceConverterTest
     private ReplicationInstanceManager manager;
 
     private static final ReplicationInstance INSTANCE =
-        new DefaultReplicationInstance("name", "uri", Status.REGISTERED);
+        new DefaultReplicationInstance("name", "uri", Status.REGISTERED, null);
 
     @BeforeEach
     void beforeEach() throws ReplicationException

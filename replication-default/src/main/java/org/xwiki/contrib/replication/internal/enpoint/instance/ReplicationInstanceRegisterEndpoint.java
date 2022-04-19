@@ -63,7 +63,8 @@ public class ReplicationInstanceRegisterEndpoint extends AbstractReplicationEndp
                 response.sendError(400, "Client and target instances have the same URI: " + uri);
             } else if (instance.getStatus() == Status.REQUESTED) {
                 // Confirm the registration
-                this.instances.confirmRequestedInstance(new DefaultReplicationInstance(name, uri, Status.REGISTERED));
+                this.instances
+                    .confirmRequestedInstance(new DefaultReplicationInstance(name, uri, Status.REGISTERED, null));
                 response.setStatus(200);
             } else if (instance.getStatus() == Status.REGISTERED) {
                 // Already registered
@@ -74,7 +75,7 @@ public class ReplicationInstanceRegisterEndpoint extends AbstractReplicationEndp
             }
         } else {
             // Creating a new requesting instance
-            this.instances.addInstance(new DefaultReplicationInstance(name, uri, Status.REQUESTING));
+            this.instances.addInstance(new DefaultReplicationInstance(name, uri, Status.REQUESTING, null));
             response.setStatus(201);
         }
     }

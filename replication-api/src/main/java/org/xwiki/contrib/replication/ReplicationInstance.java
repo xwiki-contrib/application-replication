@@ -19,6 +19,8 @@
  */
 package org.xwiki.contrib.replication;
 
+import java.util.Map;
+
 /**
  * @version $Id$
  */
@@ -61,4 +63,9 @@ public interface ReplicationInstance
      * @return the status of this instance
      */
     Status getStatus();
+
+    /**
+     * @return the names of the properties
+     */
+    Map<String, Object> getProperties();
 }
