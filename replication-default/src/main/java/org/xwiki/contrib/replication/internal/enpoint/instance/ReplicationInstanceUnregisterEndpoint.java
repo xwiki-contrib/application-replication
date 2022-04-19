@@ -53,6 +53,8 @@ public class ReplicationInstanceUnregisterEndpoint extends AbstractReplicationEn
         if (instance == null) {
             // Unknown instance
             response.sendError(404, "Unknown instance");
+        } else if (instance.getStatus() == null) {
+            response.sendError(400, "Cannot remove current instance URI: " + uri);
         }
 
         // TODO: validate key
