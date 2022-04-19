@@ -59,7 +59,9 @@ public class ReplicationInstanceRegisterEndpoint extends AbstractReplicationEndp
         ReplicationInstance instance = this.instances.getInstanceByURI(uri);
 
         if (instance != null) {
-            if (instance.getStatus() == Status.REQUESTED) {
+            if (instance.getStatus() == null) {
+                response.sendError(400, "Client and target instances have the same URI: " + uri);
+            } else if (instance.getStatus() == Status.REQUESTED) {
                 // Confirm the registration
                 this.instances.confirmRequestedInstance(new DefaultReplicationInstance(name, uri, Status.REGISTERED));
                 response.setStatus(200);
