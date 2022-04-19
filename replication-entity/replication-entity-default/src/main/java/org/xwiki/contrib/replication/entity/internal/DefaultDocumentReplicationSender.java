@@ -42,7 +42,6 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstanc
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
 import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
-import org.xwiki.contrib.replication.entity.internal.conflict.DocumentReplicationConflictMessage;
 import org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteReplicationMessage;
@@ -88,9 +87,6 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
 
     @Inject
     private Provider<DocumentRepairReplicationMessage> repairMessageProvider;
-
-    @Inject
-    private Provider<DocumentReplicationConflictMessage> conflictMessageProvider;
 
     @Inject
     private ReplicationDocumentStore documentStore;
