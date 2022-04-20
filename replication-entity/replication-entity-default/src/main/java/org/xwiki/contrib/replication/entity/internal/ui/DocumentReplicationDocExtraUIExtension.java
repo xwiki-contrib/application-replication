@@ -41,9 +41,9 @@ import org.xwiki.uiextension.UIExtension;
  * @version $Id$
  */
 @Component
-@Named(DocumentReplicationUIExtension.ID)
+@Named(DocumentReplicationDocExtraUIExtension.ID)
 @Singleton
-public class DocumentReplicationUIExtension implements UIExtension
+public class DocumentReplicationDocExtraUIExtension implements UIExtension
 {
     /**
      * The id of the UI extension.
@@ -87,14 +87,11 @@ public class DocumentReplicationUIExtension implements UIExtension
             show = false;
         }
 
-        parameters.put("show", String.valueOf(show));
-
         if (show) {
+            parameters.put("show", "true");
             parameters.put("title", translate("replication.entity.docextra.title", "Replication"));
             parameters.put("itemnumber", "-1");
             parameters.put("name", "replication");
-            // parameters.put("shortcut", "");
-            // parameters.put("order", "");
         }
 
         return parameters;
