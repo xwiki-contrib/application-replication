@@ -73,6 +73,11 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
      */
     public static final String METADATA_COMPLETE = METADATA_PREFIX + "COMPLETE";
 
+    /**
+     * The name of the metadata containing the version of the entity in the message.
+     */
+    public static final String METADATA_VERSION = METADATA_PREFIX + "VERSION";
+
     @Inject
     private Provider<XWikiContext> xcontextProvider;
 
@@ -146,6 +151,7 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
         this.complete = complete;
 
         this.version = version;
+        putMetadata(METADATA_VERSION, this.version);
 
         putMetadata(METADATA_COMPLETE, this.complete);
 
