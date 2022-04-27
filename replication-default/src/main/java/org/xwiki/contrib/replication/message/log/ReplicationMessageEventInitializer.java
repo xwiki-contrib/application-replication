@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal.message.log;
+package org.xwiki.contrib.replication.message.log;
 
 import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.replication.ReplicationMessage;

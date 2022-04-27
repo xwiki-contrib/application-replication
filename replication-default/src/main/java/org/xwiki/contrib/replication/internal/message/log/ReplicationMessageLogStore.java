@@ -22,6 +22,7 @@ package org.xwiki.contrib.replication.internal.message.log;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
@@ -31,8 +32,11 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentManager;
+import org.xwiki.context.Execution;
+import org.xwiki.context.ExecutionContext;
 import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
+import org.xwiki.contrib.replication.message.log.ReplicationMessageEventInitializer;
 import org.xwiki.eventstream.Event;
 import org.xwiki.eventstream.Event.Importance;
 import org.xwiki.eventstream.EventFactory;
@@ -41,6 +45,8 @@ import org.xwiki.eventstream.EventStreamException;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.user.api.XWikiRightService;
+
+import groovyjarjarpicocli.CommandLine.ExecutionException;
 
 /**
  * @version $Id$
@@ -63,6 +69,9 @@ public class ReplicationMessageLogStore
     private ComponentManager componentManager;
 
     @Inject
+    private Execution execution;
+
+    @Inject
     private Logger logger;
 
     /**
@@ -77,18 +86,30 @@ public class ReplicationMessageLogStore
 
     /**
      * @param message the message to save
+     * @param initializer custom initializer
+     * @return the stored {@link Event}
      * @throws EventStreamException when failing to save the message
      * @throws InterruptedException if the current thread was interrupted while waiting
      */
-    public void save(ReplicationMessage message) throws EventStreamException, InterruptedException
+    public Event saveSync(ReplicationMessage message, ReplicationMessageEventInitializer initializer)
+        throws EventStreamException, InterruptedException
     {
         // Save the event synchronously
         try {
-            saveAsync(message, null).get();
+            return saveAsyncInternal(message, initializer).get();
         } catch (InterruptedException e) {
             throw e;
         } catch (Exception e) {
-            throw new EventStreamException("Failed to save the message in the event store", e);
+            Throwable cause = e;
+            if (e instanceof ExecutionException) {
+                cause = e.getCause();
+
+                if (cause instanceof EventStreamException) {
+                    throw (EventStreamException) cause;
+                }
+            }
+
+            throw new EventStreamException("Failed to save the message in the event store", cause);
         }
     }
 
@@ -98,6 +119,32 @@ public class ReplicationMessageLogStore
      * @return the new {@link CompletableFuture} providing the added {@link Event}
      */
     public CompletableFuture<Event> saveAsync(ReplicationMessage message,
+        ReplicationMessageEventInitializer initializer)
+    {
+        CompletableFuture<Event> future = new CompletableFuture<>();
+
+        // Make the full process asynchronous and not only storing the Event instance
+        CompletableFuture.runAsync(() -> {
+            this.execution.setContext(new ExecutionContext());
+
+            try {
+                future.complete(saveAsyncInternal(message, initializer).get());
+            } catch (Exception e) {
+                future.completeExceptionally(e);
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+
+                logger.error("Failed to log the message with id {}", message.getId(), e);
+            } finally {
+                this.execution.removeContext();
+            }
+        });
+
+        return future;
+    }
+
+    private CompletableFuture<Event> saveAsyncInternal(ReplicationMessage message,
         ReplicationMessageEventInitializer initializer)
     {
         Event event = this.eventFactory.createRawEvent();
@@ -149,9 +196,10 @@ public class ReplicationMessageLogStore
 
     /**
      * @param messageId the identifier of the message to delete
+     * @return the new {@link CompletableFuture} providing the deleted {@link Event} or empty if none could be found
      */
-    public void delete(String messageId)
+    public CompletableFuture<Optional<Event>> deleteAsync(String messageId)
     {
-        this.store.deleteEvent(messageId);
+        return this.store.deleteEvent(messageId);
     }
 }

@@ -1,4 +1,5 @@
 org.xwiki.contrib.replication.internal.DefaultReplicationContext
+org.xwiki.contrib.replication.internal.DefaultReplicationMessageReader
 org.xwiki.contrib.replication.internal.ReplicationClient
 org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferenceHandler
 org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferenceResolver

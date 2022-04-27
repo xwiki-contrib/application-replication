@@ -63,7 +63,7 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
         XWikiDocument document = new XWikiDocument(documentReference);
 
         // Just indicate who created it
-        UserReference creatorReference = this.documentMessageTool.getMetadata(message,
+        UserReference creatorReference = this.messageReader.getMetadata(message,
             DocumentReferenceReplicationMessage.METADATA_CREATOR, true, UserReference.class);
         document.getAuthors().setCreator(creatorReference);
         document.getAuthors().setContentAuthor(creatorReference);
@@ -88,8 +88,7 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
         }
 
         // Set the document owner
-        if (this.documentMessageTool.getMetadata(message, DocumentReferenceReplicationMessage.METADATA_CREATOR, true,
-            true)) {
+        if (this.messageReader.getMetadata(message, DocumentReferenceReplicationMessage.METADATA_CREATOR, true, true)) {
             this.documentStore.create(documentReference, message.getSource());
         }
     }

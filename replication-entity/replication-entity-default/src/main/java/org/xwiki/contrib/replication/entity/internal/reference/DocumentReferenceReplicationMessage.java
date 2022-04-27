@@ -27,9 +27,10 @@ import javax.inject.Inject;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
+import org.xwiki.contrib.replication.ReplicationMessageReader;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
 import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
-import org.xwiki.contrib.replication.entity.internal.DocumentReplicationMessageTool;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.user.UserReference;
 
@@ -55,7 +56,10 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
     public static final String METADATA_CREATE = METADATA_PREFIX + "CREATE";
 
     @Inject
-    private DocumentReplicationMessageTool documentMessageTool;
+    private DocumentReplicationMessageReader documentMessageTool;
+
+    @Inject
+    private ReplicationMessageReader messageReader;
 
     @Override
     public String getType()
@@ -87,8 +91,8 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
     public void initialize(ReplicationReceiverMessage message) throws InvalidReplicationMessageException
     {
         initialize(this.documentMessageTool.getDocumentReference(message),
-            this.documentMessageTool.getMetadata(message, METADATA_CREATOR, true, UserReference.class),
-            this.documentMessageTool.getMetadata(message, METADATA_CREATE, false, true), message.getCustomMetadata());
+            this.messageReader.getMetadata(message, METADATA_CREATOR, true, UserReference.class),
+            this.messageReader.getMetadata(message, METADATA_CREATE, false, true), message.getCustomMetadata());
 
         // Relay the source information
         this.id = message.getId();

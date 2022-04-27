@@ -47,7 +47,7 @@ public class DocumentReplicationConflictReceiver extends AbstractDocumentReplica
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
     {
-        boolean conflict = this.documentMessageTool.getMetadata(message,
+        boolean conflict = this.messageReader.getMetadata(message,
             DocumentReplicationConflictMessage.METADATA_CONFLICT, true, boolean.class);
 
         this.store.setConflict(documentReference, conflict);

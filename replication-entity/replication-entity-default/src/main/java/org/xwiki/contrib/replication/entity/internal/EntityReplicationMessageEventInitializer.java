@@ -27,7 +27,8 @@ import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationMessage;
-import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageEventInitializer;
+import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
+import org.xwiki.contrib.replication.message.log.ReplicationMessageEventInitializer;
 import org.xwiki.eventstream.Event;
 import org.xwiki.model.EntityType;
 import org.xwiki.model.reference.DocumentReference;
@@ -44,7 +45,7 @@ import org.xwiki.model.reference.WikiReference;
 public class EntityReplicationMessageEventInitializer implements ReplicationMessageEventInitializer
 {
     @Inject
-    private DocumentReplicationMessageTool documentMessageTool;
+    private DocumentReplicationMessageReader documentMessageTool;
 
     @Inject
     private Logger logger;

@@ -63,7 +63,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
     {
-        boolean complete = this.documentMessageTool.isComplete(message);
+        boolean complete = this.documentMessageReader.isComplete(message);
 
         // Load the document
         XWikiDocument document = new XWikiDocument(documentReference, documentReference.getLocale());

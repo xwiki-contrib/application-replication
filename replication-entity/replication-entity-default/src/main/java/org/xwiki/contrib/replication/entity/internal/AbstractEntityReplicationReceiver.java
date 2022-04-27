@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
 import org.xwiki.contrib.replication.internal.AbstractReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
@@ -41,7 +42,7 @@ public abstract class AbstractEntityReplicationReceiver extends AbstractReplicat
     protected Provider<XWikiContext> xcontextProvider;
 
     @Inject
-    protected DocumentReplicationMessageTool documentMessageTool;
+    protected DocumentReplicationMessageReader documentMessageReader;
 
     @Inject
     protected Logger logger;
@@ -53,7 +54,7 @@ public abstract class AbstractEntityReplicationReceiver extends AbstractReplicat
 
         xcontext.setUserReference(getContextUserReference(message));
 
-        receiveEntity(message, this.documentMessageTool.getEntityReference(message), xcontext);
+        receiveEntity(message, this.documentMessageReader.getEntityReference(message), xcontext);
     }
 
     protected abstract void receiveEntity(ReplicationReceiverMessage message, EntityReference entityReference,
@@ -62,6 +63,6 @@ public abstract class AbstractEntityReplicationReceiver extends AbstractReplicat
     protected DocumentReference getContextUserReference(ReplicationReceiverMessage message)
         throws InvalidReplicationMessageException
     {
-        return this.documentMessageTool.getContextUser(message);
+        return this.documentMessageReader.getContextUser(message);
     }
 }

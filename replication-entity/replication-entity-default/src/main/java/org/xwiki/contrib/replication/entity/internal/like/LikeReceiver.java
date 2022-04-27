@@ -49,9 +49,9 @@ public class LikeReceiver extends AbstractEntityReplicationReceiver
     protected void receiveEntity(ReplicationReceiverMessage message, EntityReference entityReference,
         XWikiContext xcontext) throws ReplicationException
     {
-        boolean like = this.documentMessageTool.getMetadata(message, LikeMessage.METADATA_LIKE, true, Boolean.class);
+        boolean like = this.messageReader.getMetadata(message, LikeMessage.METADATA_LIKE, true, Boolean.class);
         UserReference userReference =
-            this.documentMessageTool.getMetadata(message, LikeMessage.METADATA_CREATOR, true, UserReference.class);
+            this.messageReader.getMetadata(message, LikeMessage.METADATA_CREATOR, true, UserReference.class);
 
         try {
             if (like) {

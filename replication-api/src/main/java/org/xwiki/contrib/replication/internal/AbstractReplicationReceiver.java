@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.inject.Inject;
 
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationMessageReader;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
@@ -35,6 +36,9 @@ public abstract class AbstractReplicationReceiver implements ReplicationReceiver
 {
     @Inject
     protected RelayReplicationSender relay;
+
+    @Inject
+    protected ReplicationMessageReader messageReader;
 
     @Override
     public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)

@@ -65,7 +65,7 @@ public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicati
         if (!document.isNew()) {
             try {
                 // Set the batch id if any is provided
-                String batchId = this.documentMessageTool.getMetadata(message,
+                String batchId = this.messageReader.getMetadata(message,
                     DocumentDeleteReplicationMessage.METADATA_BATCH, false);
                 if (batchId != null) {
                     this.batchOperation.execute(() -> xcontext.getWiki().deleteDocument(document, xcontext), batchId);

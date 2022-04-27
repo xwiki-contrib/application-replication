@@ -113,11 +113,11 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
             return;
         }
 
-        this.messageLog.save(message);
+        this.messageLog.saveSync(message, null);
     }
 
     private void forgetMessage(ReplicationReceiverMessage message)
     {
-        this.messageLog.delete(message.getId());
+        this.messageLog.deleteAsync(message.getId());
     }
 }

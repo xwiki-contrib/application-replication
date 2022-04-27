@@ -37,6 +37,7 @@ import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
 import org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage;
 import org.xwiki.contrib.replication.internal.RelayReplicationSender;
 import org.xwiki.model.reference.DocumentReference;
@@ -61,7 +62,7 @@ public class DocumentReplicationRelay
     private DocumentReplicationController controller;
 
     @Inject
-    private DocumentReplicationMessageTool documentMessageTool;
+    private DocumentReplicationMessageReader documentMessageTool;
 
     private List<ReplicationInstance> getInstances(DocumentReplicationLevel level,
         Collection<DocumentReplicationControllerInstance> configurations)

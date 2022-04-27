@@ -34,7 +34,7 @@
   <description>Default implementation of the low level replication API</description>
 
   <properties>
-    <xwiki.jacoco.instructionRatio>0.02</xwiki.jacoco.instructionRatio>
+    <xwiki.jacoco.instructionRatio>0.01</xwiki.jacoco.instructionRatio>
     <xwiki.extension.namespaces>{root}</xwiki.extension.namespaces>
   </properties>
 

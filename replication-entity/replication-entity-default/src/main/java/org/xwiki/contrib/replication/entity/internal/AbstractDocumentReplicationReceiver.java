@@ -44,7 +44,7 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
     protected void receiveEntity(ReplicationReceiverMessage message, EntityReference entityReference,
         XWikiContext xcontext) throws ReplicationException
     {
-        DocumentReference documentReference = this.documentMessageTool.getDocumentReference(message, entityReference);
+        DocumentReference documentReference = this.documentMessageReader.getDocumentReference(message, entityReference);
 
         // TODO: check if this message instance is allowed to replicate this document
 
