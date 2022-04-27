@@ -95,6 +95,12 @@ public class DefaultDocumentReplicationMessageReader implements DocumentReplicat
     }
 
     @Override
+    public String getDocumentVersion(ReplicationMessage message) throws InvalidReplicationMessageException
+    {
+        return this.reader.getMetadata(message, DocumentUpdateReplicationMessage.METADATA_VERSION, false);
+    }
+
+    @Override
     public boolean isComplete(ReplicationMessage message) throws InvalidReplicationMessageException
     {
         return BooleanUtils

@@ -32,14 +32,14 @@ import org.xwiki.model.reference.EntityReference;
 public interface DocumentReplicationMessageReader
 {
     /**
-     * @param message the received message
+     * @param message the message
      * @return the document associated with the message
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
     DocumentReference getDocumentReference(ReplicationMessage message) throws InvalidReplicationMessageException;
 
     /**
-     * @param message the received message
+     * @param message the message
      * @param reference the reference of the entity (without the locale)
      * @return the document associated with the message
      * @throws InvalidReplicationMessageException when failing to parse the message
@@ -48,14 +48,14 @@ public interface DocumentReplicationMessageReader
         throws InvalidReplicationMessageException;
 
     /**
-     * @param message the received message
+     * @param message the message
      * @return the entity associated with the message
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
     EntityReference getEntityReference(ReplicationMessage message) throws InvalidReplicationMessageException;
 
     /**
-     * @param message the received message
+     * @param message the message
      * @param mandatory true of the property is mandatory
      * @return the entity associated with the message
      * @throws InvalidReplicationMessageException when failing to parse the message
@@ -64,14 +64,21 @@ public interface DocumentReplicationMessageReader
         throws InvalidReplicationMessageException;
 
     /**
-     * @param message the received message
+     * @param message the message
+     * @return the version of the document associated with the message
+     * @throws InvalidReplicationMessageException
+     */
+    String getDocumentVersion(ReplicationMessage message) throws InvalidReplicationMessageException;
+
+    /**
+     * @param message the message
      * @return the user reference from the context when the message was created
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
     DocumentReference getContextUser(ReplicationMessage message) throws InvalidReplicationMessageException;
 
     /**
-     * @param message the received message
+     * @param message the message
      * @return true if the document in the message is complete
      * @throws InvalidReplicationMessageException when failing to parse the message
      */

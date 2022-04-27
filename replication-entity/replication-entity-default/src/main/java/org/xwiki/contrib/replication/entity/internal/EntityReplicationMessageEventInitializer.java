@@ -75,7 +75,7 @@ public class EntityReplicationMessageEventInitializer implements ReplicationMess
             if (entityReference != null) {
                 event.setRelatedEntity(entityReference);
 
-                setWiki(entityReference, event);
+                setWiki(message, entityReference, event);
             }
         } catch (InvalidReplicationMessageException e) {
             // Should never happen since it's not mandatory
@@ -83,7 +83,8 @@ public class EntityReplicationMessageEventInitializer implements ReplicationMess
         }
     }
 
-    private void setWiki(EntityReference entityReference, Event event)
+    private void setWiki(ReplicationMessage message, EntityReference entityReference, Event event)
+        throws InvalidReplicationMessageException
     {
         EntityReference wikiReference = entityReference.extractReference(EntityType.WIKI);
         if (wikiReference != null) {
@@ -93,10 +94,21 @@ public class EntityReplicationMessageEventInitializer implements ReplicationMess
             if (spaceReference != null) {
                 event.setSpace(new SpaceReference(spaceReference));
 
-                EntityReference documentReference = entityReference.extractReference(EntityType.DOCUMENT);
-                if (documentReference != null) {
-                    event.setDocument(new DocumentReference(documentReference));
-                }
+                setDocument(message, entityReference, event);
+            }
+        }
+    }
+
+    private void setDocument(ReplicationMessage message, EntityReference entityReference, Event event)
+        throws InvalidReplicationMessageException
+    {
+        EntityReference documentReference = entityReference.extractReference(EntityType.DOCUMENT);
+        if (documentReference != null) {
+            event.setDocument(new DocumentReference(documentReference));
+
+            String version = this.documentMessageTool.getDocumentVersion(message);
+            if (version != null) {
+                event.setDocumentVersion(version);
             }
         }
     }
