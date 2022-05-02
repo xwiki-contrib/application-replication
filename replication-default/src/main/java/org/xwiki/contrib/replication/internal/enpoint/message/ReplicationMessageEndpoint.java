@@ -19,6 +19,9 @@
  */
 package org.xwiki.contrib.replication.internal.enpoint.message;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
@@ -35,6 +38,7 @@ import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoin
 import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
 import org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageQueue;
 import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
+import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.eventstream.EventStreamException;
 import org.xwiki.resource.ResourceReferenceHandlerException;
 
@@ -113,7 +117,13 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
             return;
         }
 
-        this.messageLog.saveSync(message, null);
+        this.messageLog.saveSync(message, (m, e) -> {
+            Map<String, Object> custom = new HashMap<>(e.getCustom());
+
+            custom.put(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_RECEIVED);
+
+            e.setCustom(custom);
+        });
     }
 
     private void forgetMessage(ReplicationReceiverMessage message)
