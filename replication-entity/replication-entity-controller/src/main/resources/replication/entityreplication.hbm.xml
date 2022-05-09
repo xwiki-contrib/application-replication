@@ -24,17 +24,17 @@
 "-//Hibernate/Hibernate Mapping DTD//EN"
 "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 <hibernate-mapping>
-  <class name="org.xwiki.contrib.replication.entity.internal.HibernateEntityReplicationInstance" table="replication_entity_instance">
+  <class name="org.xwiki.contrib.replication.entity.internal.HibernateEntityReplicationInstance" table="replication_entity_instances">
     <composite-id>
       <key-property name="entity" type="long">
-        <column name="entity" index="ENTITY" />
+        <column name="XWR_ENTITY" index="ENTITY" />
       </key-property>
       <key-property name="instance" type="string">
-        <column name="instance" index="INSTANCE" length="400" />
+        <column name="XWR_INSTANCE" index="INSTANCE" length="400" />
       </key-property>
     </composite-id>
 
-    <property name="level">
+    <property name="level" column="XWR_LEVEL">
       <type name="org.hibernate.type.EnumType">
         <param name="enumClass">org.xwiki.contrib.replication.entity.DocumentReplicationLevel</param>
         <param name="useNamed">true</param>
@@ -42,7 +42,7 @@
     </property>
 
     <property name="readonly" type="boolean">
-      <column name="readonly" not-null="true" default="0"/>
+      <column name="XWR_READONLY" not-null="true" default="0"/>
     </property>
   </class>
 </hibernate-mapping>
