@@ -48,6 +48,8 @@ import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
+import com.xpn.xwiki.objects.BaseProperty;
+import com.xpn.xwiki.objects.PropertyInterface;
 
 /**
  * @version $Id$
@@ -207,18 +209,14 @@ public class ReplicationInstanceStore
         Map<String, Object> properties = new HashMap<>();
         for (String propertyKey : instanceObject.getPropertyList()) {
             if (!STANDARD_PROPERTIES.contains(propertyKey)) {
-                properties.put(propertyKey, instanceObject.safeget(propertyKey));
+                PropertyInterface property = instanceObject.safeget(propertyKey);
+                if (property instanceof BaseProperty) {
+                    properties.put(propertyKey, ((BaseProperty) property).getValue());
+                }
             }
         }
 
         return properties;
-    }
-
-    private void setProperties(BaseObject instanceObject, Map<String, Object> properties, XWikiContext xcontext)
-    {
-        for (Map.Entry<String, Object> entry : properties.entrySet()) {
-            instanceObject.set(entry.getKey(), entry.getValue(), xcontext);
-        }
     }
 
     /**
