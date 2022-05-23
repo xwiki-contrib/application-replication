@@ -34,6 +34,7 @@ import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
 import org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageQueue;
@@ -70,6 +71,9 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
     private ReplicationMessageLogStore messageLog;
 
     @Inject
+    private ReplicationSender sender;
+
+    @Inject
     private Provider<HttpServletRequestReplicationReceiverMessage> messageProvider;
 
     @Override
@@ -78,6 +82,9 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
     {
         // Make sure the sending instance is allowed to communicate with this instance
         ReplicationInstance instance = validateInstance(reference.getParameterValue(PARAMETER_INSTANCE));
+
+        // Notify the sender that an instance we know sent us a message in case we were waiting
+        this.sender.ping(instance);
 
         // Make sure the data type is supported
         String dataType = reference.getParameterValue(HttpServletRequestReplicationReceiverMessage.PARAMETER_TYPE);
