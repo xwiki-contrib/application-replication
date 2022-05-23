@@ -19,7 +19,11 @@
  */
 package org.xwiki.contrib.replication.internal.message;
 
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Queue;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -41,6 +45,8 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.event.ReplicationReceiverMessageEvent;
 import org.xwiki.contrib.replication.internal.DefaultReplicationContext;
 import org.xwiki.contrib.replication.internal.ReplicationClient;
+import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
+import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.observation.ObservationManager;
 
 /**
@@ -73,6 +79,9 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
 
     @Inject
     private ObservationManager observation;
+
+    @Inject
+    private ReplicationMessageLogStore logStore;
 
     @Override
     public void initialize() throws InitializationException
@@ -134,6 +143,19 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
 
             // Execute the receiver
             replicationReceiver.receive(message);
+
+            // Log the successfully handled message
+            this.logStore.saveAsync(message, (m, e) -> {
+                Map<String, Object> custom = new HashMap<>(e.getCustom());
+
+                // Generate a new id to avoid overwriting the stored one
+                e.setId(UUID.randomUUID().toString());
+
+                custom.put(ReplicationMessageEventQuery.KEY_STATUS_HANDLED_DATE, new Date());
+                custom.put(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_HANDLED);
+
+                e.setCustom(custom);
+            });
         } catch (InvalidReplicationMessageException e) {
             this.logger.error("Message with id [{}] is invalid and is not going to be tried again", message.getId(), e);
         } finally {

@@ -47,7 +47,7 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
     public static final String VALUE_STATUS_STORED = "stored";
 
     /**
-     * Indicate that thee message was successfully sent to an instance.
+     * Indicate that the message was successfully sent to an instance.
      */
     public static final String VALUE_STATUS_SENT = "sent";
 
@@ -60,6 +60,16 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
      * Indicate that the message was received from another instance.
      */
     public static final String VALUE_STATUS_RECEIVED = "received";
+
+    /**
+     * Indicate that the received message was successfully handled.
+     */
+    public static final String VALUE_STATUS_HANDLED = "handled";
+
+    /**
+     * Indicate when the message was successfully sent.
+     */
+    public static final String KEY_STATUS_HANDLED_DATE = "handledDate";
 
     /**
      * The instance to which the message was sent.
