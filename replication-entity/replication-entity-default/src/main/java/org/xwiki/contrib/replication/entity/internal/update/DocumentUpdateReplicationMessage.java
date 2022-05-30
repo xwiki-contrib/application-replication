@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -119,12 +118,10 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
                     ancestors.add(new DocumentAncestor(nodeVersion, node.getDate()));
                 }
             }
-            this.metadata.put(METADATA_ANCESTORS, DocumentAncestorConverter.toStrings(ancestors));
+            this.modifiableMap.put(METADATA_ANCESTORS, DocumentAncestorConverter.toStrings(ancestors));
         } catch (XWikiException e) {
             this.logger.error("Failed to get document ancestors", e);
         }
-
-        this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 
     /**
@@ -139,8 +136,6 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
         Map<String, Collection<String>> metadata)
     {
         initialize(documentReference, version, true, creator, metadata);
-
-        this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 
     protected void initialize(DocumentReference documentReference, String version, boolean complete,

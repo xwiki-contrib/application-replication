@@ -20,7 +20,6 @@
 package org.xwiki.contrib.replication.entity.internal.conflict;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
@@ -65,7 +64,5 @@ public class DocumentReplicationConflictMessage extends AbstractNoContentEntityR
         super.initialize(documentReference, metadata);
 
         putMetadata(METADATA_CONFLICT, conflict);
-
-        this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 }

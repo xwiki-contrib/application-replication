@@ -20,9 +20,7 @@
 package org.xwiki.contrib.replication.entity.internal;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -32,10 +30,9 @@ import org.xwiki.bridge.DocumentAccessBridge;
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.internal.ReplicationUtils;
+import org.xwiki.contrib.replication.internal.AbstractReplicationMessage;
 import org.xwiki.model.reference.AbstractLocalizedEntityReference;
 import org.xwiki.model.reference.EntityReference;
-import org.xwiki.properties.ConverterManager;
 import org.xwiki.user.UserReferenceSerializer;
 
 /**
@@ -43,7 +40,8 @@ import org.xwiki.user.UserReferenceSerializer;
  * @version $Id$
  */
 @InstantiationStrategy(ComponentInstantiationStrategy.PER_LOOKUP)
-public abstract class AbstractEntityReplicationMessage<E extends EntityReference> implements ReplicationSenderMessage
+public abstract class AbstractEntityReplicationMessage<E extends EntityReference> extends AbstractReplicationMessage
+    implements ReplicationSenderMessage
 {
     /**
      * The type of message supported by this receiver.
@@ -76,9 +74,6 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
     public static final String METADATA_CREATOR = METADATA_PREFIX + "CREATOR";
 
     @Inject
-    protected ConverterManager converter;
-
-    @Inject
     protected UserReferenceSerializer<String> userReferenceSerializer;
 
     @Inject
@@ -92,8 +87,6 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
 
     protected E entityReference;
 
-    protected Map<String, Collection<String>> metadata;
-
     /**
      * @param entityReference the reference of the document affected by this message
      * @param extraMetadata custom metadata to add to the message
@@ -102,10 +95,8 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
     {
         this.entityReference = entityReference;
 
-        this.metadata = new HashMap<>();
-
         if (extraMetadata != null) {
-            this.metadata.putAll(extraMetadata);
+            this.modifiableMap.putAll(extraMetadata);
         }
 
         // Make sure to use the EntityReference converter (otherwise it won't unserialize to the right type)
@@ -120,24 +111,6 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
 
         // Make sure the id is unique but not too big
         this.id = UUID.randomUUID().toString();
-    }
-
-    /**
-     * Associate a custom metadata with the message.
-     * 
-     * @param key the name of the metadata
-     * @param value the value of the metadata
-     */
-    public void putMetadata(String key, Object value)
-    {
-        String stringValue;
-        if (value instanceof Date) {
-            stringValue = ReplicationUtils.toString((Date) value);
-        } else {
-            stringValue = this.converter.convert(String.class, value);
-        }
-
-        this.metadata.put(key, Collections.singleton(stringValue));
     }
 
     @Override
@@ -156,11 +129,5 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
     public String getSource()
     {
         return this.source;
-    }
-
-    @Override
-    public Map<String, Collection<String>> getCustomMetadata()
-    {
-        return this.metadata;
     }
 }

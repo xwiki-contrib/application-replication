@@ -20,7 +20,6 @@
 package org.xwiki.contrib.replication.entity.internal.message;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -66,9 +65,7 @@ public class EntityReplicationControllerMessage extends AbstractNoContentEntityR
         super.initialize(entityReference, null);
 
         // Serialize the configuration
-        setConfiguration(this.metadata, configuration);
-
-        this.metadata = Collections.unmodifiableMap(this.metadata);
+        setConfiguration(this.modifiableMap, configuration);
     }
 
     /**

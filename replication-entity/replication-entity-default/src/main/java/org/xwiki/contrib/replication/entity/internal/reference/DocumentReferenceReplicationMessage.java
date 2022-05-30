@@ -20,7 +20,6 @@
 package org.xwiki.contrib.replication.entity.internal.reference;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -80,8 +79,6 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
 
         putMetadata(METADATA_CREATOR, creatorReference);
         putMetadata(METADATA_CREATE, create);
-
-        this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 
     /**

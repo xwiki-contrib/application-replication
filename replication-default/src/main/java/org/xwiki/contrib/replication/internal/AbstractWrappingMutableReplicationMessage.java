@@ -19,39 +19,27 @@
  */
 package org.xwiki.contrib.replication.internal;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.xwiki.contrib.replication.MutableReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationMessage;
-import org.xwiki.properties.ConverterManager;
 
 /**
  * @param <M> the type of {@link ReplicationMessage}
  * @version $Id$
  */
 public abstract class AbstractWrappingMutableReplicationMessage<M extends ReplicationMessage>
-    implements MutableReplicationMessage
+    extends AbstractReplicationMessage implements MutableReplicationMessage
 {
-    protected final M message;
-
-    private final Map<String, Collection<String>> metadata;
-
-    private final ConverterManager converter;
+    protected M message;
 
     /**
      * @param message the message to wrap
-     * @param converter used to convert values to String
      */
-    protected AbstractWrappingMutableReplicationMessage(M message, ConverterManager converter)
+    public void initialize(M message)
     {
-        this.converter = converter;
         this.message = message;
-
-        this.metadata = new HashMap<>(message.getCustomMetadata());
+        this.modifiableMap.putAll(message.getCustomMetadata());
     }
 
     @Override
@@ -79,21 +67,8 @@ public abstract class AbstractWrappingMutableReplicationMessage<M extends Replic
     }
 
     @Override
-    public Map<String, Collection<String>> getCustomMetadata()
-    {
-        return this.metadata;
-    }
-
-    @Override
     public void putMetadata(String key, Object value)
     {
-        String stringValue;
-        if (value instanceof Date) {
-            stringValue = ReplicationUtils.toString((Date) value);
-        } else {
-            stringValue = this.converter.convert(String.class, value);
-        }
-
-        this.metadata.put(key, Collections.singleton(stringValue));
+        super.putMetadata(key, value);
     }
 }

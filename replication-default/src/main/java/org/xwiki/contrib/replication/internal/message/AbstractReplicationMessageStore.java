@@ -24,9 +24,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -42,6 +40,7 @@ import org.slf4j.Logger;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationMessage;
+import org.xwiki.contrib.replication.internal.AbstractReplicationMessage;
 import org.xwiki.contrib.replication.internal.ReplicationUtils;
 import org.xwiki.environment.Environment;
 
@@ -112,7 +111,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
         return new File(messageFolder, FILE_DATA);
     }
 
-    protected abstract class AbstractFileReplicationMessage
+    protected abstract class AbstractFileReplicationMessage extends AbstractReplicationMessage
         implements ReplicationMessage, Comparable<ReplicationMessage>
     {
         protected String id;
@@ -122,8 +121,6 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
         protected String type;
 
         protected String source;
-
-        protected Map<String, Collection<String>> custom;
 
         protected File dataFile;
 
@@ -137,7 +134,6 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
             // Custom metadata
 
-            this.custom = new HashMap<>();
             File customFile = getCustomFile(messageFolder);
             PropertiesConfiguration customProperties = new Configurations().properties(customFile);
             for (Iterator<String> it = customProperties.getKeys(); it.hasNext();) {
@@ -152,9 +148,8 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
                     values = Collections.singletonList((String) propertyValue);
                 }
 
-                this.custom.put(key, values);
+                this.modifiableMap.put(key, values);
             }
-            this.custom = Collections.unmodifiableMap(this.custom);
 
             // Data
 
@@ -194,12 +189,6 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
         public String getType()
         {
             return this.type;
-        }
-
-        @Override
-        public Map<String, Collection<String>> getCustomMetadata()
-        {
-            return this.custom;
         }
 
         @Override

@@ -22,24 +22,16 @@ package org.xwiki.contrib.replication.internal;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.properties.ConverterManager;
 
 /**
  * @version $Id$
  */
+@Component(roles = WrappingMutableReplicationSenderMessage.class)
 public class WrappingMutableReplicationSenderMessage
     extends AbstractWrappingMutableReplicationMessage<ReplicationSenderMessage> implements ReplicationSenderMessage
 {
-    /**
-     * @param message
-     * @param converter
-     */
-    public WrappingMutableReplicationSenderMessage(ReplicationSenderMessage message, ConverterManager converter)
-    {
-        super(message, converter);
-    }
-
     @Override
     public void write(OutputStream stream) throws IOException
     {

@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
@@ -48,7 +49,6 @@ import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.event.ReplicationMessageStoringEvent;
 import org.xwiki.contrib.replication.internal.WrappingMutableReplicationSenderMessage;
 import org.xwiki.observation.ObservationManager;
-import org.xwiki.properties.ConverterManager;
 
 /**
  * @version $Id$
@@ -61,10 +61,10 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
     private static final String FILE_TARGETS = "targets.txt";
 
     @Inject
-    private ConverterManager converter;
+    private ObservationManager observation;
 
     @Inject
-    private ObservationManager observation;
+    private Provider<WrappingMutableReplicationSenderMessage> wrappingMessageProvider;
 
     /**
      * The message to send and the instance to send it to stored on the filesystem.
@@ -220,8 +220,8 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
         throws ReplicationException
     {
         // Give a change to customize the message to store
-        WrappingMutableReplicationSenderMessage customMessage =
-            new WrappingMutableReplicationSenderMessage(message, this.converter);
+        WrappingMutableReplicationSenderMessage customMessage = this.wrappingMessageProvider.get();
+        customMessage.initialize(message);
         this.observation.notify(new ReplicationMessageStoringEvent(), customMessage);
 
         // Store the message

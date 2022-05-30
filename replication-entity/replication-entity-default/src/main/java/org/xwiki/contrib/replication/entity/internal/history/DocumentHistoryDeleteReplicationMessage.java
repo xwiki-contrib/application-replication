@@ -20,7 +20,6 @@
 package org.xwiki.contrib.replication.entity.internal.history;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
@@ -67,8 +66,6 @@ public class DocumentHistoryDeleteReplicationMessage
 
         putMetadata(METADATA_VERSION_FROM, from);
         putMetadata(METADATA_VERSION_TO, to);
-        
-        this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 
     @Override

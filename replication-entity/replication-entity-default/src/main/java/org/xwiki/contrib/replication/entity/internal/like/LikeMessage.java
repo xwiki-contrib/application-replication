@@ -20,7 +20,6 @@
 package org.xwiki.contrib.replication.entity.internal.like;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
@@ -68,7 +67,5 @@ public class LikeMessage extends AbstractNoContentEntityReplicationMessage<Entit
 
         putMetadata(METADATA_CREATOR, user);
         putMetadata(METADATA_LIKE, like);
-
-        this.metadata = Collections.unmodifiableMap(this.metadata);
     }
 }
