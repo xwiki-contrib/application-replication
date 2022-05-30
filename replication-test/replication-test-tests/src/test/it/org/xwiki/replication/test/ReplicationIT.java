@@ -1066,9 +1066,7 @@ public class ReplicationIT extends AbstractTest
 
         // Force pushing waiting messages on XWIKI 0
         getUtil().switchExecutor(0);
-        WikiReplicationAdministrationSectionPage.gotoPage().getRegisteredInstances().get(0).clickRetry();
-        getUtil().switchExecutor(1);
-        WikiReplicationAdministrationSectionPage.gotoPage().getRegisteredInstances().get(0).clickRetry();
+        WikiReplicationAdministrationSectionPage.gotoPage().getRegisteredInstances().get(0).clickRetry();  
 
         // Wait for the conflict resolution
         getUtil().switchExecutor(0);
