@@ -65,7 +65,7 @@ public class EntityReplicationControllerMessage extends AbstractNoContentEntityR
         super.initialize(entityReference, null);
 
         // Serialize the configuration
-        setConfiguration(this.modifiableMap, configuration);
+        setConfiguration(this.modifiableMetadata, configuration);
     }
 
     /**

@@ -64,8 +64,8 @@ public class DocumentHistoryDeleteReplicationMessage
     {
         initialize(documentReference, metadata);
 
-        putMetadata(METADATA_VERSION_FROM, from);
-        putMetadata(METADATA_VERSION_TO, to);
+        putCustomMetadata(METADATA_VERSION_FROM, from);
+        putCustomMetadata(METADATA_VERSION_TO, to);
     }
 
     @Override

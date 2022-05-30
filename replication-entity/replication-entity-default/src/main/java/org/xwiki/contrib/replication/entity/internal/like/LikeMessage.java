@@ -65,7 +65,7 @@ public class LikeMessage extends AbstractNoContentEntityReplicationMessage<Entit
     {
         super.initialize(entity, metadata);
 
-        putMetadata(METADATA_CREATOR, user);
-        putMetadata(METADATA_LIKE, like);
+        putCustomMetadata(METADATA_CREATOR, user);
+        putCustomMetadata(METADATA_LIKE, like);
     }
 }

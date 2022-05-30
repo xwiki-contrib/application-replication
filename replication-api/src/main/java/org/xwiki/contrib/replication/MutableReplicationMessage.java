@@ -32,5 +32,5 @@ public interface MutableReplicationMessage extends ReplicationMessage
      * @param key the name of the metadata
      * @param value the value of the metadata
      */
-    void putMetadata(String key, Object value);
+    void putCustomMetadata(String key, Object value);
 }

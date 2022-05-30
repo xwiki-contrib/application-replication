@@ -96,18 +96,18 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
         this.entityReference = entityReference;
 
         if (extraMetadata != null) {
-            this.modifiableMap.putAll(extraMetadata);
+            this.modifiableMetadata.putAll(extraMetadata);
         }
 
         // Make sure to use the EntityReference converter (otherwise it won't unserialize to the right type)
-        putMetadata(METADATA_REFERENCE, entityReference.getClass() == EntityReference.class ? entityReference
+        putCustomMetadata(METADATA_REFERENCE, entityReference.getClass() == EntityReference.class ? entityReference
             : new EntityReference(entityReference));
 
         if (entityReference instanceof AbstractLocalizedEntityReference) {
-            putMetadata(METADATA_LOCALE, ((AbstractLocalizedEntityReference) entityReference).getLocale());
+            putCustomMetadata(METADATA_LOCALE, ((AbstractLocalizedEntityReference) entityReference).getLocale());
         }
 
-        putMetadata(METADATA_CONTEXT_USER, this.documentAccessBridge.getCurrentUserReference());
+        putCustomMetadata(METADATA_CONTEXT_USER, this.documentAccessBridge.getCurrentUserReference());
 
         // Make sure the id is unique but not too big
         this.id = UUID.randomUUID().toString();

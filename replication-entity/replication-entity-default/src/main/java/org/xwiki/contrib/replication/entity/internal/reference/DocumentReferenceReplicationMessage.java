@@ -77,8 +77,8 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
     {
         super.initialize(documentReference, metadata);
 
-        putMetadata(METADATA_CREATOR, creatorReference);
-        putMetadata(METADATA_CREATE, create);
+        putCustomMetadata(METADATA_CREATOR, creatorReference);
+        putCustomMetadata(METADATA_CREATE, create);
     }
 
     /**

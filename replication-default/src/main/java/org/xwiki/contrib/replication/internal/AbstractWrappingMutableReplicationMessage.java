@@ -39,7 +39,7 @@ public abstract class AbstractWrappingMutableReplicationMessage<M extends Replic
     public void initialize(M message)
     {
         this.message = message;
-        this.modifiableMap.putAll(message.getCustomMetadata());
+        this.modifiableMetadata.putAll(message.getCustomMetadata());
     }
 
     @Override
@@ -67,8 +67,8 @@ public abstract class AbstractWrappingMutableReplicationMessage<M extends Replic
     }
 
     @Override
-    public void putMetadata(String key, Object value)
+    public void putCustomMetadata(String key, Object value)
     {
-        super.putMetadata(key, value);
+        super.putCustomMetadata(key, value);
     }
 }

@@ -41,9 +41,10 @@ import org.xwiki.properties.ConverterManager;
 @InstantiationStrategy(ComponentInstantiationStrategy.PER_LOOKUP)
 public abstract class AbstractReplicationMessage implements ReplicationMessage
 {
-    protected final Map<String, Collection<String>> modifiableMap = new HashMap<>();
+    protected final Map<String, Collection<String>> modifiableMetadata = new HashMap<>();
 
-    protected final Map<String, Collection<String>> unmodifiableMap = Collections.unmodifiableMap(this.modifiableMap);
+    protected final Map<String, Collection<String>> unmodifiableMetadata =
+        Collections.unmodifiableMap(this.modifiableMetadata);
 
     @Inject
     private ConverterManager converter;
@@ -51,7 +52,7 @@ public abstract class AbstractReplicationMessage implements ReplicationMessage
     @Override
     public Map<String, Collection<String>> getCustomMetadata()
     {
-        return this.unmodifiableMap;
+        return this.unmodifiableMetadata;
     }
 
     /**
@@ -60,25 +61,25 @@ public abstract class AbstractReplicationMessage implements ReplicationMessage
      * @param key the name of the metadata
      * @param value the value of the metadata
      */
-    protected void putMetadata(String key, Object value)
+    protected void putCustomMetadata(String key, Object value)
     {
         if (value == null) {
-            this.modifiableMap.remove(key);
+            this.modifiableMetadata.remove(key);
         } else if (value instanceof Iterable) {
             List<String> listValue = new ArrayList<>();
             for (Object element : (Iterable) value) {
                 listValue.add(toString(element));
             }
-            this.modifiableMap.put(key, Collections.unmodifiableList(listValue));
+            this.modifiableMetadata.put(key, Collections.unmodifiableList(listValue));
         } else if (value.getClass().isArray()) {
             int length = Array.getLength(value);
             List<String> listValue = new ArrayList<>(length);
             for (int i = 0; i < length; ++i) {
                 listValue.add(toString(Array.get(value, i)));
             }
-            this.modifiableMap.put(key, Collections.unmodifiableList(listValue));
+            this.modifiableMetadata.put(key, Collections.unmodifiableList(listValue));
         } else {
-            this.modifiableMap.put(key, Collections.singleton(toString(value)));
+            this.modifiableMetadata.put(key, Collections.singleton(toString(value)));
         }
     }
 

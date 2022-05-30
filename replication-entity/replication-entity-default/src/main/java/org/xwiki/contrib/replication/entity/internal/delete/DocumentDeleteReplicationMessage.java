@@ -64,6 +64,6 @@ public class DocumentDeleteReplicationMessage extends AbstractNoContentEntityRep
     {
         super.initialize(documentReference, metadata);
 
-        putMetadata(METADATA_BATCH, this.batchOperation.getCurrentBatchId());
+        putCustomMetadata(METADATA_BATCH, this.batchOperation.getCurrentBatchId());
     }
 }

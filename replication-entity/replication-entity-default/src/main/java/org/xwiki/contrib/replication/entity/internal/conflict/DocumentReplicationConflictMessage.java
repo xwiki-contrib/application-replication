@@ -63,6 +63,6 @@ public class DocumentReplicationConflictMessage extends AbstractNoContentEntityR
     {
         super.initialize(documentReference, metadata);
 
-        putMetadata(METADATA_CONFLICT, conflict);
+        putCustomMetadata(METADATA_CONFLICT, conflict);
     }
 }

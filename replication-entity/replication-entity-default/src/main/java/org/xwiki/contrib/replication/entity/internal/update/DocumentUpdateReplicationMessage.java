@@ -118,7 +118,7 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
                     ancestors.add(new DocumentAncestor(nodeVersion, node.getDate()));
                 }
             }
-            this.modifiableMap.put(METADATA_ANCESTORS, DocumentAncestorConverter.toStrings(ancestors));
+            this.modifiableMetadata.put(METADATA_ANCESTORS, DocumentAncestorConverter.toStrings(ancestors));
         } catch (XWikiException e) {
             this.logger.error("Failed to get document ancestors", e);
         }
@@ -146,12 +146,12 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
         this.complete = complete;
 
         this.version = version;
-        putMetadata(METADATA_VERSION, this.version);
+        putCustomMetadata(METADATA_VERSION, this.version);
 
-        putMetadata(METADATA_COMPLETE, this.complete);
+        putCustomMetadata(METADATA_COMPLETE, this.complete);
 
         if (creator != null) {
-            putMetadata(METADATA_CREATOR, creator);
+            putCustomMetadata(METADATA_CREATOR, creator);
         }
     }
 

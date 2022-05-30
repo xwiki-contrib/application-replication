@@ -68,6 +68,6 @@ public class DocumentRepairReplicationMessage extends DocumentUpdateReplicationM
     {
         initialize(documentReference, version, true, creator, metadata);
 
-        putMetadata(METADATA_CONFLICT_AUTHORS, authors);
+        putCustomMetadata(METADATA_CONFLICT_AUTHORS, authors);
     }
 }

@@ -148,7 +148,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
                     values = Collections.singletonList((String) propertyValue);
                 }
 
-                this.modifiableMap.put(key, values);
+                this.modifiableMetadata.put(key, values);
             }
 
             // Data
