@@ -17,23 +17,32 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.event;
+package org.xwiki.contrib.replication.internal;
 
-import org.xwiki.contrib.replication.ReplicationReceiver;
-import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.observation.event.AbstractCancelableEvent;
+import java.io.IOException;
+import java.io.OutputStream;
+
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.properties.ConverterManager;
 
 /**
- * Event sent before {@link ReplicationReceiverMessage} is given to a {@link ReplicationReceiver}.
- * <p>
- * The event also send the following parameters:
- * </p>
- * <ul>
- * <li>source: the {@link ReplicationReceiverMessage} about to be sent</li>
- * </ul>
- * 
  * @version $Id$
  */
-public class ReplicationReceiverMessageEvent extends AbstractCancelableEvent
+public class WrappingMutableReplicationSenderMessage
+    extends AbstractWrappingMutableReplicationMessage<ReplicationSenderMessage> implements ReplicationSenderMessage
 {
+    /**
+     * @param message
+     * @param converter
+     */
+    public WrappingMutableReplicationSenderMessage(ReplicationSenderMessage message, ConverterManager converter)
+    {
+        super(message, converter);
+    }
+
+    @Override
+    public void write(OutputStream stream) throws IOException
+    {
+        this.message.write(stream);
+    }
 }

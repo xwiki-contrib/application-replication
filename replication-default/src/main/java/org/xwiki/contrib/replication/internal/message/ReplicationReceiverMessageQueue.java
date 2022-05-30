@@ -42,7 +42,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.event.ReplicationReceiverMessageEvent;
+import org.xwiki.contrib.replication.event.ReplicationMessageHandlingEvent;
 import org.xwiki.contrib.replication.internal.DefaultReplicationContext;
 import org.xwiki.contrib.replication.internal.ReplicationClient;
 import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
@@ -118,7 +118,7 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
     protected void handle(ReplicationReceiverMessage message) throws Exception
     {
         // Notify that a message is about to be handled by a receiver
-        ReplicationReceiverMessageEvent event = new ReplicationReceiverMessageEvent();
+        ReplicationMessageHandlingEvent event = new ReplicationMessageHandlingEvent();
         this.observation.notify(event, message);
         if (event.isCanceled()) {
             this.logger.warn("The message with id [{}] and coming from [{}] was ignored: {}", message.getId(),

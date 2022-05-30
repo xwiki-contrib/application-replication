@@ -30,6 +30,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.inject.Inject;
+
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -43,6 +45,10 @@ import org.xwiki.component.phase.InitializationException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.event.ReplicationMessageStoringEvent;
+import org.xwiki.contrib.replication.internal.WrappingMutableReplicationSenderMessage;
+import org.xwiki.observation.ObservationManager;
+import org.xwiki.properties.ConverterManager;
 
 /**
  * @version $Id$
@@ -53,6 +59,12 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
     implements Initializable
 {
     private static final String FILE_TARGETS = "targets.txt";
+
+    @Inject
+    private ConverterManager converter;
+
+    @Inject
+    private ObservationManager observation;
 
     /**
      * The message to send and the instance to send it to stored on the filesystem.
@@ -207,7 +219,13 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
     public FileReplicationSenderMessage store(ReplicationSenderMessage message, Collection<ReplicationInstance> targets)
         throws ReplicationException
     {
-        File messageFolder = storeMessage(message);
+        // Give a change to customize the message to store
+        WrappingMutableReplicationSenderMessage customMessage =
+            new WrappingMutableReplicationSenderMessage(message, this.converter);
+        this.observation.notify(new ReplicationMessageStoringEvent(), customMessage);
+
+        // Store the message
+        File messageFolder = storeMessage(customMessage);
 
         try {
             storeTargets(getTargetsFile(messageFolder), targets);

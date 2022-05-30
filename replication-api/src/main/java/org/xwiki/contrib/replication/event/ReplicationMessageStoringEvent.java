@@ -19,22 +19,22 @@
  */
 package org.xwiki.contrib.replication.event;
 
-import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.MutableReplicationMessage;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.observation.event.AbstractCancelableEvent;
 
 /**
- * Event sent before {@link ReplicationSenderMessage} is sent to a specific instance.
+ * Event sent before {@link ReplicationReceiverMessage} is stored in the queue of messages to send.
  * <p>
  * The event also send the following parameters:
  * </p>
  * <ul>
- * <li>source: the {@link ReplicationSenderMessage} about to be sent</li>
- * <li>data: the target {@link ReplicationInstance}</li>
+ * <li>source: a version of the {@link MutableReplicationMessage} about to be sent in which the custom metadata is
+ * modifiable</li>
  * </ul>
  * 
  * @version $Id$
  */
-public class ReplicationSenderMessageEvent extends AbstractCancelableEvent
+public class ReplicationMessageStoringEvent extends AbstractCancelableEvent
 {
 }

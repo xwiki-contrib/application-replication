@@ -36,7 +36,6 @@ import org.xwiki.contrib.replication.internal.ReplicationUtils;
 import org.xwiki.model.reference.AbstractLocalizedEntityReference;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.properties.ConverterManager;
-import org.xwiki.user.UserReference;
 import org.xwiki.user.UserReferenceSerializer;
 
 /**
@@ -134,9 +133,6 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
         String stringValue;
         if (value instanceof Date) {
             stringValue = ReplicationUtils.toString((Date) value);
-        } else if (value instanceof UserReference) {
-            // Workaround https://jira.xwiki.org/browse/XWIKI-19556
-            stringValue = this.userReferenceSerializer.serialize((UserReference) value);
         } else {
             stringValue = this.converter.convert(String.class, value);
         }

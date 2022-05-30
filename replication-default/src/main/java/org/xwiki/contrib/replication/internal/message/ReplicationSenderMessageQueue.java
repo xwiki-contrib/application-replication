@@ -36,7 +36,7 @@ import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.event.ReplicationSenderMessageEvent;
+import org.xwiki.contrib.replication.event.ReplicationMessageSendingEvent;
 import org.xwiki.contrib.replication.internal.ReplicationClient;
 import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
@@ -109,7 +109,7 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
     protected void handle(ReplicationSenderMessage message) throws InterruptedException
     {
         // Notify that a message is about to be sent
-        ReplicationSenderMessageEvent event = new ReplicationSenderMessageEvent();
+        ReplicationMessageSendingEvent event = new ReplicationMessageSendingEvent();
         this.observation.notify(event, message, this.instance);
         if (event.isCanceled()) {
             this.logger.warn("The sending of the message with id [{}] was cancelled: {}", message.getId(),
