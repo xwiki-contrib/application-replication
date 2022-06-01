@@ -31,4 +31,9 @@ public interface ReplicationContext
      * @return true if the execution results from a received replication message, false otherwise
      */
     boolean isReplicationMessage();
+
+    /**
+     * @return the current replication message
+     */
+    ReplicationMessage getReplicationMessage();
 }

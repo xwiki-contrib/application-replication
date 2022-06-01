@@ -26,6 +26,7 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.context.Execution;
 import org.xwiki.context.ExecutionContext;
 import org.xwiki.contrib.replication.ReplicationContext;
+import org.xwiki.contrib.replication.ReplicationMessage;
 
 /**
  * @version $Id$
@@ -45,28 +46,30 @@ public class DefaultReplicationContext implements ReplicationContext
     @Override
     public boolean isReplicationMessage()
     {
+        return getReplicationMessage() != null;
+    }
+
+    @Override
+    public ReplicationMessage getReplicationMessage()
+    {
         ExecutionContext context = this.execution.getContext();
 
         if (context != null) {
-            Boolean value = (Boolean) context.getProperty(REPLICATION_MESSAGE);
-
-            if (value == Boolean.TRUE) {
-                return true;
-            }
+            return (ReplicationMessage) context.getProperty(REPLICATION_MESSAGE);
         }
 
-        return false;
+        return null;
     }
 
     /**
      * @param replicationMessage true if the execution results from a received replication message, false otherwise
      */
-    public void setReplicationMessage(boolean replicationMessage)
+    public void setReplicationMessage(ReplicationMessage replicationMessage)
     {
         ExecutionContext context = this.execution.getContext();
 
-        if (context != null && isReplicationMessage() != replicationMessage) {
-            if (replicationMessage) {
+        if (context != null && getReplicationMessage() != replicationMessage) {
+            if (replicationMessage != null) {
                 context.newProperty(REPLICATION_MESSAGE).inherited().initial(replicationMessage).makeFinal().declare();
             } else {
                 context.removeProperty(REPLICATION_MESSAGE);

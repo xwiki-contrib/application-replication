@@ -135,7 +135,7 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
         this.executionContextManager.pushContext(new ExecutionContext(), false);
 
         // Indicate in the context that this is a replication change
-        ((DefaultReplicationContext) this.replicationContext).setReplicationMessage(true);
+        ((DefaultReplicationContext) this.replicationContext).setReplicationMessage(message);
 
         try {
             // Relay the message and wait until it's stored
