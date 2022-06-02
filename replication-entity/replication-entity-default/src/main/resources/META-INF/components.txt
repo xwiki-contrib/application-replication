@@ -31,6 +31,8 @@ org.xwiki.contrib.replication.entity.internal.repair.DocumentRepairReplicationMe
 org.xwiki.contrib.replication.entity.internal.repair.DocumentRepairReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.ui.DocumentReplicationConflictUIExtension
 org.xwiki.contrib.replication.entity.internal.ui.DocumentReplicationDocExtraUIExtension
+org.xwiki.contrib.replication.entity.internal.unreplicate.DocumentUnreplicateReplicationMessage
+org.xwiki.contrib.replication.entity.internal.unreplicate.DocumentUnreplicateReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.update.DocumentAncestorConverter
 org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateConflictResolver
 org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateLoaded

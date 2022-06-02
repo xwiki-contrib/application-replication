@@ -113,6 +113,17 @@ public class DocumentReplicationRelay
      * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to queue the replication message
      */
+    public CompletableFuture<ReplicationSenderMessage> relayDocumentUnreplicate(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        return relay(message, DocumentReplicationLevel.REFERENCE);
+    }
+
+    /**
+     * @param message the message to relay
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
+     * @throws ReplicationException when failing to queue the replication message
+     */
     public CompletableFuture<ReplicationSenderMessage> relayDocumentHistoryDelete(ReplicationReceiverMessage message)
         throws ReplicationException
     {

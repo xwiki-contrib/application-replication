@@ -112,7 +112,7 @@ public class EntityReplicationConfigurationUpdater
             ? Collections.emptyList() : resolveDocuments(reference, xcontext);
 
         // Send delete messages according to configuration diff
-        sendDeleteMessages(documentsToUpdate, removedInstances, xcontext);
+        sendUnreplicateMessages(documentsToUpdate, removedInstances, xcontext);
 
         // Synchronize configuration with other instances
         try {
@@ -196,7 +196,7 @@ public class EntityReplicationConfigurationUpdater
         }
     }
 
-    private void sendDeleteMessages(List<DocumentReference> documentsToUpdate,
+    private void sendUnreplicateMessages(List<DocumentReference> documentsToUpdate,
         List<DocumentReplicationControllerInstance> removedInstances, XWikiContext xcontext)
         throws XWikiException, ReplicationException
     {
@@ -204,7 +204,7 @@ public class EntityReplicationConfigurationUpdater
             XWikiDocument document = xcontext.getWiki().getDocument(documentReference, xcontext);
 
             if (!document.isNew()) {
-                this.documentSender.sendDocumentDelete(document.getDocumentReferenceWithLocale(), null,
+                this.documentSender.sendDocumentUnreplicate(document.getDocumentReferenceWithLocale(), null,
                     removedInstances);
             }
         }

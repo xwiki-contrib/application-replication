@@ -94,6 +94,15 @@ public interface DocumentReplicationSender
         Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException;
 
     /**
+     * @param documentReference the reference of the document to delete
+     * @param metadata custom metadata to add to the message
+     * @param configurations the replication configuration to follow or null if it should be asked to the controller
+     * @throws ReplicationException when failing to send the document delete
+     */
+    void sendDocumentUnreplicate(DocumentReference documentReference, Map<String, Collection<String>> metadata,
+        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException;
+
+    /**
      * @param documentReference the reference of the document from which to delete the versions
      * @param from the version from which to start deleting
      * @param to the version where to stop deleting

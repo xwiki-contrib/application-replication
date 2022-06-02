@@ -48,6 +48,7 @@ import org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDele
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.repair.DocumentRepairReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.unreplicate.DocumentUnreplicateReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
@@ -78,6 +79,9 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
 
     @Inject
     private Provider<DocumentDeleteReplicationMessage> documentDeleteMessageProvider;
+
+    @Inject
+    private Provider<DocumentUnreplicateReplicationMessage> documentUnreplicateMessageProvider;
 
     @Inject
     private Provider<DocumentHistoryDeleteReplicationMessage> historyMessageProvider;
@@ -283,6 +287,19 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
     {
         send(m -> {
             DocumentDeleteReplicationMessage message = this.documentDeleteMessageProvider.get();
+
+            message.initialize(documentReference, m);
+
+            return message;
+        }, documentReference, DocumentReplicationLevel.REFERENCE, metadata, configurations);
+    }
+
+    @Override
+    public void sendDocumentUnreplicate(DocumentReference documentReference, Map<String, Collection<String>> metadata,
+        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
+    {
+        send(m -> {
+            DocumentUnreplicateReplicationMessage message = this.documentUnreplicateMessageProvider.get();
 
             message.initialize(documentReference, m);
 
