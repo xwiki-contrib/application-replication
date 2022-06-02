@@ -269,7 +269,8 @@ public class ReplicationInstanceStore
                                 uri = getDefaultCurrentURI();
                             }
 
-                            this.currentInstance = new DefaultReplicationInstance(name, uri, null, null);
+                            this.currentInstance =
+                                new DefaultReplicationInstance(name, uri, null, getProperties(instanceObject));
                         } catch (Exception e) {
                             // Skip invalid instance
                             this.logger.error("Failed to load instance from xobject with reference [{}]",
