@@ -19,12 +19,15 @@
  */
 package org.xwiki.contrib.replication.entity.internal.index;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.event.ApplicationStartedEvent;
@@ -46,6 +49,9 @@ public class ReplicationDocumentInitializer extends AbstractEventListener
     @Inject
     private HibernateSessionFactory sessionFactory;
 
+    @Inject
+    private Logger logger;
+
     /**
      * Setup the listener.
      */
@@ -57,7 +63,11 @@ public class ReplicationDocumentInitializer extends AbstractEventListener
     @Override
     public void onEvent(Event event, Object source, Object data)
     {
-        this.sessionFactory.getConfiguration().addInputStream(getMappingFile("replication/document.hbm.xml"));
+        try (InputStream stream = getMappingFile("replication/document.hbm.xml")) {
+            this.sessionFactory.getConfiguration().addInputStream(stream);
+        } catch (IOException e) {
+            this.logger.warn("Failed to close the stream: {}", ExceptionUtils.getRootCauseMessage(e));
+        }
     }
 
     private InputStream getMappingFile(String mappingFileName)

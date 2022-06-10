@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -301,15 +302,40 @@ public class EntityReplicationStore
         }
     }
 
+    private DocumentReplicationLevel toDocumentReplicationLevel(Object value)
+    {
+        if (value != null) {
+            if (value instanceof DocumentReplicationLevel) {
+                return (DocumentReplicationLevel) value;
+            } else if (value.getClass().isEnum()) {
+                // Supports DocumentReplicationLevel coming from a different classloader
+                Enum<?> enumConstant = (Enum<?>) value;
+                return DocumentReplicationLevel.valueOf(enumConstant.name());
+            }
+        }
+
+        return null;
+    }
+
     private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(long entityId, Session session)
         throws XWikiException
     {
-        Query<HibernateEntityReplicationInstance> query = session.createQuery(
-            "SELECT instance FROM HibernateEntityReplicationInstance AS instance where instance.entity = :entity",
-            HibernateEntityReplicationInstance.class);
+        Query<Object[]> query = session.createQuery(
+            "SELECT instance.entity, instance.instance, instance.level, instance.readonly"
+                + " FROM HibernateEntityReplicationInstance AS instance WHERE instance.entity = :entity",
+            Object[].class);
         query.setParameter(ENTITY, entityId);
 
-        List<HibernateEntityReplicationInstance> hibernateInstances = query.list();
+        List<HibernateEntityReplicationInstance> hibernateInstances = query.list().stream().map(i -> {
+            // Avoid classloader reloading related issue by asking for the values instead of the a
+            // HibernateEntityReplicationInstance instance directly
+            long entity = ((Number) i[0]).longValue();
+            String instance = (String) i[1];
+            DocumentReplicationLevel level = toDocumentReplicationLevel(i[2]);
+            boolean readonly = ((Boolean) i[3]).booleanValue();
+
+            return new HibernateEntityReplicationInstance(entity, instance, level, readonly);
+        }).collect(Collectors.toList());
 
         // There is no entry
         if (hibernateInstances.isEmpty()) {

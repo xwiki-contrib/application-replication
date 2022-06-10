@@ -24,23 +24,16 @@ import java.io.InputStream;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
-import org.xwiki.component.phase.Initializable;
-import org.xwiki.component.phase.InitializationException;
-import org.xwiki.extension.repository.CoreExtensionRepository;
-import org.xwiki.extension.version.Version;
-import org.xwiki.extension.version.internal.DefaultVersion;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.event.ApplicationStartedEvent;
 import org.xwiki.observation.event.Event;
 
-import com.xpn.xwiki.XWikiContext;
-import com.xpn.xwiki.internal.store.hibernate.HibernateStore;
+import com.xpn.xwiki.store.hibernate.HibernateSessionFactory;
 import com.xpn.xwiki.util.Util;
 
 /**
@@ -51,20 +44,10 @@ import com.xpn.xwiki.util.Util;
 @Component
 @Named("EntityReplicationInitializer")
 @Singleton
-public class EntityReplicationInitializer extends AbstractEventListener implements Initializable
+public class EntityReplicationInitializer extends AbstractEventListener
 {
-    private static final Version VERSION_131003 = new DefaultVersion("13.10.3");
-
     @Inject
-    @Named("readonly")
-    private Provider<XWikiContext> xcontextProvider;
-
-    @Inject
-    // FIXME: don't use private component
-    private HibernateStore store;
-
-    @Inject
-    private CoreExtensionRepository coreExtensions;
+    private HibernateSessionFactory sessionFactory;
 
     @Inject
     private Logger logger;
@@ -80,43 +63,8 @@ public class EntityReplicationInitializer extends AbstractEventListener implemen
     @Override
     public void onEvent(Event event, Object source, Object data)
     {
-        // Inject the configuration before Hibernate initialization
-        configure();
-    }
-
-    @Override
-    public void initialize() throws InitializationException
-    {
-        // Check if XWiki is currently initializing (in which case the configuration injection will take place when
-        // receiving ApplicationStartedEvent)
-        if (this.xcontextProvider.get() == null) {
-            return;
-        }
-
-        // Check if the Hibernate configuration already been injected
-        if (this.store.getConfigurationMetadata()
-            .getEntityBinding(HibernateEntityReplicationInstance.class.getName()) == null) {
-            // Inject the configuration
-            configure();
-        }
-
-        // TODO: remove when upgrading to >=13.10.3
-        if (this.coreExtensions.getCoreExtension("org.xwiki.platform:xwiki-platform-oldcore").getId().getVersion()
-            .compareTo(VERSION_131003) >= 0) {
-            // Force reload Hibernate configuration
-            // Even if the configuration did not changed the registered class did so it needs to be reloaded
-            try {
-                this.store.build();
-            } catch (Exception e) {
-                this.logger.error("Failed to reload the Hibernate configuration", e);
-            }
-        }
-    }
-
-    private void configure()
-    {
         try (InputStream stream = getMappingFile("replication/entityreplication.hbm.xml")) {
-            this.store.getConfiguration().addInputStream(stream);
+            this.sessionFactory.getConfiguration().addInputStream(stream);
         } catch (IOException e) {
             this.logger.warn("Failed to close the stream: {}", ExceptionUtils.getRootCauseMessage(e));
         }

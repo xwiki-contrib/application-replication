@@ -50,6 +50,21 @@ public class HibernateEntityReplicationInstance implements Serializable
     }
 
     /**
+     * @param entity the reference hash of the entity associated with this configuration
+     * @param instance the instance to replicate the document with
+     * @param level how much of the document should be replicated
+     * @param readonly if the target instance is not allowed to send back modifications
+     */
+    public HibernateEntityReplicationInstance(long entity, String instance, DocumentReplicationLevel level,
+        boolean readonly)
+    {
+        this.entity = entity;
+        this.instance = instance;
+        this.level = level;
+        this.readonly = readonly;
+    }
+
+    /**
      * @param entity the identifier of the entity
      * @param instance the configured target instance
      */
