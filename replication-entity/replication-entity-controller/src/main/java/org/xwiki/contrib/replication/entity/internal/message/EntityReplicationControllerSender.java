@@ -30,6 +30,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.RelayReplicationSender;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
@@ -37,7 +38,6 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.contrib.replication.internal.RelayReplicationSender;
 import org.xwiki.model.reference.EntityReference;
 
 /**

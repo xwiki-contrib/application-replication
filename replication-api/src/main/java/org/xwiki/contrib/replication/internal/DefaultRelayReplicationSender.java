@@ -29,6 +29,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.RelayReplicationSender;
 import org.xwiki.contrib.replication.RelayedReplicationSenderMessage;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
@@ -40,9 +41,9 @@ import org.xwiki.contrib.replication.ReplicationSenderMessage;
 /**
  * @version $Id$
  */
-@Component(roles = RelayReplicationSender.class)
+@Component
 @Singleton
-public class RelayReplicationSender
+public class DefaultRelayReplicationSender implements RelayReplicationSender
 {
     @Inject
     private ReplicationInstanceManager instances;
@@ -50,11 +51,7 @@ public class RelayReplicationSender
     @Inject
     private ReplicationSender sender;
 
-    /**
-     * @param message the message to relay
-     * @param instances the instances to send the message to
-     * @return the instance to relay the message to striped from those which already received it
-     */
+    @Override
     public List<ReplicationInstance> getRelayedInstances(ReplicationReceiverMessage message,
         Collection<ReplicationInstance> instances)
     {
@@ -68,11 +65,7 @@ public class RelayReplicationSender
         return targets;
     }
 
-    /**
-     * @param message the message to relay
-     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
-     * @throws ReplicationException when failing to relay the message
-     */
+    @Override
     public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
         throws ReplicationException
     {
@@ -80,25 +73,14 @@ public class RelayReplicationSender
         return relay(message, this.instances.getRegisteredInstances());
     }
 
-    /**
-     * @param message the message to relay
-     * @param targets the instances to send message to
-     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
-     * @throws ReplicationException when failing to relay the message
-     */
+    @Override
     public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
         Collection<ReplicationInstance> targets) throws ReplicationException
     {
         return this.sender.send(new RelayedReplicationSenderMessage(message), getRelayedInstances(message, targets));
     }
 
-    /**
-     * @param message the message to relay
-     * @param metadata custom metadata to relay
-     * @param targets the instances to send message to
-     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
-     * @throws ReplicationException when failing to relay the message
-     */
+    @Override
     public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
         Map<String, Collection<String>> metadata, Collection<ReplicationInstance> targets) throws ReplicationException
     {

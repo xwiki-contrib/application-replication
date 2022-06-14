@@ -37,10 +37,10 @@ import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
+import org.xwiki.contrib.replication.AbstractReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationMessage;
-import org.xwiki.contrib.replication.internal.AbstractReplicationMessage;
 import org.xwiki.contrib.replication.internal.ReplicationUtils;
 import org.xwiki.environment.Environment;
 

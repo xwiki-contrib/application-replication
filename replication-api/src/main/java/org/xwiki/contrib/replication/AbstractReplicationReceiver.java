@@ -17,19 +17,15 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal;
+package org.xwiki.contrib.replication;
 
 import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 
-import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationMessageReader;
-import org.xwiki.contrib.replication.ReplicationReceiver;
-import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.ReplicationSenderMessage;
-
 /**
+ * Base class to help implement {@link ReplicationReceiver}.
+ * 
  * @version $Id$
  */
 public abstract class AbstractReplicationReceiver implements ReplicationReceiver

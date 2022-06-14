@@ -23,11 +23,11 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 
 import org.slf4j.Logger;
+import org.xwiki.contrib.replication.AbstractReplicationReceiver;
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
-import org.xwiki.contrib.replication.internal.AbstractReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 

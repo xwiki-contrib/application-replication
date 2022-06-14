@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal;
+package org.xwiki.contrib.replication;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -32,10 +32,12 @@ import javax.inject.Inject;
 
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
-import org.xwiki.contrib.replication.ReplicationMessage;
+import org.xwiki.contrib.replication.internal.ReplicationUtils;
 import org.xwiki.properties.ConverterManager;
 
 /**
+ * Base class to help implement a {@link ReplicationMessage} and especially custom metadata support.
+ * 
  * @version $Id$
  */
 @InstantiationStrategy(ComponentInstantiationStrategy.PER_LOOKUP)

@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.internal;
 
 import java.util.Date;
 
+import org.xwiki.contrib.replication.AbstractReplicationMessage;
 import org.xwiki.contrib.replication.MutableReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationMessage;
 
