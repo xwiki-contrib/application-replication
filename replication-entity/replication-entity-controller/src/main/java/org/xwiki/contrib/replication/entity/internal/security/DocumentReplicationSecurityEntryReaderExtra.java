@@ -26,7 +26,9 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
@@ -52,19 +54,32 @@ public class DocumentReplicationSecurityEntryReaderExtra implements SecurityEntr
     @Inject
     private EntityReplicationStore store;
 
+    @Inject
+    private Logger logger;
+
     @Override
     public Collection<SecurityRule> read(SecurityReference entityReference) throws AuthorizationException
     {
-        DocumentReplicationControllerInstance configuration;
         try {
-            configuration =
-                this.store.resolveHibernateEntityReplication(entityReference, this.instances.getCurrentInstance());
-        } catch (Exception e) {
-            throw new AuthorizationException("Failed get replication rules", e);
+            if (this.instances.getRegisteredInstances().isEmpty()) {
+                // No replication is configured for in this instance
+                this.logger.debug("No registered instance");
+
+                return null;
+            }
+        } catch (ReplicationException e) {
+            this.logger.error("Failed load load registered replication instances", e);
         }
 
-        if (configuration.isReadonly() || configuration.getLevel() == DocumentReplicationLevel.REFERENCE) {
-            return Collections.singleton(DocumentReplicationSecurityRule.INSTANCE);
+        try {
+            DocumentReplicationControllerInstance configuration =
+                this.store.resolveHibernateEntityReplication(entityReference, this.instances.getCurrentInstance());
+
+            if (configuration.isReadonly() || configuration.getLevel() == DocumentReplicationLevel.REFERENCE) {
+                return Collections.singleton(DocumentReplicationSecurityRule.INSTANCE);
+            }
+        } catch (Exception e) {
+            this.logger.error("Failed get replication rules", e);
         }
 
         return null;
