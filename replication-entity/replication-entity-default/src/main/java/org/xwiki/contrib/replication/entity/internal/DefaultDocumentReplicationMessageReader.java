@@ -84,7 +84,7 @@ public class DefaultDocumentReplicationMessageReader implements DocumentReplicat
         EntityReference reference = this.reader.getMetadata(message,
             AbstractEntityReplicationMessage.METADATA_REFERENCE, mandatory, EntityReference.class);
 
-        return this.currentEntityResolver.resolve(reference, reference.getType());
+        return reference != null ? this.currentEntityResolver.resolve(reference, reference.getType()) : null;
     }
 
     @Override
