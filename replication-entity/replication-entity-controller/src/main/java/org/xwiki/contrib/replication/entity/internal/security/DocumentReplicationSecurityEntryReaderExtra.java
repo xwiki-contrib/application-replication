@@ -28,7 +28,6 @@ import javax.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
@@ -60,17 +59,6 @@ public class DocumentReplicationSecurityEntryReaderExtra implements SecurityEntr
     @Override
     public Collection<SecurityRule> read(SecurityReference entityReference) throws AuthorizationException
     {
-        try {
-            if (this.instances.getRegisteredInstances().isEmpty()) {
-                // No replication is configured for in this instance
-                this.logger.debug("No registered instance");
-
-                return null;
-            }
-        } catch (ReplicationException e) {
-            this.logger.error("Failed load load registered replication instances", e);
-        }
-
         try {
             DocumentReplicationControllerInstance configuration =
                 this.store.resolveHibernateEntityReplication(entityReference, this.instances.getCurrentInstance());

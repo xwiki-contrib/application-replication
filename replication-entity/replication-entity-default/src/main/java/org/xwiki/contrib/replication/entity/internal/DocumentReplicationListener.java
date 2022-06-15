@@ -33,7 +33,6 @@ import org.xwiki.bridge.event.DocumentVersionRangeDeletingEvent;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.ObservationContext;
@@ -72,9 +71,6 @@ public class DocumentReplicationListener extends AbstractEventListener
     private Provider<DocumentReplicationController> controllerProvider;
 
     @Inject
-    private Provider<ReplicationInstanceManager> instancesProvider;
-
-    @Inject
     private Logger logger;
 
     /**
@@ -90,16 +86,10 @@ public class DocumentReplicationListener extends AbstractEventListener
     public void onEvent(Event event, Object source, Object data)
     {
         // Ignore the modification if:
-        // * there is no registered replication instance yet
         // * it's been caused by a replication
         // * it's been caused by a remote event
-        try {
-            if (!this.instancesProvider.get().getRegisteredInstances().isEmpty()
-                || this.replicationContext.isReplicationMessage() || this.remoteContext.isRemoteState()) {
-                return;
-            }
-        } catch (ReplicationException e) {
-            this.logger.error("Failed to load registered replication instances", e);
+        if (this.replicationContext.isReplicationMessage() || this.remoteContext.isRemoteState()) {
+            return;
         }
 
         XWikiDocument document = (XWikiDocument) source;

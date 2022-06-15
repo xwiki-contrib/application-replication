@@ -23,15 +23,11 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
-import org.xwiki.observation.AbstractEventListener;
-import org.xwiki.observation.event.ApplicationStartedEvent;
-import org.xwiki.observation.event.Event;
 
 import com.xpn.xwiki.store.hibernate.HibernateSessionFactory;
 import com.xpn.xwiki.util.Util;
@@ -41,10 +37,9 @@ import com.xpn.xwiki.util.Util;
  *
  * @version $Id: f9ed06c92322e4b3ba6505fc7b87ea7a142d246d $
  */
-@Component
-@Named("EntityReplicationInitializer")
+@Component(roles = EntityReplicationInitializer.class)
 @Singleton
-public class EntityReplicationInitializer extends AbstractEventListener
+public class EntityReplicationInitializer
 {
     @Inject
     private HibernateSessionFactory sessionFactory;
@@ -52,22 +47,28 @@ public class EntityReplicationInitializer extends AbstractEventListener
     @Inject
     private Logger logger;
 
-    /**
-     * Setup the listener.
-     */
-    public EntityReplicationInitializer()
-    {
-        super("EntityReplicationInitializer", new ApplicationStartedEvent());
-    }
+    private boolean registered;
 
-    @Override
-    public void onEvent(Event event, Object source, Object data)
+    /**
+     * Register the hibernate mapping.
+     */
+    public void initialize()
     {
         try (InputStream stream = getMappingFile("replication/entityreplication.hbm.xml")) {
             this.sessionFactory.getConfiguration().addInputStream(stream);
         } catch (IOException e) {
             this.logger.warn("Failed to close the stream: {}", ExceptionUtils.getRootCauseMessage(e));
         }
+
+        this.registered = true;
+    }
+
+    /**
+     * @return the registered
+     */
+    public boolean isInitialized()
+    {
+        return this.registered;
     }
 
     private InputStream getMappingFile(String mappingFileName)
