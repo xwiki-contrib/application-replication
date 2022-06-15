@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +32,7 @@ import javax.inject.Inject;
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.internal.ReplicationUtils;
+import org.xwiki.contrib.replication.internal.UpperCaseMap;
 import org.xwiki.properties.ConverterManager;
 
 /**
@@ -43,7 +43,7 @@ import org.xwiki.properties.ConverterManager;
 @InstantiationStrategy(ComponentInstantiationStrategy.PER_LOOKUP)
 public abstract class AbstractReplicationMessage implements ReplicationMessage
 {
-    protected final Map<String, Collection<String>> modifiableMetadata = new HashMap<>();
+    protected final Map<String, Collection<String>> modifiableMetadata = new UpperCaseMap<>();
 
     protected final Map<String, Collection<String>> unmodifiableMetadata =
         Collections.unmodifiableMap(this.modifiableMetadata);
