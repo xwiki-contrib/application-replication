@@ -60,9 +60,6 @@ public class DocumentReplicationListener extends AbstractEventListener
     private static final DocumentVersionRangeDeletingEvent HISTORY_DELETING = new DocumentVersionRangeDeletingEvent();
 
     @Inject
-    private Provider<DocumentReplicationController> controllerProvider;
-
-    @Inject
     private ReplicationContext replicationContext;
 
     @Inject
@@ -72,7 +69,10 @@ public class DocumentReplicationListener extends AbstractEventListener
     private RemoteObservationManagerContext remoteContext;
 
     @Inject
-    private ReplicationInstanceManager instances;
+    private Provider<DocumentReplicationController> controllerProvider;
+
+    @Inject
+    private Provider<ReplicationInstanceManager> instancesProvider;
 
     @Inject
     private Logger logger;
@@ -94,8 +94,8 @@ public class DocumentReplicationListener extends AbstractEventListener
         // * it's been caused by a replication
         // * it's been caused by a remote event
         try {
-            if (!this.instances.getRegisteredInstances().isEmpty() || this.replicationContext.isReplicationMessage()
-                || this.remoteContext.isRemoteState()) {
+            if (!this.instancesProvider.get().getRegisteredInstances().isEmpty()
+                || this.replicationContext.isReplicationMessage() || this.remoteContext.isRemoteState()) {
                 return;
             }
         } catch (ReplicationException e) {
