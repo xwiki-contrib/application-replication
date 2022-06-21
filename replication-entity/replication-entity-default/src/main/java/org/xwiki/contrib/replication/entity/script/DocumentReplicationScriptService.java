@@ -30,13 +30,11 @@ import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils;
+import org.xwiki.contrib.replication.entity.EntityReplication;
 import org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfiguration;
 import org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfigurationStore;
-import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.script.service.ScriptService;
@@ -71,13 +69,10 @@ public class DocumentReplicationScriptService implements ScriptService
     private DocumentReplicationControllerConfigurationStore controllerStore;
 
     @Inject
-    private ReplicationDocumentStore documentStore;
+    private EntityReplication entityReplication;
 
     @Inject
     private ContextualAuthorizationManager authorization;
-
-    @Inject
-    private DocumentReplicationUtils replicationUtils;
 
     /**
      * Indicate the list of registered instances this document should be replicated to.
@@ -174,21 +169,7 @@ public class DocumentReplicationScriptService implements ScriptService
      */
     public String getOwner(DocumentReference documentReference) throws ReplicationException
     {
-        return this.documentStore.getOwner(documentReference);
-    }
-
-    /**
-     * @param documentReference the reference of the document
-     * @param owner the owner instance of the document
-     * @throws AccessDeniedException when the current author is not allowed to use this API
-     * @throws ReplicationException when the update of the owner fail
-     */
-    public void setOwner(DocumentReference documentReference, ReplicationInstance owner)
-        throws ReplicationException, AccessDeniedException
-    {
-        this.authorization.checkAccess(Right.PROGRAM);
-
-        this.documentStore.setOwner(documentReference, owner.getURI());
+        return this.entityReplication.getOwner(documentReference);
     }
 
     /**
@@ -198,7 +179,7 @@ public class DocumentReplicationScriptService implements ScriptService
      */
     public boolean getConflict(DocumentReference documentReference) throws ReplicationException
     {
-        return this.documentStore.getConflict(documentReference);
+        return this.entityReplication.getConflict(documentReference);
     }
 
     /**
@@ -212,12 +193,6 @@ public class DocumentReplicationScriptService implements ScriptService
     {
         this.authorization.checkAccess(Right.PROGRAM);
 
-        if (this.documentStore.getConflict(documentReference) != conflict) {
-            // Update the conflict status
-            this.documentStore.setConflict(documentReference, conflict);
-
-            // Indicate the change to other instances
-            this.replicationUtils.sendDocumentConflict(documentReference, conflict);
-        }
+        this.entityReplication.setConflict(documentReference, conflict);
     }
 }
