@@ -111,7 +111,7 @@ public class EntityReplicationConfigurationUpdater
         List<DocumentReference> documentsToUpdate = newInstances.isEmpty() && removedInstances.isEmpty()
             ? Collections.emptyList() : resolveDocuments(reference, xcontext);
 
-        // Send delete messages according to configuration diff
+        // Send unreplicate messages according to configuration diff
         sendUnreplicateMessages(documentsToUpdate, removedInstances, xcontext);
 
         // Synchronize configuration with other instances
