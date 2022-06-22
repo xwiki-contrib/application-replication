@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.internal.message;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -238,6 +239,7 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
                 this.logStore.saveAsync(fileMessage, (m, e) -> {
                     Map<String, Object> custom = new HashMap<>(e.getCustom());
 
+                    custom.put(ReplicationMessageEventQuery.KEY_STATUS_STORED_DATE, new Date());
                     custom.put(ReplicationMessageEventQuery.KEY_STATUS,
                         ReplicationMessageEventQuery.VALUE_STATUS_STORED);
                     custom.put(ReplicationMessageEventQuery.KEY_TARGETS, fileMessage.getTargets().stream()
