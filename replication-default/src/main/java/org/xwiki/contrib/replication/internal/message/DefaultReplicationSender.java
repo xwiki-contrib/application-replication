@@ -239,7 +239,9 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
                 this.logStore.saveAsync(fileMessage, (m, e) -> {
                     Map<String, Object> custom = new HashMap<>(e.getCustom());
 
-                    custom.put(ReplicationMessageEventQuery.KEY_STATUS_STORED_DATE, new Date());
+                    // Make the event date be the stored date
+                    e.setDate(new Date());
+
                     custom.put(ReplicationMessageEventQuery.KEY_STATUS,
                         ReplicationMessageEventQuery.VALUE_STATUS_STORED);
                     custom.put(ReplicationMessageEventQuery.KEY_TARGETS, fileMessage.getTargets().stream()

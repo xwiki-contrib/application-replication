@@ -166,6 +166,7 @@ public class ReplicationMessageLogStore
 
         // Standard metadata
         properties.put(ReplicationMessageEventQuery.KEY_ID, message.getId());
+        properties.put(ReplicationMessageEventQuery.KEY_DATE, message.getDate());
         properties.put(ReplicationMessageEventQuery.KEY_SOURCE, message.getSource());
         properties.put(ReplicationMessageEventQuery.KEY_TYPE, message.getType());
 

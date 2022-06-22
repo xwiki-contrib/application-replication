@@ -128,7 +128,9 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
         this.messageLog.saveSync(message, (m, e) -> {
             Map<String, Object> custom = new HashMap<>(e.getCustom());
 
-            custom.put(ReplicationMessageEventQuery.KEY_STATUS_RECEIVED_DATE, new Date());
+            // Make the event date be the received date
+            e.setDate(new Date());
+
             custom.put(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_RECEIVED);
 
             e.setCustom(custom);

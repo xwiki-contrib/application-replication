@@ -47,19 +47,9 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
     public static final String VALUE_STATUS_STORED = "stored";
 
     /**
-     * Indicate when the message was stored.
-     */
-    public static final String KEY_STATUS_STORED_DATE = "storedDate";
-
-    /**
      * Indicate that the message was successfully sent to an instance.
      */
     public static final String VALUE_STATUS_SENT = "sent";
-
-    /**
-     * Indicate when the message was successfully sent.
-     */
-    public static final String KEY_STATUS_SENT_DATE = "sentDate";
 
     /**
      * Indicate that the message was received from another instance and is waiting to be handled.
@@ -67,19 +57,9 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
     public static final String VALUE_STATUS_RECEIVED = "received";
 
     /**
-     * Indicate when the message was received from another instance.
-     */
-    public static final String KEY_STATUS_RECEIVED_DATE = "receivedDate";
-
-    /**
      * Indicate that the received message was successfully handled.
      */
     public static final String VALUE_STATUS_HANDLED = "handled";
-
-    /**
-     * Indicate when the message was successfully handled.
-     */
-    public static final String KEY_STATUS_HANDLED_DATE = "handledDate";
 
     /**
      * The instance to which the message was sent.
@@ -95,6 +75,11 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
      * The id of the message.
      */
     public static final String KEY_ID = "id";
+
+    /**
+     * The date of the message.
+     */
+    public static final String KEY_DATE = "date";
 
     /**
      * The source instance from which the message is coming from.
@@ -115,8 +100,8 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
      * The mapping between the custom replication event properties and the corresponding store types.
      */
     public static final Map<String, Type> CUSTOM_TYPES =
-        Map.of(KEY_STATUS, String.class, KEY_STATUS_SENT_DATE, Date.class, KEY_TARGET, String.class, KEY_TARGETS,
-            List.class, KEY_ID, String.class, KEY_SOURCE, String.class, KEY_TYPE, String.class);
+        Map.of(KEY_STATUS, String.class, KEY_TARGET, String.class, KEY_TARGETS, List.class, KEY_ID, String.class,
+            KEY_DATE, Date.class, KEY_SOURCE, String.class, KEY_TYPE, String.class);
 
     /**
      * Helper to set the right type depending on the property name.

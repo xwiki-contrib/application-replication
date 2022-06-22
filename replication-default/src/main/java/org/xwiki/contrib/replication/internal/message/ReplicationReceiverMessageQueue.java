@@ -151,7 +151,9 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
                 // Generate a new id to avoid overwriting the stored one
                 e.setId(UUID.randomUUID().toString());
 
-                custom.put(ReplicationMessageEventQuery.KEY_STATUS_HANDLED_DATE, new Date());
+                // Make the event date be the handled date
+                e.setDate(new Date());
+
                 custom.put(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_HANDLED);
 
                 e.setCustom(custom);
