@@ -34,7 +34,7 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
     /**
      * The application indicated in the event for all replication messages.
      */
-    public static final String VALUE_APPLICATION = "replication";
+    public static final String VALUE_APPLICATION = "replication.message";
 
     /**
      * The status of a send message (stored, sent).
