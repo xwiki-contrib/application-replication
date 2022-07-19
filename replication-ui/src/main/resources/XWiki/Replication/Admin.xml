@@ -120,6 +120,8 @@
 {{/velocity}}
 
 {{velocity}}
+#set($isMainWiki = ($services.wiki.currentWikiId == $services.wiki.mainWikiId))
+#if ($isMainWiki)
 #if ($hasProgramming)
 === {{translation key="replication.admin.instance.CURRENT"/}}
 
@@ -215,6 +217,9 @@
   #end
 #else
   {{warning}}{{translation key="replication.admin.nocontroller"/}}{{/warning}}
+#end
+#else
+  {{warning}}{{translation key="replication.admin.subwiki"/}}{{/warning}}
 #end
 {{/velocity}}</content>
   <object>

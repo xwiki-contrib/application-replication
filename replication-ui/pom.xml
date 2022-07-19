@@ -35,9 +35,6 @@
 
   <properties>
     <xwiki.extension.category>application</xwiki.extension.category>
-
-    <!-- Should only be installed on main wiki -->
-    <xwiki.extension.namespaces>wiki:xwiki</xwiki.extension.namespaces>
   </properties>
 
   <dependencies>
