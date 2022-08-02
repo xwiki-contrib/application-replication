@@ -19,6 +19,8 @@
  */
 package org.xwiki.contrib.replication.entity.internal;
 
+import java.util.List;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -50,6 +52,12 @@ public class DefaultEntityReplication implements EntityReplication
     public String getOwner(DocumentReference documentReference) throws ReplicationException
     {
         return this.documentStore.getOwner(documentReference);
+    }
+
+    @Override
+    public List<String> getOwners(List<DocumentReference> documents) throws ReplicationException
+    {
+        return this.documentStore.getOwners(documents);
     }
 
     /**

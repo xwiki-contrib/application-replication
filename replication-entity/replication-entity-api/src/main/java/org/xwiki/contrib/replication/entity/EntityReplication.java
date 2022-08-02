@@ -19,6 +19,8 @@
  */
 package org.xwiki.contrib.replication.entity;
 
+import java.util.List;
+
 import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.model.reference.DocumentReference;
@@ -35,6 +37,13 @@ public interface EntityReplication
      * @throws ReplicationException when failing to get the owner
      */
     String getOwner(DocumentReference documentReference) throws ReplicationException;
+
+    /**
+     * @param documents the references of the documents
+     * @return the owner instances of the provided documents
+     * @throws ReplicationException when failing to get the owners
+     */
+    List<String> getOwners(List<DocumentReference> documents) throws ReplicationException;
 
     /**
      * @param documentReference the reference of the document

@@ -35,6 +35,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
+import org.xwiki.contrib.replication.entity.EntityReplication;
 import org.xwiki.contrib.replication.entity.internal.message.EntityReplicationControllerSender;
 import org.xwiki.model.EntityType;
 import org.xwiki.model.reference.DocumentReference;
@@ -68,6 +69,9 @@ public class EntityReplicationConfigurationUpdater
     private EntityReplicationControllerSender configurationSender;
 
     @Inject
+    private EntityReplication entityReplication;
+
+    @Inject
     @Named("local")
     private EntityReferenceSerializer<String> localSerializer;
 
@@ -80,6 +84,19 @@ public class EntityReplicationConfigurationUpdater
     @Inject
     private Logger logger;
 
+    private class Change
+    {
+        private final DocumentReplicationControllerInstance before;
+
+        private final DocumentReplicationControllerInstance after;
+
+        Change(DocumentReplicationControllerInstance before, DocumentReplicationControllerInstance after)
+        {
+            this.before = before;
+            this.after = after;
+        }
+    }
+
     /**
      * @param reference the reference of the entity
      * @param instances the instance to send the entity to
@@ -90,26 +107,30 @@ public class EntityReplicationConfigurationUpdater
     public void save(EntityReference reference, List<DocumentReplicationControllerInstance> instances)
         throws XWikiException, ReplicationException, QueryException
     {
-        // Get pre-save configuration
+        // Resolve pre-save configuration
         Map<String, DocumentReplicationControllerInstance> preConfigurations =
             this.store.resolveControllerInstancesMap(this.store.getHibernateEntityReplication(reference));
 
-        // Save new configuration
-        this.store.storeHibernateEntityReplication(reference, instances);
-
-        // Get post-save configuration
+        // Resolve post-save configuration
         Map<String, DocumentReplicationControllerInstance> postConfigurations =
-            this.store.resolveControllerInstancesMap(this.store.getHibernateEntityReplication(reference));
+            this.store.resolveControllerInstancesMap(instances);
 
         // Calculate the configuration diff
         List<DocumentReplicationControllerInstance> newInstances = new ArrayList<>();
         List<DocumentReplicationControllerInstance> removedInstances = new ArrayList<>();
-        diff(preConfigurations, postConfigurations, newInstances, removedInstances);
+        List<Change> changes = new ArrayList<>();
+        diff(preConfigurations, postConfigurations, newInstances, removedInstances, changes);
 
         // Gather affected documents
         XWikiContext xcontext = this.provider.get();
         List<DocumentReference> documentsToUpdate = newInstances.isEmpty() && removedInstances.isEmpty()
             ? Collections.emptyList() : resolveDocuments(reference, xcontext);
+
+        // Make sure current instance is allowed to do that change
+        checkChanges(documentsToUpdate, removedInstances, changes);
+
+        // Save new configuration
+        this.store.storeHibernateEntityReplication(reference, instances);
 
         // Send unreplicate messages according to configuration diff
         sendUnreplicateMessages(documentsToUpdate, removedInstances, xcontext);
@@ -125,6 +146,26 @@ public class EntityReplicationConfigurationUpdater
         // Send add messages according to configuration diff
         sendAddMessages(documentsToUpdate, newInstances, preConfigurations == null || preConfigurations.isEmpty(),
             xcontext);
+    }
+
+    private void checkChanges(List<DocumentReference> documentsToUpdate,
+        List<DocumentReplicationControllerInstance> removedInstances, List<Change> changes) throws ReplicationException
+    {
+        for (String owner : this.entityReplication.getOwners(documentsToUpdate)) {
+            for (DocumentReplicationControllerInstance removedInstance : removedInstances) {
+                if (removedInstance.getInstance().getURI().equals(owner)) {
+                    throw new ReplicationException(
+                        "Removing owner instance of a document from the replication is not allowed");
+                }
+            }
+            for (Change change : changes) {
+                if (change.before.getInstance().getURI().equals(owner)
+                    && change.after.getLevel() != DocumentReplicationLevel.ALL) {
+                    throw new ReplicationException(
+                        "Reducing the replication level of the owner instance of a document is not allowed");
+                }
+            }
+        }
     }
 
     private DocumentReplicationControllerInstance get(Map<String, DocumentReplicationControllerInstance> configurations,
@@ -144,21 +185,21 @@ public class EntityReplicationConfigurationUpdater
     private void diff(Map<String, DocumentReplicationControllerInstance> preConfigurations,
         Map<String, DocumentReplicationControllerInstance> postConfigurations,
         List<DocumentReplicationControllerInstance> newInstances,
-        List<DocumentReplicationControllerInstance> removedInstances)
+        List<DocumentReplicationControllerInstance> removedInstances, List<Change> changes)
     {
         if (preConfigurations != null) {
-            diffPre(preConfigurations, postConfigurations, newInstances, removedInstances);
+            diffPre(preConfigurations, postConfigurations, newInstances, removedInstances, changes);
         }
 
         if (postConfigurations != null) {
-            diffPost(preConfigurations, postConfigurations, newInstances, removedInstances);
+            diffPost(preConfigurations, postConfigurations, newInstances);
         }
     }
 
     private void diffPre(Map<String, DocumentReplicationControllerInstance> preConfigurations,
         Map<String, DocumentReplicationControllerInstance> postConfigurations,
         List<DocumentReplicationControllerInstance> newInstances,
-        List<DocumentReplicationControllerInstance> removedInstances)
+        List<DocumentReplicationControllerInstance> removedInstances, List<Change> changes)
     {
         for (DocumentReplicationControllerInstance preConfiguration : preConfigurations.values()) {
             // Skip current instance
@@ -172,6 +213,7 @@ public class EntityReplicationConfigurationUpdater
                 } else if (postConfiguration.getLevel() != preConfiguration.getLevel()) {
                     // An instance configuration level changed
                     newInstances.add(postConfiguration);
+                    changes.add(new Change(preConfiguration, postConfiguration));
                 }
             }
         }
@@ -179,8 +221,7 @@ public class EntityReplicationConfigurationUpdater
 
     private void diffPost(Map<String, DocumentReplicationControllerInstance> preConfigurations,
         Map<String, DocumentReplicationControllerInstance> postConfigurations,
-        List<DocumentReplicationControllerInstance> newInstances,
-        List<DocumentReplicationControllerInstance> removedInstances)
+        List<DocumentReplicationControllerInstance> newInstances)
     {
         for (DocumentReplicationControllerInstance postConfiguration : postConfigurations.values()) {
             // Skip current instance

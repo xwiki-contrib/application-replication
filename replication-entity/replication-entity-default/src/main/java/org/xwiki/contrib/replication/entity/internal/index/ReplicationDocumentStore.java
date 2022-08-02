@@ -19,6 +19,9 @@
  */
 package org.xwiki.contrib.replication.entity.internal.index;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
@@ -109,7 +112,7 @@ public class ReplicationDocumentStore
 
     private Void updateConflict(long docId, boolean conflict, Session session)
     {
-        Query query =
+        Query<?> query =
             session.createQuery("UPDATE HibernateReplicationDocument SET conflict=:conflict WHERE docId=:docId");
         query.setParameter(PROP_CONFLICT, conflict);
         query.setParameter("docId", docId);
@@ -141,7 +144,27 @@ public class ReplicationDocumentStore
      */
     public String getOwner(DocumentReference documentReference) throws ReplicationException
     {
-        return get(documentReference, PROP_OWNER);
+        return get(documentReference, PROP_OWNER, String.class);
+    }
+
+    /**
+     * @param documents the references of the documents
+     * @return the owner instances of the provided documents
+     * @throws ReplicationException when failing to get the owners
+     */
+    public List<String> getOwners(List<DocumentReference> documents) throws ReplicationException
+    {
+        XWikiContext xcontext = this.xcontextProvider.get();
+        XWikiHibernateStore store = (XWikiHibernateStore) this.hibernateStore;
+
+        try {
+            return store.executeRead(xcontext, s -> s
+                .createQuery("select owner from HibernateReplicationDocument where docId in :documents", String.class)
+                .setParameter("documents", documents.stream().map(this::toDocumentId).collect(Collectors.toList()))
+                .list());
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to get document owners", e);
+        }
     }
 
     /**
@@ -151,7 +174,7 @@ public class ReplicationDocumentStore
      */
     public boolean getConflict(DocumentReference documentReference) throws ReplicationException
     {
-        Boolean conflict = get(documentReference, PROP_CONFLICT);
+        Boolean conflict = get(documentReference, PROP_CONFLICT, Boolean.class);
 
         return Boolean.TRUE.equals(conflict);
     }
@@ -168,14 +191,17 @@ public class ReplicationDocumentStore
         }
     }
 
-    private <T> T get(DocumentReference reference, String property) throws ReplicationException
+    private <T> T get(DocumentReference reference, String property, Class<T> resultType) throws ReplicationException
     {
         XWikiContext xcontext = this.xcontextProvider.get();
         XWikiHibernateStore store = (XWikiHibernateStore) this.hibernateStore;
 
         try {
-            return store.executeRead(xcontext, s -> (T) s.createQuery("select " + property
-                + " from HibernateReplicationDocument where docId = '" + toDocumentId(reference) + "'").uniqueResult());
+            return store
+                .executeRead(xcontext,
+                    s -> s.createQuery(
+                        "select " + property + " from HibernateReplicationDocument where docId = :document", resultType)
+                        .setParameter("document", toDocumentId(reference)).uniqueResult());
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to execute the read", e);
         }
