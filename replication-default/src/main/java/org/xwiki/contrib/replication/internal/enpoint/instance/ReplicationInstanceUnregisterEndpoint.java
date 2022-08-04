@@ -57,7 +57,8 @@ public class ReplicationInstanceUnregisterEndpoint extends AbstractReplicationEn
             response.sendError(400, "Cannot remove current instance URI: " + uri);
         }
 
-        // TODO: validate key
+        // Validate key
+        validateInstance(instance, reference);
 
         this.instances.removeInstance(uri);
     }

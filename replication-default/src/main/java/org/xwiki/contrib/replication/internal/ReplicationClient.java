@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -51,6 +52,8 @@ import org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstan
 import org.xwiki.contrib.replication.internal.enpoint.message.HttpServletRequestReplicationReceiverMessage;
 import org.xwiki.contrib.replication.internal.enpoint.message.ReplicationMessageEndpoint;
 import org.xwiki.contrib.replication.internal.instance.ReplicationInstanceStore;
+import org.xwiki.contrib.replication.internal.sign.SignatureManager;
+import org.xwiki.crypto.pkix.params.CertifiedPublicKey;
 
 /**
  * @version $Id$
@@ -64,7 +67,48 @@ public class ReplicationClient implements Initializable
     @Inject
     private ReplicationInstanceStore instances;
 
+    @Inject
+    private SignatureManager signatureManager;
+
     private CloseableHttpClient client;
+
+    /**
+     * The result of the register.
+     * 
+     * @version $Id$
+     */
+    public class RegisterResponse
+    {
+        private final Status status;
+
+        private final CertifiedPublicKey publicKey;
+
+        /**
+         * @param status the status of the instance
+         * @param publicKey the public key to use to validate message sent by the target instance
+         */
+        public RegisterResponse(Status status, CertifiedPublicKey publicKey)
+        {
+            this.status = status;
+            this.publicKey = publicKey;
+        }
+
+        /**
+         * @return the status of the instance
+         */
+        public Status getStatus()
+        {
+            return this.status;
+        }
+
+        /**
+         * @return the publicKey
+         */
+        public CertifiedPublicKey getPublicKey()
+        {
+            return this.publicKey;
+        }
+    }
 
     @Override
     public void initialize() throws InitializationException
@@ -72,11 +116,32 @@ public class ReplicationClient implements Initializable
         this.client = HttpClients.createSystem();
     }
 
-    private URIBuilder createURIBuilder(String uri, String endpoint) throws URISyntaxException
+    private URIBuilder createURIBuilder(String uri, String endpoint) throws URISyntaxException, ReplicationException
     {
         URIBuilder builder = ReplicationInstanceStore.createURIBuilder(uri);
         builder.appendPath(ReplicationResourceReferenceHandler.HINT);
         builder.appendPath(endpoint);
+
+        builder.addParameter(ReplicationInstanceUnregisterEndpoint.PARAMETER_URI,
+            this.instances.getCurrentInstance().getURI());
+
+        return builder;
+    }
+
+    private URIBuilder createURIBuilder(ReplicationInstance target, String endpoint)
+        throws URISyntaxException, ReplicationException
+    {
+        return createURIBuilder(target, endpoint, String.valueOf(new Date().getTime()));
+    }
+
+    private URIBuilder createURIBuilder(ReplicationInstance target, String endpoint, String key)
+        throws URISyntaxException, ReplicationException
+    {
+        URIBuilder builder = createURIBuilder(target.getURI(), endpoint);
+
+        builder.addParameter(ReplicationInstancePingEndpoint.PARAMETER_KEY, key);
+        builder.addParameter(ReplicationInstancePingEndpoint.PARAMETER_SIGNEDKEY,
+            this.signatureManager.sign(target, key));
 
         return builder;
     }
@@ -91,11 +156,7 @@ public class ReplicationClient implements Initializable
     public void sendMessage(ReplicationSenderMessage message, ReplicationInstance target)
         throws ReplicationException, URISyntaxException, IOException
     {
-        URIBuilder builder = createURIBuilder(target.getURI(), ReplicationMessageEndpoint.PATH);
-
-        builder.addParameter(ReplicationMessageEndpoint.PARAMETER_INSTANCE,
-            this.instances.getCurrentInstance().getURI());
-        // TODO: send a key
+        URIBuilder builder = createURIBuilder(target, ReplicationMessageEndpoint.PATH, message.getId());
 
         builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_ID, message.getId());
         builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_TYPE, message.getType());
@@ -144,10 +205,7 @@ public class ReplicationClient implements Initializable
      */
     public void unregister(ReplicationInstance instance) throws ReplicationException, URISyntaxException, IOException
     {
-        URIBuilder builder = createURIBuilder(instance.getURI(), ReplicationInstanceUnregisterEndpoint.PATH);
-        builder.addParameter(ReplicationInstanceUnregisterEndpoint.PARAMETER_URI,
-            this.instances.getCurrentInstance().getURI());
-        // TODO: send a key
+        URIBuilder builder = createURIBuilder(instance, ReplicationInstanceUnregisterEndpoint.PATH);
 
         HttpPut httpPut = new HttpPut(builder.build());
 
@@ -178,10 +236,7 @@ public class ReplicationClient implements Initializable
      */
     public void ping(ReplicationInstance instance) throws ReplicationException, URISyntaxException, IOException
     {
-        URIBuilder builder = createURIBuilder(instance.getURI(), ReplicationInstancePingEndpoint.PATH);
-        builder.addParameter(ReplicationInstancePingEndpoint.PARAMETER_URI,
-            this.instances.getCurrentInstance().getURI());
-        // TODO: send a key
+        URIBuilder builder = createURIBuilder(instance, ReplicationInstancePingEndpoint.PATH);
 
         HttpPost httpPost = new HttpPost(builder.build());
 
@@ -211,28 +266,28 @@ public class ReplicationClient implements Initializable
      * @throws IOException when failing to register the instance
      * @throws URISyntaxException when failing to register the instance
      */
-    public Status register(String uri) throws ReplicationException, IOException, URISyntaxException
+    public RegisterResponse register(String uri) throws ReplicationException, IOException, URISyntaxException
     {
         URIBuilder builder = createURIBuilder(uri, ReplicationInstanceRegisterEndpoint.PATH);
-        builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_URI,
-            this.instances.getCurrentInstance().getURI());
+
         builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_NAME,
             this.instances.getCurrentInstance().getName());
-        // TODO: send a key
+        builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_PUBLICKEY,
+            this.signatureManager.serializePublicKey(this.signatureManager.getSendPublicKey(uri)));
 
         HttpPut httpPut = new HttpPut(builder.build());
 
         try (CloseableHttpResponse response = this.client.execute(httpPut)) {
             if (response.getCode() == 200) {
-                // TODO: registered both ways
-                return Status.REGISTERED;
+                // Registered both ways
+                Map<String, Object> responseContent = HTTPUtils.fromJSON(response);
+
+                return new RegisterResponse(Status.REGISTERED, this.signatureManager.unserializePublicKey(
+                    (String) responseContent.get(ReplicationInstanceRegisterEndpoint.PARAMETER_PUBLICKEY)));
             } else if (response.getCode() == 201) {
-                // TODO: new registration
+                // New registration
             } else if (response.getCode() == 202) {
-                // TODO: already requested
-            } else if (response.getCode() == 204) {
-                // TODO: already registered
-                return Status.REGISTERED;
+                // Already requested
             } else {
                 String error;
                 try {
@@ -245,6 +300,6 @@ public class ReplicationClient implements Initializable
             }
         }
 
-        return Status.REQUESTED;
+        return new RegisterResponse(Status.REQUESTED, null);
     }
 }

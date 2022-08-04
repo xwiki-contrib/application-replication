@@ -19,6 +19,10 @@
  */
 package org.xwiki.contrib.replication.internal.enpoint.instance;
 
+import java.io.Writer;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
@@ -27,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
+import org.xwiki.contrib.replication.internal.HTTPUtils;
 import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
@@ -49,12 +54,18 @@ public class ReplicationInstanceRegisterEndpoint extends AbstractReplicationEndp
      */
     public static final String PARAMETER_NAME = "name";
 
+    /**
+     * The name of the parameter which contain the public key to use to verify messages sent by the instance.
+     */
+    public static final String PARAMETER_PUBLICKEY = "publicKey";
+
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, ReplicationResourceReference reference)
         throws Exception
     {
         String name = reference.getParameterValue(PARAMETER_NAME);
         String uri = reference.getParameterValue(PARAMETER_URI);
+        String publicKey = reference.getParameterValue(PARAMETER_PUBLICKEY);
 
         ReplicationInstance instance = this.instances.getInstanceByURI(uri);
 
@@ -63,19 +74,28 @@ public class ReplicationInstanceRegisterEndpoint extends AbstractReplicationEndp
                 response.sendError(400, "Client and target instances have the same URI: " + uri);
             } else if (instance.getStatus() == Status.REQUESTED) {
                 // Confirm the registration
-                this.instances
-                    .confirmRequestedInstance(new DefaultReplicationInstance(name, uri, Status.REGISTERED, null));
+                this.instances.confirmRequestedInstance(new DefaultReplicationInstance(name, uri, Status.REGISTERED,
+                    this.signatureManager.unserializePublicKey(publicKey), null));
+
                 response.setStatus(200);
+
+                // Send back the public key to use to validate message sent by the current instance
+                Map<String, Object> responseContent = new HashMap<>();
+                responseContent.put(PARAMETER_PUBLICKEY, this.signatureManager.getSendPublicKey(instance));
+                try (Writer writer = response.getWriter()) {
+                    writer.write(HTTPUtils.toJSON(responseContent));
+                }
             } else if (instance.getStatus() == Status.REGISTERED) {
                 // Already registered
-                response.setStatus(204);
+                response.sendError(409, "An instance is already registered with URI: " + uri);
             } else {
                 // Already requested
                 response.setStatus(202);
             }
         } else {
             // Creating a new requesting instance
-            this.instances.addInstance(new DefaultReplicationInstance(name, uri, Status.REQUESTING, null));
+            this.instances.addInstance(new DefaultReplicationInstance(name, uri, Status.REQUESTING,
+                this.signatureManager.unserializePublicKey(publicKey), null));
             response.setStatus(201);
         }
     }

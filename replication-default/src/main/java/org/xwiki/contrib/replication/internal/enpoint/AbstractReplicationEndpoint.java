@@ -26,6 +26,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.UnauthorizedReplicationInstanceException;
+import org.xwiki.contrib.replication.internal.sign.SignatureManager;
 
 /**
  * @version $Id$
@@ -38,25 +39,52 @@ public abstract class AbstractReplicationEndpoint implements ReplicationEndpoint
     public static final String PARAMETER_URI = "uri";
 
     /**
-     * The name of the parameter containing the key of the instance which sent the request.
+     * The key to verify.
      */
-    // TODO: add support for public/private key
     public static final String PARAMETER_KEY = "key";
+
+    /**
+     * The signature to verify with the key.
+     */
+    public static final String PARAMETER_SIGNEDKEY = "signedKey";
 
     @Inject
     protected ReplicationInstanceManager instances;
 
-    protected ReplicationInstance validateInstance(String instanceId) throws ReplicationException
+    @Inject
+    protected SignatureManager signatureManager;
+
+    protected ReplicationInstance validateInstance(ReplicationResourceReference reference) throws ReplicationException
     {
-        ReplicationInstance instance = this.instances.getInstanceByURI(instanceId);
+        String uri = reference.getParameterValue(PARAMETER_URI);
+        ReplicationInstance instance = this.instances.getInstanceByURI(uri);
 
         if (instance == null || instance.getStatus() != Status.REGISTERED) {
             throw new UnauthorizedReplicationInstanceException(
-                "The instance with id [" + instanceId + "] is not authorized to send replication messages");
+                "The instance with id [" + uri + "] is not authorized to send replication messages");
         }
 
-        // Validate the key
+        validateInstance(instance, reference);
 
         return instance;
+    }
+
+    protected void validateInstance(ReplicationInstance instance, ReplicationResourceReference reference)
+        throws ReplicationException
+    {
+        String key = reference.getParameterValue(PARAMETER_KEY);
+
+        // Validate the key
+        if (key == null) {
+            throw new UnauthorizedReplicationInstanceException(
+                "No key to verify for instance [" + instance.getURI() + "]");
+        }
+
+        String signedKey = reference.getParameterValue(PARAMETER_SIGNEDKEY);
+
+        if (!this.signatureManager.verify(instance, key, signedKey)) {
+            throw new UnauthorizedReplicationInstanceException(
+                "Failed to validate the signature of instance with id [" + instance.getURI() + "]");
+        }
     }
 }

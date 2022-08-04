@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.crypto.pkix.params.CertifiedPublicKey;
 import org.xwiki.text.XWikiToStringBuilder;
 
 /**
@@ -38,19 +39,25 @@ public class DefaultReplicationInstance implements ReplicationInstance
 
     private Status status;
 
+    private CertifiedPublicKey publicKey;
+
     private Map<String, Object> properties;
 
     /**
      * @param name the display name of the instance
      * @param uri the base URI of the instance (generally of the form https://www.xwiki.org/xwiki/)
      * @param status the status of the instance
+     * @param publicKey the public key to use to verify message sent by this instance
      * @param properties the custom propertie
      */
-    public DefaultReplicationInstance(String name, String uri, Status status, Map<String, Object> properties)
+    public DefaultReplicationInstance(String name, String uri, Status status, CertifiedPublicKey publicKey,
+        Map<String, Object> properties)
     {
         this.name = name;
         this.uri = cleanURI(uri);
         this.status = status;
+        this.publicKey = publicKey;
+
         setProperties(properties);
     }
 
@@ -59,7 +66,8 @@ public class DefaultReplicationInstance implements ReplicationInstance
      */
     public DefaultReplicationInstance(ReplicationInstance instance)
     {
-        this(instance.getName(), instance.getURI(), instance.getStatus(), instance.getProperties());
+        this(instance.getName(), instance.getURI(), instance.getStatus(), instance.getPublicKey(),
+            instance.getProperties());
     }
 
     /**
@@ -98,6 +106,20 @@ public class DefaultReplicationInstance implements ReplicationInstance
     public void setStatus(Status status)
     {
         this.status = status;
+    }
+
+    @Override
+    public CertifiedPublicKey getPublicKey()
+    {
+        return this.publicKey;
+    }
+
+    /**
+     * @param publicKey the public key to use to validate messages sent by this instance
+     */
+    public void setPublicKey(CertifiedPublicKey publicKey)
+    {
+        this.publicKey = publicKey;
     }
 
     @Override

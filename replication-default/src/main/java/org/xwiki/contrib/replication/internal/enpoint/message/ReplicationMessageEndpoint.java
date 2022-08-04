@@ -57,11 +57,6 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
      */
     public static final String PATH = "message";
 
-    /**
-     * The name of the parameter containing the identifier of the last instance which sent the message.
-     */
-    public static final String PARAMETER_INSTANCE = "instance";
-
     @Inject
     private ComponentManager componentManager;
 
@@ -82,7 +77,7 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
         throws Exception
     {
         // Make sure the sending instance is allowed to communicate with this instance
-        ReplicationInstance instance = validateInstance(reference.getParameterValue(PARAMETER_INSTANCE));
+        ReplicationInstance instance = validateInstance(reference);
 
         // Notify the sender that an instance we know sent us a message in case we were waiting
         this.sender.ping(instance);

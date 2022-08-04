@@ -41,8 +41,8 @@ import org.xwiki.contrib.replication.AbstractReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationMessage;
+import org.xwiki.contrib.replication.internal.ReplicationFileStore;
 import org.xwiki.contrib.replication.internal.ReplicationUtils;
-import org.xwiki.environment.Environment;
 
 import com.xpn.xwiki.util.Util;
 
@@ -52,8 +52,6 @@ import com.xpn.xwiki.util.Util;
  */
 public abstract class AbstractReplicationMessageStore<M extends ReplicationMessage>
 {
-    private static final String DIRECTORY_REPLICATION = "replication";
-
     private static final String FILE_METADATA = "metadata.properties";
 
     private static final String FILE_CUSTOM = "custom.properties";
@@ -72,7 +70,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
     protected ReplicationInstanceManager instances;
 
     @Inject
-    protected Environment environment;
+    protected ReplicationFileStore fileStore;
 
     @Inject
     protected Logger logger;
@@ -84,11 +82,6 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
     protected void setHome(File home)
     {
         this.home = home;
-    }
-
-    protected File getReplicationFolder()
-    {
-        return new File(this.environment.getPermanentDirectory(), DIRECTORY_REPLICATION);
     }
 
     protected File getMessageFolder(String id)

@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.script;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -38,6 +39,7 @@ import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
 import org.xwiki.contrib.replication.internal.message.DefaultReplicationSender;
 import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageQueue;
+import org.xwiki.contrib.replication.internal.sign.SignatureManager;
 import org.xwiki.script.service.ScriptService;
 import org.xwiki.script.service.ScriptServiceManager;
 
@@ -64,6 +66,9 @@ public class ReplicationScriptService implements ScriptService
 
     @Inject
     private ReplicationSender sender;
+
+    @Inject
+    private SignatureManager signatureManager;
 
     /**
      * @param <S> the type of the {@link ScriptService}
@@ -181,5 +186,27 @@ public class ReplicationScriptService implements ScriptService
         if (queue != null) {
             queue.wakeUp();
         }
+    }
+
+    /**
+     * @param instance the instance to send data to
+     * @return the fingerprint of the public key used to validate signatures sent to the passed instance
+     * @throws IOException when failing to calculate the fingerprint
+     * @throws ReplicationException when failing to calculate the fingerprint
+     */
+    public String getSendPublicFingerprint(ReplicationInstance instance) throws IOException, ReplicationException
+    {
+        return this.signatureManager.getPublicFingerprint(this.signatureManager.getSendPublicKey(instance));
+    }
+
+    /**
+     * @param instance the instance from which to receive data
+     * @return the fingerprint of the public key used to validate signatures sent by the passed instance
+     * @throws IOException when failing to calculate the fingerprint
+     * @throws ReplicationException when failing to calculate the fingerprint
+     */
+    public String getReceivePublicFingerprint(ReplicationInstance instance) throws IOException, ReplicationException
+    {
+        return this.signatureManager.getPublicFingerprint(instance.getPublicKey());
     }
 }

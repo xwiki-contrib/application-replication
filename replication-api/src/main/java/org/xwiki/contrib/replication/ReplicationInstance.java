@@ -21,6 +21,8 @@ package org.xwiki.contrib.replication;
 
 import java.util.Map;
 
+import org.xwiki.crypto.pkix.params.CertifiedPublicKey;
+
 /**
  * @version $Id$
  */
@@ -63,6 +65,11 @@ public interface ReplicationInstance
      * @return the status of this instance
      */
     Status getStatus();
+
+    /**
+     * @return the key to use to verify messages sent by this instance
+     */
+    CertifiedPublicKey getPublicKey();
 
     /**
      * @return the names of the properties

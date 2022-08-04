@@ -17,42 +17,35 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal.enpoint.instance;
+package org.xwiki.contrib.replication.internal;
+
+import java.io.File;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.ReplicationSender;
-import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoint;
-import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
+import org.xwiki.environment.Environment;
 
 /**
+ * Helper to manipulate files stored for replication.
+ * 
  * @version $Id$
  */
-@Component
-@Named(ReplicationInstancePingEndpoint.PATH)
+@Component(roles = ReplicationFileStore.class)
 @Singleton
-public class ReplicationInstancePingEndpoint extends AbstractReplicationEndpoint
+public class ReplicationFileStore
 {
-    /**
-     * The path to use to access this endpoint.
-     */
-    public static final String PATH = "instance/ping";
+    private static final String DIRECTORY_REPLICATION = "replication";
 
     @Inject
-    private ReplicationSender sender;
+    protected Environment environment;
 
-    @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response, ReplicationResourceReference reference)
-        throws Exception
+    /**
+     * @return the root folder where to store replication related data
+     */
+    public File getReplicationFolder()
     {
-        ReplicationInstance instance = validateInstance(reference);
-
-        this.sender.ping(instance);
+        return new File(this.environment.getPermanentDirectory(), DIRECTORY_REPLICATION);
     }
 }

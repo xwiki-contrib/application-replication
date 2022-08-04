@@ -102,7 +102,7 @@ public class ReplicationSenderMessageStore extends AbstractReplicationMessageSto
     @Override
     public void initialize() throws InitializationException
     {
-        setHome(new File(getReplicationFolder(), "sender"));
+        setHome(new File(this.fileStore.getReplicationFolder(), "sender"));
     }
 
     @Override

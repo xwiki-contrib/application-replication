@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.internal.instance;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -40,6 +41,8 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.internal.ReplicationConstants;
+import org.xwiki.contrib.replication.internal.sign.SignatureManager;
+import org.xwiki.crypto.pkix.params.CertifiedPublicKey;
 import org.xwiki.instance.InstanceIdManager;
 import org.xwiki.model.reference.LocalDocumentReference;
 import org.xwiki.model.reference.WikiReference;
@@ -76,6 +79,9 @@ public class ReplicationInstanceStore
     private InstanceIdManager instanceId;
 
     @Inject
+    private SignatureManager signatureManager;
+
+    @Inject
     private Logger logger;
 
     private ReplicationInstance currentInstance;
@@ -110,7 +116,7 @@ public class ReplicationInstanceStore
                 String currentURI = getDefaultCurrentURI();
                 String currentName = getDefaultCurrentName();
 
-                this.currentInstance = new DefaultReplicationInstance(currentName, currentURI, null, null);
+                this.currentInstance = new DefaultReplicationInstance(currentName, currentURI, null, null, null);
             } catch (Exception e) {
                 throw new ReplicationException("Failed to get the current instance URI", e);
             }
@@ -201,7 +207,30 @@ public class ReplicationInstanceStore
 
     private void setStatus(BaseObject instanceObject, Status status)
     {
-        instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_STATUS, status.name());
+        instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_STATUS,
+            status != null ? status.name() : "");
+    }
+
+    /**
+     * @param instanceObject the object containing a replication instance
+     * @return the public key to use to validate messages sent by this instance
+     */
+    public CertifiedPublicKey getPublicKey(BaseObject instanceObject)
+    {
+        try {
+            return this.signatureManager.unserializePublicKey(
+                instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_PUBLICKEY));
+        } catch (IOException e) {
+            this.logger.error("Failed to parse public key from [{}]", instanceObject.getReference(), e);
+
+            return null;
+        }
+    }
+
+    private void setPublicKey(BaseObject instanceObject, CertifiedPublicKey publicKey) throws IOException
+    {
+        instanceObject.setLargeStringValue(StandardReplicationInstanceClassInitializer.FIELD_PUBLICKEY,
+            this.signatureManager.serializePublicKey(publicKey));
     }
 
     private Map<String, Object> getProperties(BaseObject instanceObject)
@@ -226,21 +255,24 @@ public class ReplicationInstanceStore
     public ReplicationInstance toReplicationInstance(BaseObject instanceObject)
     {
         return new DefaultReplicationInstance(getName(instanceObject), getURI(instanceObject),
-            getStatus(instanceObject), getProperties(instanceObject));
+            getStatus(instanceObject), getPublicKey(instanceObject), getProperties(instanceObject));
     }
 
-    private void setReplicationInstance(ReplicationInstance instance, BaseObject instanceObject)
+    private void setReplicationInstance(ReplicationInstance instance, BaseObject instanceObject) throws IOException
     {
-        setReplicationInstance(instance.getName(), instance.getURI(), instance.getStatus(), instanceObject);
+        setReplicationInstance(instance.getName(), instance.getURI(), instance.getStatus(), instance.getPublicKey(),
+            instanceObject);
     }
 
-    private void setReplicationInstance(String name, String uri, Status status, BaseObject instanceObject)
+    private void setReplicationInstance(String name, String uri, Status status, CertifiedPublicKey publicKey,
+        BaseObject instanceObject) throws IOException
     {
         instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_NAME, name);
         instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_URI, uri);
 
-        instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_STATUS,
-            status != null ? status.name() : "");
+        setStatus(instanceObject, status);
+
+        setPublicKey(instanceObject, publicKey);
     }
 
     /**
@@ -270,7 +302,7 @@ public class ReplicationInstanceStore
                             }
 
                             this.currentInstance =
-                                new DefaultReplicationInstance(name, uri, null, getProperties(instanceObject));
+                                new DefaultReplicationInstance(name, uri, null, null, getProperties(instanceObject));
                         } catch (Exception e) {
                             // Skip invalid instance
                             this.logger.error("Failed to load instance from xobject with reference [{}]",
@@ -297,7 +329,11 @@ public class ReplicationInstanceStore
             BaseObject instanceObject =
                 instancesDocument.newXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE, xcontext);
 
-            setReplicationInstance(instance, instanceObject);
+            try {
+                setReplicationInstance(instance, instanceObject);
+            } catch (IOException e) {
+                throw new ReplicationException("Failed to serialize the replication instance [" + instance + "]", e);
+            }
 
             xcontext.getWiki().saveDocument(instancesDocument, "Add instance " + instance.getURI(), xcontext);
 
@@ -366,7 +402,11 @@ public class ReplicationInstanceStore
                 throw new ReplicationException("The instance with URI [" + instance.getURI() + "] does not exist");
             }
 
-            setReplicationInstance(instance, instanceObject);
+            try {
+                setReplicationInstance(instance, instanceObject);
+            } catch (IOException e) {
+                throw new ReplicationException("Failed to update the replication instance [" + instance + "]", e);
+            }
 
             xcontext.getWiki().saveDocument(instancesDocument, "Update instance " + instance.getURI(), xcontext);
 
@@ -391,7 +431,11 @@ public class ReplicationInstanceStore
                     instancesDocument.newXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE, xcontext);
             }
 
-            setReplicationInstance(name, uri, null, instanceObject);
+            try {
+                setReplicationInstance(name, uri, null, null, instanceObject);
+            } catch (IOException e) {
+                throw new ReplicationException("Failed to current replication instance", e);
+            }
 
             xcontext.getWiki().saveDocument(instancesDocument, "Update current instance", xcontext);
 

@@ -19,9 +19,20 @@
  */
 package org.xwiki.contrib.replication.internal;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.core5.http.HttpEntityContainer;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @version $Id$
@@ -93,5 +104,52 @@ public final class HTTPUtils
         }
 
         return builder.toString();
+    }
+
+    /**
+     * @param map the map to serialize
+     * @return the JSON version of the map
+     * @throws JsonProcessingException when failing to serialize the map to JSON
+     */
+    public static String toJSON(Map<String, Object> map) throws JsonProcessingException
+    {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.writeValueAsString(map);
+    }
+
+    /**
+     * @param json the JSON version to parse
+     * @return the unserialized map
+     * @throws IOException when failing to parse the json input
+     */
+    public static Map<String, Object> fromJSON(String json) throws IOException
+    {
+        if (StringUtils.isEmpty(json)) {
+            return null;
+        }
+
+        TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>()
+        {
+        };
+        return new ObjectMapper().readValue(json, typeRef);
+    }
+
+    /**
+     * @param entity the HTTP response to parse
+     * @return the unserialized map
+     * @throws IOException when failing to parse the json input
+     */
+    public static Map<String, Object> fromJSON(HttpEntityContainer entity) throws IOException
+    {
+        if (entity.getEntity().getContentLength() > 0) {
+            try (InputStream stream = entity.getEntity().getContent()) {
+                TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>()
+                {
+                };
+                return new ObjectMapper().readValue(stream, typeRef);
+            }
+        }
+
+        return Collections.emptyMap();
     }
 }

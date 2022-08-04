@@ -345,18 +345,18 @@ public class ReplicationIT extends AbstractTest
         // Accept the instance
         admin1 = requestingInstance.accept();
 
-        // Link to instance2
-        admin1.setRequestedURI(this.proxyURI2);
-        admin1 = admin1.requestInstance();
-
-        // Check if the instance has been moved to registered instances
-        requestingInstances = admin1.getRequestingInstances();
-        assertEquals(0, requestingInstances.size());
-
         // Check if the instance has been moved to registered instances
         List<RegisteredInstancePane> registeredInstances = admin1.getRegisteredInstances();
         assertEquals(1, registeredInstances.size());
         assertEquals(this.proxyURI0, registeredInstances.get(0).getURI());
+
+        // Link to instance2
+        admin1.setRequestedURI(this.proxyURI2);
+        admin1 = admin1.requestInstance();
+
+        // Check if the instance has been moved to requesting instances
+        requestingInstances = admin1.getRequestingInstances();
+        assertEquals(0, requestingInstances.size());
 
         // Go back to instance0
         getUtil().switchExecutor(0);

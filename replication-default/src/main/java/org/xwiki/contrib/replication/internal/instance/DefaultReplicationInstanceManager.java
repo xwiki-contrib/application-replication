@@ -37,6 +37,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.internal.ReplicationClient;
+import org.xwiki.contrib.replication.internal.ReplicationClient.RegisterResponse;
 
 /**
  * @version $Id$
@@ -192,15 +193,16 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         String cleanURI = DefaultReplicationInstance.cleanURI(uri);
 
         // Send a request to the target instance
-        Status status;
+        RegisterResponse response;
         try {
-            status = this.client.register(cleanURI);
+            response = this.client.register(cleanURI);
         } catch (Exception e) {
             throw new ReplicationException("Failed to register the instance on [" + cleanURI + "]", e);
         }
 
         // Create the new instance
-        ReplicationInstance instance = new DefaultReplicationInstance(null, cleanURI, status, null);
+        ReplicationInstance instance =
+            new DefaultReplicationInstance(null, cleanURI, response.getStatus(), response.getPublicKey(), null);
 
         // Add instance to the store
         this.store.addInstance(instance);
@@ -299,16 +301,16 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         }
 
         // Notify the instance of the acceptance
-        Status status;
+        RegisterResponse response;
         try {
-            status = this.client.register(cleanURI);
+            response = this.client.register(cleanURI);
         } catch (Exception e) {
             throw new ReplicationException("Failed to send a request to instance [" + cleanURI + "]", e);
         }
 
-        if (status != Status.REQUESTING) {
+        if (response.getStatus() != Status.REQUESTING) {
             // Update the instance status
-            this.store.updateStatus(instance, status);
+            this.store.updateStatus(instance, response.getStatus());
         }
 
         return true;
