@@ -34,6 +34,7 @@ import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.event.ReplicationInstanceRegisteredEvent;
 import org.xwiki.contrib.replication.event.ReplicationInstanceUnregisteredEvent;
+import org.xwiki.contrib.replication.internal.message.ReplicationInstanceMessageSender;
 import org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageQueue;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.observation.AbstractEventListener;
@@ -62,10 +63,13 @@ public class ReplicationInstanceListener extends AbstractEventListener
     private Provider<ReplicationInstanceStore> storeProvider;
 
     @Inject
-    private Provider<ReplicationInstanceManager> instances;
+    private Provider<ReplicationInstanceManager> instanceProvider;
 
     @Inject
     private Provider<ReplicationSender> senderProvider;
+
+    @Inject
+    private Provider<ReplicationInstanceMessageSender> instanceSenderProvider;
 
     @Inject
     private Provider<ReplicationReceiverMessageQueue> receiverProvider;
@@ -91,16 +95,21 @@ public class ReplicationInstanceListener extends AbstractEventListener
         if (event instanceof ApplicationReadyEvent) {
             initialize();
         } else if (event instanceof XObjectEvent) {
-            reload();
+            ReplicationInstanceManager instancesManager = this.instanceProvider.get();
+
+            try {
+                instancesManager.reload();
+            } catch (ReplicationException e) {
+                this.logger.error("Failed to reload stored instances", e);
+            }
 
             XWikiDocument document = (XWikiDocument) source;
             EntityReference objectReference = ((XObjectEvent) event).getReference();
 
-            // Check if an instance has been unregistered
+            // Check changes made to instances
             try {
                 ReplicationInstance oldInstance = handleOldInstance(document, objectReference);
 
-                // Check if an instance has been registered
                 handleNewInstance(document, objectReference, oldInstance);
             } catch (ReplicationException e) {
                 this.logger.error("Failed to update the instances", e);
@@ -122,13 +131,13 @@ public class ReplicationInstanceListener extends AbstractEventListener
 
             if (statusOld == Status.REGISTERED) {
                 String uriOld = store.getURI(xobjectOld);
-                ReplicationInstance oldInstance = this.instances.get().getInstanceByURI(uriOld);
-                if (oldInstance == null || oldInstance.getStatus() != Status.REGISTERED) {
+                ReplicationInstance instanceOld = this.instanceProvider.get().getInstanceByURI(uriOld);
+                if (instanceOld == null || instanceOld.getStatus() != Status.REGISTERED) {
                     this.observation.notify(new ReplicationInstanceUnregisteredEvent(uriOld),
                         store.toReplicationInstance(xobjectOld));
                 }
 
-                return oldInstance;
+                return instanceOld;
             }
         }
 
@@ -136,7 +145,7 @@ public class ReplicationInstanceListener extends AbstractEventListener
     }
 
     private void handleNewInstance(XWikiDocument document, EntityReference objectReference,
-        ReplicationInstance oldInstance) throws ReplicationException
+        ReplicationInstance instanceOld) throws ReplicationException
     {
         ReplicationInstanceStore store = this.storeProvider.get();
 
@@ -145,21 +154,22 @@ public class ReplicationInstanceListener extends AbstractEventListener
         if (xobjectNew != null) {
             String uriNew = store.getURI(xobjectNew);
 
-            ReplicationInstance instanceNew = this.instances.get().getInstanceByURI(uriNew);
+            ReplicationInstance instanceNew = this.instanceProvider.get().getInstanceByURI(uriNew);
 
+            // Check if the current instance has been modified
+            if (instanceNew != null && instanceNew.getStatus() == null && instanceOld != null) {
+                try {
+                    this.instanceSenderProvider.get().updateCurrentInstance();
+                } catch (Exception e) {
+                    this.logger.error("Failed to send update message for current instance", e);
+                }
+            }
+
+            // Check if an instance has been registered
             if (instanceNew != null && instanceNew.getStatus() == Status.REGISTERED
-                && (oldInstance == null || !oldInstance.getURI().equals(uriNew))) {
+                && (instanceOld == null || !instanceOld.getURI().equals(uriNew))) {
                 this.observation.notify(new ReplicationInstanceRegisteredEvent(uriNew), instanceNew);
             }
-        }
-    }
-
-    private void reload()
-    {
-        try {
-            this.instances.get().reload();
-        } catch (ReplicationException e) {
-            this.logger.error("Failed to reload stored instances", e);
         }
     }
 

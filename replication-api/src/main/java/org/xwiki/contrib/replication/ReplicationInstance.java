@@ -69,7 +69,7 @@ public interface ReplicationInstance
     /**
      * @return the key to use to verify messages sent by this instance
      */
-    CertifiedPublicKey getPublicKey();
+    CertifiedPublicKey getReceiveKey();
 
     /**
      * @return the names of the properties

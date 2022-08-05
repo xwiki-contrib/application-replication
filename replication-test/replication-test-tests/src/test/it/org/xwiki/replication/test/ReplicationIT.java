@@ -327,7 +327,9 @@ public class ReplicationIT extends AbstractTest
         // Check if the instance has been added to requested instances
         List<RequestedInstancePane> requestedInstances = admin0.getRequestedInstances();
         assertEquals(1, requestedInstances.size());
-        assertEquals(this.proxyURI1, requestedInstances.get(0).getURI());
+        RequestedInstancePane requestedInstance = requestedInstances.get(0);
+        assertEquals(this.proxyURI1, requestedInstance.getURI());
+        String sendkey0To1 = requestedInstance.getSendKey();
 
         // Go to instance1
         getUtil().switchExecutor(1);
@@ -341,6 +343,10 @@ public class ReplicationIT extends AbstractTest
         List<RequestingInstancePane> requestingInstances = admin1.getRequestingInstances();
         RequestingInstancePane requestingInstance = requestingInstances.get(0);
         assertEquals(this.proxyURI0, requestingInstance.getURI());
+        assertEquals(INSTANCE_NAME_0, requestingInstance.getName());
+        String receivekey0To1 = requestingInstance.getReceiveKey();
+
+        assertEquals(sendkey0To1, receivekey0To1);
 
         // Accept the instance
         admin1 = requestingInstance.accept();
@@ -348,7 +354,11 @@ public class ReplicationIT extends AbstractTest
         // Check if the instance has been moved to registered instances
         List<RegisteredInstancePane> registeredInstances = admin1.getRegisteredInstances();
         assertEquals(1, registeredInstances.size());
-        assertEquals(this.proxyURI0, registeredInstances.get(0).getURI());
+        RegisteredInstancePane registeredInstance = registeredInstances.get(0);
+        assertEquals(this.proxyURI0, registeredInstance.getURI());
+        assertEquals(INSTANCE_NAME_0, registeredInstance.getName());
+        receivekey0To1 = registeredInstance.getReceiveKey();
+        String sendkey1To0 = registeredInstance.getSendKey();
 
         // Link to instance2
         admin1.setRequestedURI(this.proxyURI2);
@@ -366,7 +376,28 @@ public class ReplicationIT extends AbstractTest
         // Check if the instance has been moved to registered instances
         registeredInstances = admin0.getRegisteredInstances();
         assertEquals(1, registeredInstances.size());
-        assertEquals(this.proxyURI1, registeredInstances.get(0).getURI());
+        registeredInstance = registeredInstances.get(0);
+        assertEquals(this.proxyURI1, registeredInstance.getURI());
+        assertEquals(INSTANCE_NAME_1, registeredInstance.getName());
+        String receivekey1To0 = registeredInstance.getReceiveKey();
+
+        assertEquals(sendkey1To0, receivekey1To0);
+
+        // Reset the send key to instance1
+        admin0 = registeredInstance.resetKey();
+        registeredInstances = admin0.getRegisteredInstances();
+        registeredInstance = registeredInstances.get(0);
+        sendkey0To1 = registeredInstance.getSendKey();
+
+        // Go to instance1
+        getUtil().switchExecutor(1);
+        // Make sure the receive key for instance0 was updated
+        admin1 = WikiReplicationAdministrationSectionPage.gotoPage();
+        registeredInstances = admin1.getRegisteredInstances();
+        registeredInstance = registeredInstances.get(0);
+        receivekey0To1 = registeredInstance.getReceiveKey();
+
+        assertEquals(sendkey0To1, receivekey0To1);
 
         // Go to instance2
         getUtil().switchExecutor(2);
@@ -380,6 +411,7 @@ public class ReplicationIT extends AbstractTest
         requestingInstances = admin2.getRequestingInstances();
         requestingInstance = requestingInstances.get(0);
         assertEquals(this.proxyURI1, requestingInstance.getURI());
+        assertEquals(INSTANCE_NAME_1, requestingInstance.getName());
 
         // Accept the instance
         requestingInstance.accept();
@@ -1066,7 +1098,7 @@ public class ReplicationIT extends AbstractTest
 
         // Force pushing waiting messages on XWIKI 0
         getUtil().switchExecutor(0);
-        WikiReplicationAdministrationSectionPage.gotoPage().getRegisteredInstances().get(0).clickRetry();  
+        WikiReplicationAdministrationSectionPage.gotoPage().getRegisteredInstances().get(0).clickRetry();
 
         // Wait for the conflict resolution
         getUtil().switchExecutor(0);

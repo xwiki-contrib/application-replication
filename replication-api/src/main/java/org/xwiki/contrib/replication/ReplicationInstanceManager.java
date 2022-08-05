@@ -156,4 +156,12 @@ public interface ReplicationInstanceManager
      * @throws ReplicationException when failing to update the current instance
      */
     void saveCurrentInstance(String name, String uri) throws ReplicationException;
+
+    /**
+     * Create a new key and replace the one current used to send message to the passed instance.
+     * 
+     * @param uri the uri of the instance for which to reset the send key
+     * @throws ReplicationException when failing to reset the instance send key
+     */
+    void resetSendKey(String uri) throws ReplicationException;
 }

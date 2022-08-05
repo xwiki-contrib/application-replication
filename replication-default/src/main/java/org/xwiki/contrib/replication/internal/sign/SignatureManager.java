@@ -90,12 +90,12 @@ public class SignatureManager
         throws ReplicationException
     {
         // If no signature associated accept anything
-        if (instance.getPublicKey() == null) {
+        if (instance.getReceiveKey() == null) {
             return true;
         }
 
         try {
-            Signer signer = this.signerFactory.getInstance(false, instance.getPublicKey().getPublicKeyParameters());
+            Signer signer = this.signerFactory.getInstance(false, instance.getReceiveKey().getPublicKeyParameters());
             signer.update(content.getBytes(UTF_8));
 
             return signer.verify(Base64.getDecoder().decode(signedContent));
@@ -110,9 +110,9 @@ public class SignatureManager
      * @return the public key used to verify the signature of messages sent by this instance
      * @throws ReplicationException when failing to get the public key of the instance
      */
-    public CertifiedPublicKey getSendPublicKey(ReplicationInstance instance) throws ReplicationException
+    public CertifiedPublicKey getSendKey(ReplicationInstance instance) throws ReplicationException
     {
-        return getSendPublicKey(instance.getURI());
+        return getSendKey(instance.getURI());
     }
 
     /**
@@ -120,34 +120,33 @@ public class SignatureManager
      * @return the public key used to verify the signature of messages sent by this instance
      * @throws ReplicationException when failing to get the public key of the instance
      */
-    public CertifiedPublicKey getSendPublicKey(String instance) throws ReplicationException
+    public CertifiedPublicKey getSendKey(String instance) throws ReplicationException
     {
         return this.store.getCertifiedKeyPair(instance).getCertificate();
     }
 
     /**
-     * @param publicKey the serialized public key
+     * @param key the serialized public key
      * @return the unserialized public key
      * @throws IOException when failing to unserialize the public key
      */
-    public CertifiedPublicKey unserializePublicKey(String publicKey) throws IOException
+    public CertifiedPublicKey unserializeKey(String key) throws IOException
     {
-        return StringUtils.isEmpty(publicKey) ? null
-            : this.certificateFactory.decode(Base64.getDecoder().decode(publicKey));
+        return StringUtils.isEmpty(key) ? null : this.certificateFactory.decode(Base64.getDecoder().decode(key));
     }
 
     /**
-     * @param publicKey the unserialized public key
+     * @param key the unserialized public key
      * @return the serialized public key
      * @throws IOException when failing to serialize the public key
      */
-    public String serializePublicKey(CertifiedPublicKey publicKey) throws IOException
+    public String serializeKey(CertifiedPublicKey key) throws IOException
     {
-        if (publicKey == null) {
+        if (key == null) {
             return null;
         }
 
-        byte[] encoded = publicKey.getEncoded();
+        byte[] encoded = key.getEncoded();
 
         return Base64.getEncoder().encodeToString(encoded);
     }
@@ -157,8 +156,8 @@ public class SignatureManager
      * @return the fingerprint for the passed key
      * @throws IOException when failing to create a fingerprint
      */
-    public String getPublicFingerprint(CertifiedPublicKey key) throws IOException
+    public String getFingerprint(CertifiedPublicKey key) throws IOException
     {
-        return key != null ? DigestUtils.sha256Hex(key.getEncoded()) : null;
+        return key != null ? DigestUtils.sha1Hex(key.getEncoded()) : null;
     }
 }

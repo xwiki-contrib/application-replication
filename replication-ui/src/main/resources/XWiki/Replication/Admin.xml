@@ -29,6 +29,7 @@
   <creator>xwiki:XWiki.Admin</creator>
   <parent>WebHome</parent>
   <author>xwiki:XWiki.Admin</author>
+  <originalMetadataAuthor>xwiki:XWiki.Admin</originalMetadataAuthor>
   <contentAuthor>xwiki:XWiki.Admin</contentAuthor>
   <version>1.1</version>
   <title>Admin</title>
@@ -37,13 +38,27 @@
   <syntaxId>xwiki/2.1</syntaxId>
   <hidden>true</hidden>
   <content>{{velocity output="false"}}
+#macro(receivekey $instance)
+  &lt;dt&gt;$escapetool.xml($services.localization.render('replication.admin.instance.receivekey'))&lt;/dt&gt;
+  &lt;dd&gt;&lt;span title="$escapetool.xml($services.localization.render('replication.admin.instance.receivekey.description'))" class="receivekey"&gt;$!services.replication.getReceiveFingerprint($instance)&lt;/span&gt;&lt;/dd&gt;
+#end
+
+#macro(sendkey $instance)
+  &lt;dt&gt;$escapetool.xml($services.localization.render('replication.admin.instance.sendkey'))&lt;/dt&gt;
+  &lt;dd&gt;&lt;span title="$escapetool.xml($services.localization.render('replication.admin.instance.sendkey.description'))" class="sendkey"&gt;$!services.replication.getSendFingerprint($instance)&lt;/span&gt; &lt;button class="btn btn-danger btn-sm" name="key_reset" title="$escapetool.xml($services.localization.render('replication.admin.instance.sendkey.button.reset.description'))"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.sendkey.button.reset'))&lt;/button&gt;&lt;/dd&gt;
+#end
+
 #macro(displayInstance $instance)
   (((
     {{html}}
       &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-        $instance.name (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;)
+        &lt;span class="instanceName"&gt;$instance.name&lt;/span&gt; (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;)
         &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;
-        &lt;button class="btn btn-danger" name="remove"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.remove'))&lt;/button&gt;
+        &lt;button class="btn btn-danger btn-sm" name="remove"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.remove'))&lt;/button&gt;
+        &lt;dl&gt;
+          #receivekey($instance)
+          #sendkey($instance)
+        &lt;/dl&gt;
       &lt;/form&gt;
       #set ($queueMessages = $services.replication.getQueueMessages($instance))
       #if ($queueMessages.size() &gt; 0)
@@ -71,10 +86,13 @@
   (((
     {{html}}
       &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-        $instance.name (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;)
+        &lt;span class="instanceName"&gt;$instance.name&lt;/span&gt; (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;)
         &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;
         &lt;button class="btn btn-success" name="requesting_accept"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.accept'))&lt;/button&gt;
         &lt;button class="btn btn-danger" name="requesting_decline"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.decline'))&lt;/button&gt;
+        &lt;dl&gt;
+          #receivekey($instance)
+        &lt;/dl&gt;
       &lt;/form&gt;
     {{/html}}
   )))
@@ -86,6 +104,9 @@
       &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
         &lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt; &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;
         &lt;button class="btn btn-danger" name="requested_cancel"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.cancel'))&lt;/button&gt;
+        &lt;dl&gt;
+          #sendkey($instance)
+        &lt;/dl&gt;
       &lt;/form&gt;
     {{/html}}
   )))
@@ -97,6 +118,8 @@
   #set($void = $instanceManager.reload())
 #elseif ($request.remove)
   #set($void = $instanceManager.removeRegisteredInstance($request.uri))
+#elseif ($request.key_reset)
+  #set($void = $instanceManager.resetSendKey($request.uri))
 #elseif ($request.requesting_accept)
   #set($void = $instanceManager.acceptRequestingInstance($request.uri))
 #elseif ($request.requesting_decline)

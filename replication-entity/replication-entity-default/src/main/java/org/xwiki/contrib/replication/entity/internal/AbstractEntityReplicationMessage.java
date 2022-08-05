@@ -20,17 +20,14 @@
 package org.xwiki.contrib.replication.entity.internal;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
-import java.util.UUID;
 
 import javax.inject.Inject;
 
 import org.xwiki.bridge.DocumentAccessBridge;
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
-import org.xwiki.contrib.replication.AbstractReplicationMessage;
-import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.AbstractReplicationSenderMessage;
 import org.xwiki.model.reference.AbstractLocalizedEntityReference;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.user.UserReferenceSerializer;
@@ -40,8 +37,8 @@ import org.xwiki.user.UserReferenceSerializer;
  * @version $Id$
  */
 @InstantiationStrategy(ComponentInstantiationStrategy.PER_LOOKUP)
-public abstract class AbstractEntityReplicationMessage<E extends EntityReference> extends AbstractReplicationMessage
-    implements ReplicationSenderMessage
+public abstract class AbstractEntityReplicationMessage<E extends EntityReference>
+    extends AbstractReplicationSenderMessage
 {
     /**
      * The type of message supported by this receiver.
@@ -79,12 +76,6 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
     @Inject
     protected DocumentAccessBridge documentAccessBridge;
 
-    protected String id;
-
-    protected String source;
-
-    protected Date date = new Date();
-
     protected E entityReference;
 
     /**
@@ -93,6 +84,8 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
      */
     protected void initialize(E entityReference, Map<String, Collection<String>> extraMetadata)
     {
+        initialize();
+
         this.entityReference = entityReference;
 
         if (extraMetadata != null) {
@@ -108,26 +101,5 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
         }
 
         putCustomMetadata(METADATA_CONTEXT_USER, this.documentAccessBridge.getCurrentUserReference());
-
-        // Make sure the id is unique but not too big
-        this.id = UUID.randomUUID().toString();
-    }
-
-    @Override
-    public String getId()
-    {
-        return this.id;
-    }
-
-    @Override
-    public Date getDate()
-    {
-        return this.date;
-    }
-
-    @Override
-    public String getSource()
-    {
-        return this.source;
     }
 }

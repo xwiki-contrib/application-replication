@@ -39,7 +39,7 @@ public class DefaultReplicationInstance implements ReplicationInstance
 
     private Status status;
 
-    private CertifiedPublicKey publicKey;
+    private CertifiedPublicKey receiveKey;
 
     private Map<String, Object> properties;
 
@@ -48,7 +48,7 @@ public class DefaultReplicationInstance implements ReplicationInstance
      * @param uri the base URI of the instance (generally of the form https://www.xwiki.org/xwiki/)
      * @param status the status of the instance
      * @param publicKey the public key to use to verify message sent by this instance
-     * @param properties the custom propertie
+     * @param properties the custom properties
      */
     public DefaultReplicationInstance(String name, String uri, Status status, CertifiedPublicKey publicKey,
         Map<String, Object> properties)
@@ -56,7 +56,7 @@ public class DefaultReplicationInstance implements ReplicationInstance
         this.name = name;
         this.uri = cleanURI(uri);
         this.status = status;
-        this.publicKey = publicKey;
+        this.receiveKey = publicKey;
 
         setProperties(properties);
     }
@@ -66,7 +66,7 @@ public class DefaultReplicationInstance implements ReplicationInstance
      */
     public DefaultReplicationInstance(ReplicationInstance instance)
     {
-        this(instance.getName(), instance.getURI(), instance.getStatus(), instance.getPublicKey(),
+        this(instance.getName(), instance.getURI(), instance.getStatus(), instance.getReceiveKey(),
             instance.getProperties());
     }
 
@@ -109,17 +109,17 @@ public class DefaultReplicationInstance implements ReplicationInstance
     }
 
     @Override
-    public CertifiedPublicKey getPublicKey()
+    public CertifiedPublicKey getReceiveKey()
     {
-        return this.publicKey;
+        return this.receiveKey;
     }
 
     /**
-     * @param publicKey the public key to use to validate messages sent by this instance
+     * @param receiveKey the public key to use to validate messages sent by this instance
      */
-    public void setPublicKey(CertifiedPublicKey publicKey)
+    public void setReceiveKey(CertifiedPublicKey receiveKey)
     {
-        this.publicKey = publicKey;
+        this.receiveKey = receiveKey;
     }
 
     @Override

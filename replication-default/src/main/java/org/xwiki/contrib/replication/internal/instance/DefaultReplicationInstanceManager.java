@@ -37,7 +37,6 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.internal.ReplicationClient;
-import org.xwiki.contrib.replication.internal.ReplicationClient.RegisterResponse;
 
 /**
  * @version $Id$
@@ -193,16 +192,14 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         String cleanURI = DefaultReplicationInstance.cleanURI(uri);
 
         // Send a request to the target instance
-        RegisterResponse response;
         try {
-            response = this.client.register(cleanURI);
+            this.client.register(cleanURI);
         } catch (Exception e) {
             throw new ReplicationException("Failed to register the instance on [" + cleanURI + "]", e);
         }
 
         // Create the new instance
-        ReplicationInstance instance =
-            new DefaultReplicationInstance(null, cleanURI, response.getStatus(), response.getPublicKey(), null);
+        ReplicationInstance instance = new DefaultReplicationInstance(null, cleanURI, Status.REQUESTED, null, null);
 
         // Add instance to the store
         this.store.addInstance(instance);
@@ -301,19 +298,26 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         }
 
         // Notify the instance of the acceptance
-        RegisterResponse response;
+        Status status;
         try {
-            response = this.client.register(cleanURI);
+            status = this.client.accept(instance);
         } catch (Exception e) {
             throw new ReplicationException("Failed to send a request to instance [" + cleanURI + "]", e);
         }
 
-        if (response.getStatus() != Status.REQUESTING) {
+        if (status == Status.REGISTERED) {
             // Update the instance status
-            this.store.updateStatus(instance, response.getStatus());
+            this.store.updateStatus(instance, status);
+
+            // The instances are now linked
+            return true;
+        } else if (status == Status.REQUESTED) {
+            // Convert the REQUESTING instance into a REQUESTED one
+            this.store.updateInstance(new DefaultReplicationInstance(instance.getURI(), instance.getName(), status,
+                null, instance.getProperties()));
         }
 
-        return true;
+        return false;
     }
 
     @Override
@@ -372,5 +376,15 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
 
         this.instancesByURI = Collections.unmodifiableMap(newInstancesByURI);
         this.instancesByName = Collections.unmodifiableMap(newInstancesByName);
+    }
+
+    @Override
+    public void resetSendKey(String uri) throws ReplicationException
+    {
+        try {
+            this.client.resetSendKey(getCurrentInstance());
+        } catch (Exception e) {
+            throw new ReplicationException("Failed to reset the key for instance with URI [" + uri + "]", e);
+        }
     }
 }

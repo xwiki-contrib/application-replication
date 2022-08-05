@@ -94,8 +94,8 @@ public class CertifiedKeyPairStore implements Initializable
 
     /**
      * @param instance the instance for which to get the {@link CertifiedKeyPair}
-     * @return the {@link CertifiedKeyPair} associated with the passed instance or a new one if it's the first time this
-     *         method is called
+     * @return the new {@link CertifiedKeyPair} associated with the passed instance or a new one if it's the first time
+     *         this method is called
      * @throws ReplicationException when failing to get or create the {@link CertifiedKeyPair}
      */
     public CertifiedKeyPair getCertifiedKeyPair(String instance) throws ReplicationException
@@ -114,7 +114,13 @@ public class CertifiedKeyPairStore implements Initializable
         return createCertifiedKeyPair(instance);
     }
 
-    private CertifiedKeyPair createCertifiedKeyPair(String instance) throws ReplicationException
+    /**
+     * @param instance the instance for which to create a new {@link CertifiedKeyPair}
+     * @return the new {@link CertifiedKeyPair} associated with the passed instance or a new one if it's the first time
+     *         this method is called
+     * @throws ReplicationException when failing to get or create the {@link CertifiedKeyPair}
+     */
+    public CertifiedKeyPair createCertifiedKeyPair(String instance) throws ReplicationException
     {
         AsymmetricKeyPair keys = this.keyPairGenerator.generate();
         Signer signer = this.signerFactory.getInstance(true, keys.getPrivate());

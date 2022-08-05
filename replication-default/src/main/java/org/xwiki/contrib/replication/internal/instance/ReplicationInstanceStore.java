@@ -218,8 +218,8 @@ public class ReplicationInstanceStore
     public CertifiedPublicKey getPublicKey(BaseObject instanceObject)
     {
         try {
-            return this.signatureManager.unserializePublicKey(
-                instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_PUBLICKEY));
+            return this.signatureManager.unserializeKey(
+                instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_RECEIVEKEY));
         } catch (IOException e) {
             this.logger.error("Failed to parse public key from [{}]", instanceObject.getReference(), e);
 
@@ -229,8 +229,8 @@ public class ReplicationInstanceStore
 
     private void setPublicKey(BaseObject instanceObject, CertifiedPublicKey publicKey) throws IOException
     {
-        instanceObject.setLargeStringValue(StandardReplicationInstanceClassInitializer.FIELD_PUBLICKEY,
-            this.signatureManager.serializePublicKey(publicKey));
+        instanceObject.setLargeStringValue(StandardReplicationInstanceClassInitializer.FIELD_RECEIVEKEY,
+            this.signatureManager.serializeKey(publicKey));
     }
 
     private Map<String, Object> getProperties(BaseObject instanceObject)
@@ -260,7 +260,7 @@ public class ReplicationInstanceStore
 
     private void setReplicationInstance(ReplicationInstance instance, BaseObject instanceObject) throws IOException
     {
-        setReplicationInstance(instance.getName(), instance.getURI(), instance.getStatus(), instance.getPublicKey(),
+        setReplicationInstance(instance.getName(), instance.getURI(), instance.getStatus(), instance.getReceiveKey(),
             instanceObject);
     }
 
@@ -364,31 +364,6 @@ public class ReplicationInstanceStore
 
     /**
      * @param instance the instance to update
-     * @param status the new status of the instance to update
-     * @throws ReplicationException when failing to update the instance status
-     */
-    public void updateStatus(ReplicationInstance instance, Status status) throws ReplicationException
-    {
-        executeInstanceDocument((instancesDocument, xcontext) -> {
-            BaseObject instanceObject =
-                instancesDocument.getXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE,
-                    StandardReplicationInstanceClassInitializer.FIELD_URI, instance.getURI(), false);
-
-            setStatus(instanceObject, status);
-
-            xcontext.getWiki().saveDocument(instancesDocument,
-                "Set status [" + status.name() + "] for instance " + instance.getURI(), xcontext);
-
-            if (instance instanceof DefaultReplicationInstance) {
-                ((DefaultReplicationInstance) instance).setStatus(status);
-            }
-
-            return null;
-        });
-    }
-
-    /**
-     * @param instance the instance to update
      * @throws ReplicationException when failing to update the instance
      */
     public void updateInstance(ReplicationInstance instance) throws ReplicationException
@@ -412,6 +387,17 @@ public class ReplicationInstanceStore
 
             return null;
         });
+    }
+
+    /**
+     * @param instance the instance to update
+     * @param status the status to update in the instance
+     * @throws ReplicationException when failing to update the instance
+     */
+    public void updateStatus(ReplicationInstance instance, Status status) throws ReplicationException
+    {
+        updateInstance(new DefaultReplicationInstance(instance.getName(), instance.getURI(), status,
+            instance.getReceiveKey(), instance.getProperties()));
     }
 
     /**

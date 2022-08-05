@@ -23,20 +23,14 @@ import java.util.List;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-import org.xwiki.test.ui.po.BaseElement;
 
 /**
  * Displays information about a replication instance.
  * 
  * @version $Id: 0bdab4653171162f3b27340382543e218ce66d49 $
  */
-public class RegisteredInstancePane extends BaseElement
+public class RegisteredInstancePane extends AbstractInstancePane
 {
-    /**
-     * The dependency container.
-     */
-    private final WebElement container;
-
     /**
      * Creates a new instance.
      * 
@@ -44,12 +38,25 @@ public class RegisteredInstancePane extends BaseElement
      */
     public RegisteredInstancePane(WebElement container)
     {
-        this.container = container;
+        super(container);
     }
 
-    public String getURI()
+    @Override
+    public String getName()
     {
-        return getDriver().findElementWithoutWaiting(this.container, By.tagName("a")).getText();
+        return super.getName();
+    }
+
+    @Override
+    public String getSendKey()
+    {
+        return super.getSendKey();
+    }
+
+    @Override
+    public String getReceiveKey()
+    {
+        return super.getReceiveKey();
     }
 
     public String getWarning()
@@ -72,6 +79,15 @@ public class RegisteredInstancePane extends BaseElement
         WebElement removeButton = this.container.findElement(By.name("requesting_remove"));
 
         removeButton.click();
+
+        return new WikiReplicationAdministrationSectionPage();
+    }
+
+    public WikiReplicationAdministrationSectionPage resetKey()
+    {
+        WebElement resetButton = this.container.findElement(By.name("key_reset"));
+
+        resetButton.click();
 
         return new WikiReplicationAdministrationSectionPage();
     }

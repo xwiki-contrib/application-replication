@@ -76,7 +76,7 @@ public class StandardReplicationInstanceClassInitializer extends AbstractMandato
     /**
      * The name of the property containing the Replication Instance public key.
      */
-    public static final String FIELD_PUBLICKEY = "publicKey";
+    public static final String FIELD_RECEIVEKEY = "receiveKey";
 
     @Inject
     private List<ReplicationInstanceClassInitializer> initializers;
@@ -101,7 +101,7 @@ public class StandardReplicationInstanceClassInitializer extends AbstractMandato
     {
         xclass.addTextField(FIELD_URI, "URI", 30);
         xclass.addTextField(FIELD_NAME, "Name", 30);
-        xclass.addTextAreaField(FIELD_PUBLICKEY, "Public key", 30, 1);
+        xclass.addTextAreaField(FIELD_RECEIVEKEY, "Receive key", 30, 1);
 
         xclass.addStaticListField(FIELD_STATUS, "Status",
             Status.REGISTERED.name() + '|' + Status.REQUESTED.name() + '|' + Status.REQUESTING.name());

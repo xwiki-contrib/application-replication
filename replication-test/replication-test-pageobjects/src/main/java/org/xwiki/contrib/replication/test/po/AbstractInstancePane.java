@@ -21,36 +21,47 @@ package org.xwiki.contrib.replication.test.po;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.xwiki.test.ui.po.BaseElement;
 
 /**
  * Displays information about a replication instance.
  * 
  * @version $Id: 0bdab4653171162f3b27340382543e218ce66d49 $
  */
-public class RequestedInstancePane extends AbstractInstancePane
+public abstract class AbstractInstancePane extends BaseElement
 {
+    /**
+     * The dependency container.
+     */
+    protected final WebElement container;
+
     /**
      * Creates a new instance.
      * 
      * @param container the dependency container
      */
-    public RequestedInstancePane(WebElement container)
+    AbstractInstancePane(WebElement container)
     {
-        super(container);
+        this.container = container;
     }
 
-    @Override
-    public String getSendKey()
+    public String getURI()
     {
-        return super.getSendKey();
+        return getDriver().findElementWithoutWaiting(this.container, By.tagName("a")).getText();
     }
 
-    public WikiReplicationAdministrationSectionPage cancel()
+    protected String getName()
     {
-        WebElement cancelButton = this.container.findElement(By.name("requested_cancel"));
+        return getDriver().findElementWithoutWaiting(this.container, By.className("instanceName")).getText();
+    }
 
-        cancelButton.click();
+    protected String getSendKey()
+    {
+        return getDriver().findElementWithoutWaiting(this.container, By.className("sendkey")).getText();
+    }
 
-        return new WikiReplicationAdministrationSectionPage();
+    protected String getReceiveKey()
+    {
+        return getDriver().findElementWithoutWaiting(this.container, By.className("receivekey")).getText();
     }
 }

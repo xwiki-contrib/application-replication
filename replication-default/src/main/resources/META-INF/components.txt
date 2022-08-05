@@ -8,6 +8,7 @@ org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReferenceResol
 org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstancePingEndpoint
 org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstanceRegisterEndpoint
 org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstanceUnregisterEndpoint
+org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstanceUpdateKeyEndpoint
 org.xwiki.contrib.replication.internal.enpoint.message.HttpServletRequestReplicationReceiverMessage
 org.xwiki.contrib.replication.internal.enpoint.message.ReplicationMessageEndpoint
 org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstanceManager
@@ -16,6 +17,9 @@ org.xwiki.contrib.replication.internal.instance.ReplicationInstanceStore
 org.xwiki.contrib.replication.internal.instance.StandardReplicationInstanceClassInitializer
 org.xwiki.contrib.replication.internal.instance.WikiDescriptorListener
 org.xwiki.contrib.replication.internal.message.DefaultReplicationSender
+org.xwiki.contrib.replication.internal.message.ReplicationInstanceMessageSender
+org.xwiki.contrib.replication.internal.message.ReplicationInstanceUpdateMessage
+org.xwiki.contrib.replication.internal.message.ReplicationInstanceUpdateReceiver
 org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageQueue
 org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageStore
 org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageQueue

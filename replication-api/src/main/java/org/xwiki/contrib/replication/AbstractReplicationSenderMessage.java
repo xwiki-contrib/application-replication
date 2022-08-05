@@ -17,40 +17,50 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.test.po;
+package org.xwiki.contrib.replication;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
+import java.util.Date;
+import java.util.UUID;
+
+import org.xwiki.component.annotation.InstantiationStrategy;
+import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 
 /**
- * Displays information about a replication instance.
+ * Base class to help implement a {@link ReplicationMessage} and especially custom metadata support.
  * 
- * @version $Id: 0bdab4653171162f3b27340382543e218ce66d49 $
+ * @version $Id$
  */
-public class RequestedInstancePane extends AbstractInstancePane
+@InstantiationStrategy(ComponentInstantiationStrategy.PER_LOOKUP)
+public abstract class AbstractReplicationSenderMessage extends AbstractReplicationMessage
+    implements ReplicationSenderMessage
 {
-    /**
-     * Creates a new instance.
-     * 
-     * @param container the dependency container
-     */
-    public RequestedInstancePane(WebElement container)
+    protected String id;
+
+    protected Date date = new Date();
+
+    protected String source;
+
+    @Override
+    public String getId()
     {
-        super(container);
+        return this.id;
     }
 
     @Override
-    public String getSendKey()
+    public Date getDate()
     {
-        return super.getSendKey();
+        return this.date;
     }
 
-    public WikiReplicationAdministrationSectionPage cancel()
+    @Override
+    public String getSource()
     {
-        WebElement cancelButton = this.container.findElement(By.name("requested_cancel"));
+        return this.source;
+    }
 
-        cancelButton.click();
-
-        return new WikiReplicationAdministrationSectionPage();
+    protected void initialize()
+    {
+        // Make sure the id is unique but not too big
+        this.id = UUID.randomUUID().toString();
     }
 }

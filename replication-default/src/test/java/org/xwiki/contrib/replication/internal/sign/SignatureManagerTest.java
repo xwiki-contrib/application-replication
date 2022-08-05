@@ -96,8 +96,8 @@ class SignatureManagerTest
         assertTrue(this.signatureManager.verify(instance2, "content", signature2));        
 
         // Set public keys
-        instance1.setPublicKey(this.signatureManager.getSendPublicKey(instance1));
-        instance2.setPublicKey(this.signatureManager.getSendPublicKey(instance2));
+        instance1.setReceiveKey(this.signatureManager.getSendKey(instance1));
+        instance2.setReceiveKey(this.signatureManager.getSendKey(instance2));
 
         assertTrue(this.signatureManager.verify(instance1, "content", signature1));
         assertFalse(this.signatureManager.verify(instance1, "othercontent", signature1));

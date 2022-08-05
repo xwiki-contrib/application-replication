@@ -21,20 +21,14 @@ package org.xwiki.contrib.replication.test.po;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-import org.xwiki.test.ui.po.BaseElement;
 
 /**
  * Displays information about a replication instance.
  * 
  * @version $Id: 0bdab4653171162f3b27340382543e218ce66d49 $
  */
-public class RequestingInstancePane extends BaseElement
+public class RequestingInstancePane extends AbstractInstancePane
 {
-    /**
-     * The dependency container.
-     */
-    private final WebElement container;
-
     /**
      * Creates a new instance.
      * 
@@ -42,14 +36,19 @@ public class RequestingInstancePane extends BaseElement
      */
     public RequestingInstancePane(WebElement container)
     {
-        this.container = container;
+        super(container);
     }
 
-    public String getURI()
+    @Override
+    public String getName()
     {
-        WebElement uriElement = this.container.findElement(By.tagName("a"));
+        return super.getName();
+    }
 
-        return uriElement.getText();
+    @Override
+    public String getReceiveKey()
+    {
+        return super.getReceiveKey();
     }
 
     public WikiReplicationAdministrationSectionPage accept()

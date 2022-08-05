@@ -87,7 +87,7 @@ public class ReplicationScriptService implements ScriptService
      */
     public Collection<ReplicationInstance> getRegisteredInstances() throws ReplicationException
     {
-        return this.instances.getRegisteredInstances().stream().map(i -> new DefaultReplicationInstance(i))
+        return this.instances.getRegisteredInstances().stream().map(DefaultReplicationInstance::new)
             .collect(Collectors.toList());
     }
 
@@ -194,9 +194,9 @@ public class ReplicationScriptService implements ScriptService
      * @throws IOException when failing to calculate the fingerprint
      * @throws ReplicationException when failing to calculate the fingerprint
      */
-    public String getSendPublicFingerprint(ReplicationInstance instance) throws IOException, ReplicationException
+    public String getSendFingerprint(ReplicationInstance instance) throws IOException, ReplicationException
     {
-        return this.signatureManager.getPublicFingerprint(this.signatureManager.getSendPublicKey(instance));
+        return this.signatureManager.getFingerprint(this.signatureManager.getSendKey(instance));
     }
 
     /**
@@ -205,8 +205,8 @@ public class ReplicationScriptService implements ScriptService
      * @throws IOException when failing to calculate the fingerprint
      * @throws ReplicationException when failing to calculate the fingerprint
      */
-    public String getReceivePublicFingerprint(ReplicationInstance instance) throws IOException, ReplicationException
+    public String getReceiveFingerprint(ReplicationInstance instance) throws IOException, ReplicationException
     {
-        return this.signatureManager.getPublicFingerprint(instance.getPublicKey());
+        return this.signatureManager.getFingerprint(instance.getReceiveKey());
     }
 }
