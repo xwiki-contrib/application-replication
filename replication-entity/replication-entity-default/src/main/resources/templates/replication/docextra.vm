@@ -33,13 +33,6 @@
 
   #if ($resolvedInstances.size() > 0)
     <dl>
-      <dt>$escapetool.xml($services.localization.render("replication.admin.controller"))</dt>
-      <dd>
-        #set ($resolvedController = $services.replication.document.resolveDocumentReplicationController($doc.documentReference))
-        {{translation key="replication.controller.${resolvedController}.name"/}}
-        {{translation key="replication.controller.${resolvedController}.description"/}}
-      </dd>
-
       <dt>$escapetool.xml($services.localization.render("replication.entity.docextra.owner"))</dt>
       <dd data-key="owner">
         #set ($ownerURI = $services.replication.document.getOwner($doc.documentReference))
