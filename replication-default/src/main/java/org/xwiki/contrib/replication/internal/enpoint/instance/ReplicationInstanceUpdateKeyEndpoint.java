@@ -32,7 +32,6 @@ import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoin
 import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
 import org.xwiki.contrib.replication.internal.instance.ReplicationInstanceStore;
-import org.xwiki.contrib.replication.internal.sign.SignatureManager;
 
 /**
  * @version $Id$
@@ -50,13 +49,10 @@ public class ReplicationInstanceUpdateKeyEndpoint extends AbstractReplicationEnd
     /**
      * The name of the parameter which contain the new value of the receive key for the source instance.
      */
-    public static final String PARAMETER_NEWKEY = "newKey";
+    public static final String PARAMETER_NEWRECEIVEKEY = "newReceiveKey";
 
     @Inject
     private ReplicationInstanceStore store;
-
-    @Inject
-    private SignatureManager signatureManager;
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, ReplicationResourceReference reference)
@@ -66,7 +62,7 @@ public class ReplicationInstanceUpdateKeyEndpoint extends AbstractReplicationEnd
         ReplicationInstance instance = validateInstance(reference);
 
         // Get the new key
-        String newKey = reference.getParameterValue(PARAMETER_NEWKEY);
+        String newKey = reference.getParameterValue(PARAMETER_NEWRECEIVEKEY);
 
         // Store the new key
         try {

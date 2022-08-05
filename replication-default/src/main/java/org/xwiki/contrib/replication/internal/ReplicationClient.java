@@ -129,7 +129,7 @@ public class ReplicationClient implements Initializable
         builder.appendPath(ReplicationResourceReferenceHandler.HINT);
         builder.appendPath(endpoint);
 
-        builder.addParameter(ReplicationInstanceUnregisterEndpoint.PARAMETER_URI,
+        builder.setParameter(ReplicationInstanceUnregisterEndpoint.PARAMETER_URI,
             this.instances.getCurrentInstance().getURI());
 
         return builder;
@@ -146,8 +146,8 @@ public class ReplicationClient implements Initializable
     {
         URIBuilder builder = createURIBuilder(target.getURI(), endpoint);
 
-        builder.addParameter(ReplicationInstancePingEndpoint.PARAMETER_KEY, key);
-        builder.addParameter(ReplicationInstancePingEndpoint.PARAMETER_SIGNEDKEY,
+        builder.setParameter(ReplicationInstancePingEndpoint.PARAMETER_KEY, key);
+        builder.setParameter(ReplicationInstancePingEndpoint.PARAMETER_SIGNEDKEY,
             this.signatureManager.sign(target, key));
 
         return builder;
@@ -168,16 +168,16 @@ public class ReplicationClient implements Initializable
         try {
             URIBuilder builder = createURIBuilder(target, ReplicationMessageEndpoint.PATH, message.getId());
 
-            builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_ID, message.getId());
-            builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_TYPE, message.getType());
-            builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_DATE,
+            builder.setParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_ID, message.getId());
+            builder.setParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_TYPE, message.getType());
+            builder.setParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_DATE,
                 HttpServletRequestReplicationReceiverMessage.fromDate(message.getDate()));
 
             String source = message.getSource();
             if (source == null) {
                 source = this.instances.getCurrentInstance().getURI();
             }
-            builder.addParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_SOURCE, source);
+            builder.setParameter(HttpServletRequestReplicationReceiverMessage.PARAMETER_SOURCE, source);
 
             HttpPut httpPut = new HttpPut(builder.build());
 
@@ -281,11 +281,11 @@ public class ReplicationClient implements Initializable
     {
         URIBuilder builder = createURIBuilder(uri, ReplicationInstanceRegisterEndpoint.PATH);
 
-        builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_NAME,
+        builder.setParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_NAME,
             this.instances.getCurrentInstance().getName());
 
         // Indicate the key that will be used to send messages to the target instance
-        builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_RECEIVEKEY,
+        builder.setParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_RECEIVEKEY,
             this.signatureManager.serializeKey(this.signatureManager.getSendKey(uri)));
 
         HttpPut httpPut = new HttpPut(builder.build());
@@ -314,20 +314,20 @@ public class ReplicationClient implements Initializable
      */
     public Status accept(ReplicationInstance instance) throws ReplicationException, IOException, URISyntaxException
     {
-        this.lock.writeLock().lock();
+        this.lock.readLock().lock();
 
         try {
             URIBuilder builder = createURIBuilder(instance, ReplicationInstanceRegisterEndpoint.PATH);
 
-            builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_NAME,
+            builder.setParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_NAME,
                 this.instances.getCurrentInstance().getName());
 
             // Indicate the key that will be used to send messages to the target instance
-            builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_RECEIVEKEY,
+            builder.setParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_RECEIVEKEY,
                 this.signatureManager.serializeKey(this.signatureManager.getSendKey(instance)));
 
             // Send the receive key as a key to prove it was requested in the first place
-            builder.addParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_REQUESTKEY,
+            builder.setParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_REQUESTKEY,
                 this.signatureManager.serializeKey(instance.getReceiveKey()));
 
             HttpPut httpPut = new HttpPut(builder.build());
@@ -350,7 +350,7 @@ public class ReplicationClient implements Initializable
 
             return Status.REQUESTED;
         } finally {
-            this.lock.writeLock().unlock();
+            this.lock.readLock().unlock();
         }
     }
 
@@ -383,33 +383,31 @@ public class ReplicationClient implements Initializable
     private void sendKey(ReplicationInstance instance, CertifiedKeyPair oldKey, CertifiedKeyPair newKey)
         throws URISyntaxException, ReplicationException, IOException
     {
-        try {
-            URIBuilder builder = createURIBuilder(instance, ReplicationInstanceUpdateKeyEndpoint.PATH);
+        URIBuilder builder = createURIBuilder(instance.getURI(), ReplicationInstanceUpdateKeyEndpoint.PATH);
 
-            // The target instance expect the old key
-            builder.addParameter(ReplicationInstanceUpdateKeyEndpoint.PARAMETER_KEY,
-                this.signatureManager.serializeKey(oldKey.getCertificate()));
+        // The target instance expect the old key
+        String key = String.valueOf(new Date().getTime());
+        builder.setParameter(ReplicationInstancePingEndpoint.PARAMETER_KEY, key);
+        builder.setParameter(ReplicationInstancePingEndpoint.PARAMETER_SIGNEDKEY,
+            this.signatureManager.sign(oldKey.getPrivateKey(), key));
 
-            // Indicate the new key
-            builder.addParameter(ReplicationInstanceUpdateKeyEndpoint.PARAMETER_NEWKEY,
-                this.signatureManager.serializeKey(newKey.getCertificate()));
+        // Indicate the new key
+        builder.setParameter(ReplicationInstanceUpdateKeyEndpoint.PARAMETER_NEWRECEIVEKEY,
+            this.signatureManager.serializeKey(newKey.getCertificate()));
 
-            HttpPost httpPost = new HttpPost(builder.build());
+        HttpPost httpPost = new HttpPost(builder.build());
 
-            try (CloseableHttpResponse response = this.client.execute(httpPost)) {
-                if (response.getCode() == 200) {
-                    // Done
-                } else if (response.getCode() == 404) {
-                    // The instance does not actually exist on the server side
-                } else {
-                    String error = HTTPUtils.getContent(response, UNKNWON_ERROR);
+        try (CloseableHttpResponse response = this.client.execute(httpPost)) {
+            if (response.getCode() == 200) {
+                // Done
+            } else if (response.getCode() == 404) {
+                // The instance does not actually exist on the server side
+            } else {
+                String error = HTTPUtils.getContent(response, UNKNWON_ERROR);
 
-                    throw new ReplicationException(
-                        String.format("Failed to update the key in the instance [%s]: %s", instance.getURI(), error));
-                }
+                throw new ReplicationException(
+                    String.format("Failed to update the key in the instance [%s]: %s", instance.getURI(), error));
             }
-        } finally {
-            this.lock.readLock().unlock();
         }
     }
 }

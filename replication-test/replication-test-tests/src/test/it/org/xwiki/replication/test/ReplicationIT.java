@@ -312,14 +312,28 @@ public class ReplicationIT extends AbstractTest
 
     private void instances() throws InterruptedException
     {
-        // Login on instance0
+        // Configure instance0 name and URI
         getUtil().switchExecutor(0);
         WikiReplicationAdministrationSectionPage admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
-        // Set custom name and URI
         admin0.setCurrentName(INSTANCE_NAME_0);
         admin0.setCurrentURI(this.proxyURI0);
         admin0 = admin0.clickSaveButton();
+        // Configure instance1 name and URI
+        getUtil().switchExecutor(1);
+        WikiReplicationAdministrationSectionPage admin1 = WikiReplicationAdministrationSectionPage.gotoPage();
+        admin1.setCurrentName(INSTANCE_NAME_1);
+        admin1.setCurrentURI(this.proxyURI1);
+        admin1 = admin0.clickSaveButton();
+        // Configure instance2 name and URI
+        getUtil().switchExecutor(2);
+        WikiReplicationAdministrationSectionPage admin2 = WikiReplicationAdministrationSectionPage.gotoPage();
+        admin2.setCurrentName(INSTANCE_NAME_2);
+        admin2.setCurrentURI(this.proxyURI2);
+        admin2 = admin0.clickSaveButton();
 
+        // Go back to instance1
+        getUtil().switchExecutor(0);
+        admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
         // Link to instance1
         admin0.setRequestedURI(this.proxyURI1);
         admin0 = admin0.requestInstance();
@@ -334,11 +348,7 @@ public class ReplicationIT extends AbstractTest
         // Go to instance1
         getUtil().switchExecutor(1);
         // Check if the instance has been added to requesting instances
-        WikiReplicationAdministrationSectionPage admin1 = assertEqualsRequestingInstancesWithTimeout(1);
-        // Set custom name and URI
-        admin1.setCurrentName(INSTANCE_NAME_1);
-        admin1.setCurrentURI(this.proxyURI1);
-        admin1 = admin1.clickSaveButton();
+        admin1 = assertEqualsRequestingInstancesWithTimeout(1);
 
         List<RequestingInstancePane> requestingInstances = admin1.getRequestingInstances();
         RequestingInstancePane requestingInstance = requestingInstances.get(0);
@@ -402,11 +412,7 @@ public class ReplicationIT extends AbstractTest
         // Go to instance2
         getUtil().switchExecutor(2);
         // Check if the instance has been added to requesting instances
-        WikiReplicationAdministrationSectionPage admin2 = assertEqualsRequestingInstancesWithTimeout(1);
-        // Set custom name and URI
-        admin2.setCurrentName(INSTANCE_NAME_2);
-        admin2.setCurrentURI(this.proxyURI2);
-        admin2 = admin2.clickSaveButton();
+        admin2 = assertEqualsRequestingInstancesWithTimeout(1);
 
         requestingInstances = admin2.getRequestingInstances();
         requestingInstance = requestingInstances.get(0);

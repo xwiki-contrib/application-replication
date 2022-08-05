@@ -70,12 +70,27 @@ public class SignatureManager
         try {
             PrivateKeyParameters pk = this.store.getCertifiedKeyPair(instance.getURI()).getPrivateKey();
 
+            return sign(pk, content);
+        } catch (Exception e) {
+            throw new ReplicationException(String.format("Error while signing [%s] for [%s]", content, instance), e);
+        }
+    }
+
+    /**
+     * @param pk the key to use to sign the content
+     * @param content the content to sign
+     * @return the signed content
+     * @throws ReplicationException when failing to sign the content
+     */
+    public String sign(PrivateKeyParameters pk, String content) throws ReplicationException
+    {
+        try {
             Signer signer = this.signerFactory.getInstance(true, pk);
             signer.update(content.getBytes(UTF_8));
 
             return Base64.getEncoder().encodeToString(signer.generate());
         } catch (Exception e) {
-            throw new ReplicationException(String.format("Error while signing [%s] for [%s]", content, instance), e);
+            throw new ReplicationException(String.format("Error while signing [%s]", content), e);
         }
     }
 

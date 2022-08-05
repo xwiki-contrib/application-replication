@@ -26,8 +26,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.UnauthorizedReplicationInstanceException;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
+import org.xwiki.contrib.replication.UnauthorizedReplicationInstanceException;
 import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
@@ -76,14 +76,14 @@ public class ReplicationInstanceRegisterEndpoint extends AbstractReplicationEndp
                 response.sendError(400, "Client and target instances have the same URI: " + uri);
             } else if (instance.getStatus() == Status.REQUESTED) {
                 // Make sure the instance was requested
-                if (!requestKey.equals(
-                    this.signatureManager.serializeKey(this.signatureManager.getSendKey(instance)))) {
+                if (!requestKey
+                    .equals(this.signatureManager.serializeKey(this.signatureManager.getSendKey(instance)))) {
                     throw new UnauthorizedReplicationInstanceException("The instance was not requested");
                 }
 
                 // Confirm the registration
-                this.instances.confirmRequestedInstance(new DefaultReplicationInstance(name, uri, Status.REGISTERED,
-                    this.signatureManager.unserializeKey(receiveKey), null));
+                this.instances.confirmRequestedInstance(new DefaultReplicationInstance(name, instance.getURI(),
+                    Status.REGISTERED, this.signatureManager.unserializeKey(receiveKey), instance.getProperties()));
 
                 // The instance is now registered
                 response.setStatus(200);

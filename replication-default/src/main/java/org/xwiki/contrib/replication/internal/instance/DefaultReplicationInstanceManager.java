@@ -382,7 +382,7 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     public void resetSendKey(String uri) throws ReplicationException
     {
         try {
-            this.client.resetSendKey(getCurrentInstance());
+            this.client.resetSendKey(getInstanceByURI(uri));
         } catch (Exception e) {
             throw new ReplicationException("Failed to reset the key for instance with URI [" + uri + "]", e);
         }
