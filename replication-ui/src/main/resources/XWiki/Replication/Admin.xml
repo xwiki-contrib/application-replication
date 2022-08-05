@@ -112,8 +112,11 @@
   )))
 #end
 
-#set($instanceManager = $services.component.getInstance('org.xwiki.contrib.replication.ReplicationInstanceManager'))
+#set ($instanceManager = $services.component.getInstance('org.xwiki.contrib.replication.ReplicationInstanceManager'))
+#set ($currentInstance = $instanceManager.currentInstance)
+{{/velocity}}
 
+{{velocity output="false"}}
 #if ($request.reload)
   #set($void = $instanceManager.reload())
 #elseif ($request.remove)
@@ -138,11 +141,12 @@
     #end
   #end
 #end
-
-#set ($currentInstance = $instanceManager.currentInstance)
 {{/velocity}}
 
 {{velocity}}
+## Reload the current instance in case it was modified
+#set ($currentInstance = $instanceManager.currentInstance)
+#set ($instances = $instanceManager.getInstances())
 #set($isMainWiki = ($services.wiki.currentWikiId == $services.wiki.mainWikiId))
 #if ($isMainWiki)
 #if ($hasProgramming)
@@ -156,7 +160,13 @@
     &lt;dt&gt;&lt;label for="current_name"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.form.name'))&lt;/label&gt;&lt;/dt&gt;
     &lt;dd&gt;&lt;input id="current_name" type="text" name="name" value="$escapetool.xml($currentInstance.name)" size="60"/&gt;&lt;/dd&gt;
     &lt;dt&gt;&lt;label for="current_uri"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.form.uri'))&lt;/label&gt;&lt;/dt&gt;
-    &lt;dd&gt;&lt;input id="current_uri" type="text" name="uri" value="$escapetool.xml($currentInstance.uRI)" size="60"/&gt;&lt;/dd&gt;
+    &lt;dd&gt;
+      &lt;input id="current_uri" type="text" name="uri" value="$escapetool.xml($currentInstance.uRI)" size="60"##
+        #if ($instances.size() &gt; 0)
+          disabled title="$escapetool.xml($services.localization.render('replication.admin.instance.form.uri.disabled'))"##
+        #end
+      /&gt;
+    &lt;/dd&gt;
   &lt;/dl&gt;
   &lt;button class="btn" name="current_save"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.save'))&lt;/button&gt;
 &lt;/form&gt;
@@ -166,7 +176,7 @@
 
 {{translation key="replication.admin.instance.REGISTERED.description"/}}
 
-#foreach($instance in $instanceManager.getInstances())
+#foreach($instance in $instances)
   #if ($instance.status.name() == 'REGISTERED')
     * #displayInstance($instance)
   #end
@@ -176,7 +186,7 @@
 
 {{translation key="replication.admin.instance.REQUESTING.description"/}}
 
-#foreach($instance in $instanceManager.getInstances())
+#foreach($instance in $instances)
   #if ($instance.status.name() == 'REQUESTING')
     * #displayRequestingInstance($instance)
   #end
@@ -194,7 +204,7 @@
 &lt;/form&gt;
 {{/html}}
 
-#foreach($instance in $instanceManager.getInstances())
+#foreach($instance in $instances)
   #if ($instance.status.name() == 'REQUESTED')
     * #displayRequestedInstance($instance)
   #end
