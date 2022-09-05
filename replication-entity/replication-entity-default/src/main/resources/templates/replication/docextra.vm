@@ -71,4 +71,7 @@
   #else
     $escapetool.xml($services.localization.render("replication.entity.docextra.notreplicated"))
   #end
+  #foreach ($uix in $services.uix.getExtensions('org.xwiki.contrib.replication.docextra.end'))
+    $services.rendering.render($uix.execute(), 'html/5.0')
+  #end
 </div>
