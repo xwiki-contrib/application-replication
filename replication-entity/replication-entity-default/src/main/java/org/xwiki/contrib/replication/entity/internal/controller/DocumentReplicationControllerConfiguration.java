@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
@@ -59,6 +60,10 @@ public class DocumentReplicationControllerConfiguration
 
     @Inject
     private ComponentManager componentManager;
+
+    @Inject
+    @Named("minimum")
+    private DocumentReplicationController minimumController;
 
     private Map<String, DocumentReplicationController> controllers;
 
@@ -102,8 +107,17 @@ public class DocumentReplicationControllerConfiguration
                 // Get rid of the default controller which is not a real one
                 standardControllers.remove("default");
 
+                // Remove the minimum controller which does nothing and is only here as a fallback
+                standardControllers.remove("minimum");
+
                 this.controllers = standardControllers;
-                this.fallbackController = this.controllers.values().iterator().next();
+
+                if (this.controllers.isEmpty()) {
+                    // Fallback on the minimum controller is nothing else is available
+                    this.fallbackController = this.minimumController;
+                } else {
+                    this.fallbackController = this.controllers.values().iterator().next();
+                }
             } catch (ComponentLookupException e) {
                 throw new ReplicationException("Failed to get controllers", e);
             }
@@ -232,7 +246,7 @@ public class DocumentReplicationControllerConfiguration
             this.lock.unlock();
         }
 
-        return controller;
+        return controller != null ? controller : this.fallbackController;
     }
 
     private synchronized DocumentReplicationController loadDocumentReplicationController(SpaceReference spaceReference)
@@ -294,12 +308,14 @@ public class DocumentReplicationControllerConfiguration
 
     private DocumentReplicationController getGlobalDocumentReplicationController() throws ReplicationException
     {
+        DocumentReplicationController controller = null;
+
         String controllerName = this.configurationSource.getProperty("replication.entity.controller");
         if (controllerName != null) {
-            return getInternalControllers().get(controllerName);
+            controller = getInternalControllers().get(controllerName);
         }
 
         // Fallback on the first found controller in the list
-        return this.fallbackController;
+        return controller != null ? controller : this.fallbackController;
     }
 }

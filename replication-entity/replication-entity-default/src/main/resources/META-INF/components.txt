@@ -11,6 +11,7 @@ org.xwiki.contrib.replication.entity.internal.controller.DefaultDocumentReplicat
 org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfiguration
 org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfigurationInvalidator
 org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfigurationStore
+org.xwiki.contrib.replication.entity.internal.controller.MinimumDocumentReplicationController
 org.xwiki.contrib.replication.entity.internal.controller.ReplicationEntityConfigurationClassInitializer
 org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationMessage
 org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationReceiver
