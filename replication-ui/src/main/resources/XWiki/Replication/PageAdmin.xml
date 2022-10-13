@@ -29,6 +29,7 @@
   <creator>xwiki:XWiki.Admin</creator>
   <parent>WebHome</parent>
   <author>xwiki:XWiki.Admin</author>
+  <originalMetadataAuthor>xwiki:XWiki.Admin</originalMetadataAuthor>
   <contentAuthor>xwiki:XWiki.Admin</contentAuthor>
   <version>1.1</version>
   <title/>
@@ -45,49 +46,52 @@
    #set ($wikiAdminURL = $xwiki.getURL('XWiki.XWikiPreferences', 'admin', $escapetool.url({'section' : 'Replication'})))
   [[{{translation key="replication.admin.noinstance"/}}&gt;&gt;path:$wikiAdminURL]]
 #else
-  == {{translation key="replication.admin.controller"/}}
-
-  #set ($parentController = $services.replication.document.resolveDocumentReplicationController($replicationDocument.documentReference.parent.parent))
-  #if ($request.setcontroller)
-    #if ("$!request.controller" == '')
-      #set ($controller = $NULL)
-    #else
-      #set ($controller = $request.controller)
-    #end
-    #set ($void = $services.replication.document.setDocumentReplicationController($replicationDocument.documentReference.parent, $controller))
-    {{success}}{{translation key="replication.admin.setcontroller.#if($controller)changed#{else}reseted#end"/}}{{/success}}
-
-  #end
-  #set ($controller = $services.replication.document.getDocumentReplicationController($replicationDocument.documentReference.parent))
-  #set ($resolvedController = $services.replication.document.resolveDocumentReplicationController($replicationDocument.documentReference.parent))
   #set ($controllers = $services.replication.document.getDocumentReplicationControllers())
-  #if ($resolvedController)
-    #if ($controllers.size() == 1)
-      {{translation key="replication.controller.${resolvedController}.name"/}}
-      {{translation key="replication.controller.${resolvedController}.description"/}}
-    #elseif ($controllers.size() &gt; 1)
-      {{html}}
-        &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-          &lt;select name="controller"&gt;
-            &lt;option value="" title="$escapetool.xml($services.localization.render("replication.controller.${parentController}.description"))"&gt;$escapetool.xml($services.localization.render('replication.admin.setcontroller.default', [$services.localization.render("replication.controller.${parentController}.name")]))&lt;/option&gt;
-            #foreach($controllerId in $controllers)
-              &lt;option value="$controllerId" #if($controllerId == $controller)selected#end title="$escapetool.xml($services.localization.render("replication.controller.${controllerId}.description"))"&gt;$escapetool.xml($services.localization.render("replication.controller.${controllerId}.name"))&lt;/option&gt;
-            #end
-          &lt;/select&gt;
-          &lt;button class="btn" name="setcontroller"&gt;$escapetool.xml($services.localization.render('replication.admin.setcontroller.button'))&lt;/button&gt;
-        &lt;/form&gt;
-      {{/html}}
-    #end
-    #set ($resolvedInstances = $services.replication.document.getDocumentInstances($replicationDocument.documentReference))
-    ## More
-    #set ($uixsId = "replication.admin.page.${resolvedController}")
-    #set ($uixs = $services.uix.getExtensions($uixsId))
-    #if (!$uixs.isEmpty())
+  #if ($controllers)
+    == {{translation key="replication.admin.controller"/}}
 
-      {{uiextensions extensionPoint="$uixsId"/}}
+    #set ($parentController = $services.replication.document.resolveDocumentReplicationController($replicationDocument.documentReference.parent.parent))
+    #if ($request.setcontroller)
+      #if ("$!request.controller" == '')
+        #set ($controller = $NULL)
+      #else
+        #set ($controller = $request.controller)
+      #end
+      #set ($void = $services.replication.document.setDocumentReplicationController($replicationDocument.documentReference.parent, $controller))
+      {{success}}{{translation key="replication.admin.setcontroller.#if($controller)changed#{else}reseted#end"/}}{{/success}}
+
     #end
-  #else
-    {{warning}}{{translation key="replication.admin.nocontroller"/}}{{/warning}}
+    #set ($controller = $services.replication.document.getDocumentReplicationController($replicationDocument.documentReference.parent))
+    #set ($resolvedController = $services.replication.document.resolveDocumentReplicationController($replicationDocument.documentReference.parent))
+    #set ($controllers = $services.replication.document.getDocumentReplicationControllers())
+    #if ($resolvedController)
+      #if ($controllers.size() == 1)
+        {{translation key="replication.controller.${resolvedController}.name"/}}
+        {{translation key="replication.controller.${resolvedController}.description"/}}
+      #elseif ($controllers.size() &gt; 1)
+        {{html}}
+          &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
+            &lt;select name="controller"&gt;
+              &lt;option value="" title="$escapetool.xml($services.localization.render("replication.controller.${parentController}.description"))"&gt;$escapetool.xml($services.localization.render('replication.admin.setcontroller.default', [$services.localization.render("replication.controller.${parentController}.name")]))&lt;/option&gt;
+              #foreach($controllerId in $controllers)
+                &lt;option value="$controllerId" #if($controllerId == $controller)selected#end title="$escapetool.xml($services.localization.render("replication.controller.${controllerId}.description"))"&gt;$escapetool.xml($services.localization.render("replication.controller.${controllerId}.name"))&lt;/option&gt;
+              #end
+            &lt;/select&gt;
+            &lt;button class="btn" name="setcontroller"&gt;$escapetool.xml($services.localization.render('replication.admin.setcontroller.button'))&lt;/button&gt;
+          &lt;/form&gt;
+        {{/html}}
+      #end
+      #set ($resolvedInstances = $services.replication.document.getDocumentInstances($replicationDocument.documentReference))
+      ## More
+      #set ($uixsId = "replication.admin.page.${resolvedController}")
+      #set ($uixs = $services.uix.getExtensions($uixsId))
+      #if (!$uixs.isEmpty())
+
+        {{uiextensions extensionPoint="$uixsId"/}}
+      #end
+    #else
+      {{warning}}{{translation key="replication.admin.nocontroller"/}}{{/warning}}
+    #end
   #end
 
   == {{translation key="replication.admin.page.troubleshooting"/}}
