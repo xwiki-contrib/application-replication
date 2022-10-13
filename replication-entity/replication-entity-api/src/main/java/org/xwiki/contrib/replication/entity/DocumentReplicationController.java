@@ -25,6 +25,7 @@ import java.util.List;
 import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -44,6 +45,21 @@ public interface DocumentReplicationController
      */
     List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference)
         throws ReplicationException;
+
+    /**
+     * Indicate the list of registered instances this document should be replicated to.
+     * 
+     * @param entityReference the reference of the entity for which we want to know the replication configuration
+     * @param receivers the instances which are supposed to handler the message
+     * @return the registered instances on which to replicate the document
+     * @throws ReplicationException when failing to get the configuration
+     * @since 1.1
+     */
+    default List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference,
+        Collection<String> receivers) throws ReplicationException
+    {
+        return getReplicationConfiguration(entityReference);
+    }
 
     /**
      * Indicate the list of registered instances this document's messages should be relayed to.
@@ -92,10 +108,39 @@ public interface DocumentReplicationController
         DocumentReplicationLevel minimumLevel) throws ReplicationException;
 
     /**
+     * @param messageProducer called to generate the message to send
+     * @param entityReference the entity associated with the message
+     * @param minimumLevel the minimum level required from an instance configuration to receive the document
+     * @param receivers the instances which are supposed to handler the message
+     * @throws ReplicationException when failing to send the message
+     * @since 1.1
+     */
+    default void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
+        DocumentReplicationLevel minimumLevel, Collection<String> receivers) throws ReplicationException
+    {
+        send(messageProducer, entityReference, minimumLevel);
+    }
+
+    /**
+     * Force replicate the complete current state of the document to configured instances.
+     * 
+     * @param documentReference the reference of the document
+     * @param receivers the instances which are supposed to handler the message
+     * @throws ReplicationException when failing to replicate the document
+     * @since 1.1
+     */
+    default void replicateDocument(DocumentReference documentReference, Collection<String> receivers)
+        throws ReplicationException
+    {
+
+    }
+
+    /**
      * Force pushing a complete document to allowed instances.
      * 
      * @param document the document to send
      * @throws ReplicationException when failing to replicate the document
+     * @see #replicateDocument(DocumentReference, Collection)
      */
     void sendCompleteDocument(XWikiDocument document) throws ReplicationException;
 

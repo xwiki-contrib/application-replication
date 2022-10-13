@@ -32,7 +32,6 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
-import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.AbstractDocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
@@ -53,9 +52,6 @@ public class StandardDocumentReplicationController extends AbstractDocumentRepli
 {
     @Inject
     private EntityReplicationStore store;
-
-    @Inject
-    private ReplicationInstanceManager instanceManager;
 
     @Override
     public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference)

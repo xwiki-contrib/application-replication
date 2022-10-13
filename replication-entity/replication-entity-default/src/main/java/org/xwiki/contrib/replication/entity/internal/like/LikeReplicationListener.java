@@ -21,15 +21,12 @@ package org.xwiki.contrib.replication.entity.internal.like;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationContext;
 import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.entity.DocumentReplicationController;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.like.events.LikeEvent;
 import org.xwiki.like.events.UnlikeEvent;
 import org.xwiki.model.reference.EntityReference;
@@ -58,10 +55,7 @@ public class LikeReplicationListener extends AbstractEventListener
     private RemoteObservationManagerContext remoteContext;
 
     @Inject
-    private Provider<LikeMessage> likeMessageProvider;
-
-    @Inject
-    private DocumentReplicationController replicationController;
+    private LikeMessageSender likeSender;
 
     @Inject
     private Logger logger;
@@ -87,13 +81,7 @@ public class LikeReplicationListener extends AbstractEventListener
         EntityReference entityReference = (EntityReference) data;
 
         try {
-            this.replicationController.send(m -> {
-                LikeMessage likeMessage = this.likeMessageProvider.get();
-
-                likeMessage.initialize(userReference, entityReference, like, m);
-
-                return likeMessage;
-            }, entityReference, DocumentReplicationLevel.ALL);
+            this.likeSender.send(userReference, entityReference, like, null);
         } catch (ReplicationException e) {
             this.logger.error("Failed to send a replication message for [{}] done by user [{}] on entity [{}]",
                 like ? "like" : "unlike", userReference, entityReference);

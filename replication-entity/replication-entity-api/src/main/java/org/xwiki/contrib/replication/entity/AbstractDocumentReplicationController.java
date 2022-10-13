@@ -19,13 +19,19 @@
  */
 package org.xwiki.contrib.replication.entity;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
 
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -38,13 +44,64 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
     @Inject
     protected DocumentReplicationSender sender;
 
+    @Inject
+    protected ReplicationInstanceManager instanceManager;
+
+    @Override
+    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference,
+        Collection<String> receivers) throws ReplicationException
+    {
+        List<DocumentReplicationControllerInstance> configurations = getReplicationConfiguration(entityReference);
+
+        // Optimizing a bit the replication configuration based on the receivers
+        if (receivers != null) {
+            // According to receivers the message should not be sent to any instance
+            if (receivers.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            // Check if all receivers are direct links
+            for (String receiver : receivers) {
+                ReplicationInstance instance = this.instanceManager.getInstanceByURI(receiver);
+                if (instance == null) {
+                    // One of the receiver is unknown so we don't filter the replication configuration
+                    return configurations;
+                }
+            }
+
+            // Filter the replication configuration to keep only indicated receivers
+            List<DocumentReplicationControllerInstance> filteredConfigurations = new ArrayList<>(configurations.size());
+            for (DocumentReplicationControllerInstance configuration : configurations) {
+                if (receivers.contains(configuration.getInstance().getURI())) {
+                    filteredConfigurations.add(configuration);
+                }
+            }
+
+            configurations = filteredConfigurations;
+        }
+
+        return configurations;
+    }
+
+    /**
+     * @param document the document associated with the metadata
+     * @return the metadata associated with the document
+     * @throws ReplicationException when failing to gather the metadata associated with the document
+     */
     protected Map<String, Collection<String>> getMetadata(XWikiDocument document) throws ReplicationException
     {
+        // No custom metadata by default
         return null;
     }
 
+    /**
+     * @param entity the entity associated with the metadata
+     * @return the metadata associated with the entity
+     * @throws ReplicationException when failing to gather the metadata associated with the entity
+     */
     protected Map<String, Collection<String>> getMetadata(EntityReference entity) throws ReplicationException
     {
+        // No custom metadata by default
         return null;
     }
 
@@ -80,6 +137,25 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
         DocumentReplicationLevel minimumLevel) throws ReplicationException
     {
         this.sender.send(messageProducer, entityReference, minimumLevel, getMetadata(entityReference), null);
+    }
+
+    @Override
+    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
+        DocumentReplicationLevel minimumLevel, Collection<String> receivers) throws ReplicationException
+    {
+        this.sender.send(messageProducer, entityReference, minimumLevel, receivers, getMetadata(entityReference), null);
+    }
+
+    @Override
+    public void replicateDocument(DocumentReference documentReference, Collection<String> receivers)
+        throws ReplicationException
+    {
+        List<DocumentReplicationControllerInstance> configurations =
+            getReplicationConfiguration(documentReference, receivers);
+
+        if (!configurations.isEmpty()) {
+            this.sender.replicateDocument(documentReference, receivers, getMetadata(documentReference), configurations);
+        }
     }
 
     @Override

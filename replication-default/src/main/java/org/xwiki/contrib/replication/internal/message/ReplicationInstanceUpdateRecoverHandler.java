@@ -19,39 +19,45 @@
  */
 package org.xwiki.contrib.replication.internal.message;
 
+import java.util.Date;
+
 import javax.inject.Inject;
-import javax.inject.Provider;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationSender;
+import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
+import org.xwiki.contrib.replication.ReplicationInstanceRecoverHandler;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 
 /**
- * Helper to send various instance related messages.
- * 
  * @version $Id$
+ * @since 1.1
  */
-@Component(roles = ReplicationInstanceMessageSender.class)
+@Component
 @Singleton
-public class ReplicationInstanceMessageSender
+@Named(ReplicationInstanceUpdateMessage.TYPE)
+public class ReplicationInstanceUpdateRecoverHandler implements ReplicationInstanceRecoverHandler
 {
     @Inject
-    private Provider<ReplicationInstanceUpdateMessage> messageProvider;
+    private ReplicationInstanceManager instances;
 
     @Inject
-    private ReplicationSender sender;
+    private ReplicationInstanceMessageSender sender;
 
-    /**
-     * Send an update of the current instance to linked instances.
-     * 
-     * @throws ReplicationException when failing to create the message
-     */
-    public void updateCurrentInstance() throws ReplicationException
+    @Override
+    public void receive(Date dateMin, Date dateMax, ReplicationReceiverMessage message) throws ReplicationException
     {
-        ReplicationInstanceUpdateMessage message = this.messageProvider.get();
-        message.initializeCurrent();
+        ReplicationInstance sourceInstance = this.instances.getInstanceByURI(message.getSource());
 
-        this.sender.send(message);
+        // Taking care of this only in direct linked instances is enough
+        if (sourceInstance == null) {
+            return;
+        }
+
+        // Just send a new message with the current state
+        this.sender.updateCurrentInstance();
     }
 }

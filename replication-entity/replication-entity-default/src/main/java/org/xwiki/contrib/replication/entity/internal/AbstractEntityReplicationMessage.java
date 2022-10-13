@@ -20,13 +20,12 @@
 package org.xwiki.contrib.replication.entity.internal;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 import javax.inject.Inject;
 
 import org.xwiki.bridge.DocumentAccessBridge;
-import org.xwiki.component.annotation.InstantiationStrategy;
-import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.AbstractReplicationSenderMessage;
 import org.xwiki.model.reference.AbstractLocalizedEntityReference;
 import org.xwiki.model.reference.EntityReference;
@@ -36,7 +35,6 @@ import org.xwiki.user.UserReferenceSerializer;
  * @param <E> the type of reference
  * @version $Id$
  */
-@InstantiationStrategy(ComponentInstantiationStrategy.PER_LOOKUP)
 public abstract class AbstractEntityReplicationMessage<E extends EntityReference>
     extends AbstractReplicationSenderMessage
 {
@@ -70,6 +68,13 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
      */
     public static final String METADATA_CREATOR = METADATA_PREFIX + "CREATOR";
 
+    /**
+     * The name of the metadata used to group various types of messages for recovering needs.
+     * 
+     * @since 1.1
+     */
+    public static final String METADATA_RECOVER_TYPE = METADATA_PREFIX + "RECOVER_TYPE";
+
     @Inject
     protected UserReferenceSerializer<String> userReferenceSerializer;
 
@@ -80,9 +85,12 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
 
     /**
      * @param entityReference the reference of the document affected by this message
+     * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
+     * @since 1.1
      */
-    protected void initialize(E entityReference, Map<String, Collection<String>> extraMetadata)
+    protected void initialize(E entityReference, Collection<String> receivers,
+        Map<String, Collection<String>> extraMetadata)
     {
         initialize();
 
@@ -101,5 +109,7 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
         }
 
         putCustomMetadata(METADATA_CONTEXT_USER, this.documentAccessBridge.getCurrentUserReference());
+
+        this.receivers = receivers != null ? Collections.unmodifiableCollection(receivers) : null;
     }
 }

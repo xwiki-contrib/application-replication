@@ -22,6 +22,7 @@ package org.xwiki.contrib.replication.entity.internal.controller;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -36,6 +37,7 @@ import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.configuration.ConfigurationSource;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfiguration;
 import org.xwiki.model.EntityType;
 import org.xwiki.model.internal.reference.EntityReferenceFactory;
 import org.xwiki.model.reference.EntityReference;
@@ -44,10 +46,12 @@ import org.xwiki.model.reference.WikiReference;
 
 /**
  * @version $Id$
+ * @since 1.1
  */
-@Component(roles = DocumentReplicationControllerConfiguration.class)
+@Component
 @Singleton
-public class DocumentReplicationControllerConfiguration
+@Named("standard")
+public class StandardDocumentReplicationControllerConfiguration implements DocumentReplicationControllerConfiguration
 {
     @Inject
     private ConfigurationSource configurationSource;
@@ -67,7 +71,7 @@ public class DocumentReplicationControllerConfiguration
 
     private Map<String, DocumentReplicationController> controllers;
 
-    private Map<String, DocumentReplicationController> publicControllers;
+    private Optional<Map<String, DocumentReplicationController>> publicControllers;
 
     private DocumentReplicationController fallbackController;
 
@@ -84,14 +88,11 @@ public class DocumentReplicationControllerConfiguration
         private Set<EntityReference> children;
     }
 
-    /**
-     * @return the available controllers
-     * @throws ReplicationException when failing to lookup components
-     */
-    public Map<String, DocumentReplicationController> getControllers() throws ReplicationException
+    @Override
+    public Optional<Map<String, DocumentReplicationController>> getControllers() throws ReplicationException
     {
         if (this.publicControllers == null) {
-            this.publicControllers = Collections.unmodifiableMap(getInternalControllers());
+            this.publicControllers = Optional.of(Collections.unmodifiableMap(getInternalControllers()));
         }
 
         return this.publicControllers;
@@ -203,11 +204,7 @@ public class DocumentReplicationControllerConfiguration
         entry.inherited = inherited;
     }
 
-    /**
-     * @param entityReference the reference of the entity to replicate
-     * @return the replication controller in charge of the document
-     * @throws ReplicationException when failing to retrieve the configured controller
-     */
+    @Override
     public DocumentReplicationController resolveDocumentReplicationController(EntityReference entityReference)
         throws ReplicationException
     {

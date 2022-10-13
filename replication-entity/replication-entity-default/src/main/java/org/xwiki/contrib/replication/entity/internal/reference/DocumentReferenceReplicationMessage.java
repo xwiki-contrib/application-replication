@@ -29,7 +29,7 @@ import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationMessageReader;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
-import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.user.UserReference;
 
@@ -37,7 +37,7 @@ import org.xwiki.user.UserReference;
  * @version $Id$
  */
 @Component(roles = DocumentReferenceReplicationMessage.class)
-public class DocumentReferenceReplicationMessage extends AbstractNoContentEntityReplicationMessage<DocumentReference>
+public class DocumentReferenceReplicationMessage extends AbstractNoContentDocumentReplicationMessage
 {
     /**
      * The message type for these messages.
@@ -70,12 +70,14 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
      * @param documentReference the reference of the document to replicate
      * @param creatorReference the reference of the creator of the document
      * @param create true if the documented just started to be replicated
-     * @param metadata custom metadata to add to the message
+     * @param receivers the instances which are supposed to handler the message
+     * @param extraMetadata custom metadata to add to the message
+     * @since 1.1
      */
     public void initialize(DocumentReference documentReference, UserReference creatorReference, boolean create,
-        Map<String, Collection<String>> metadata)
+        Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
     {
-        super.initialize(documentReference, metadata);
+        super.initialize(documentReference, receivers, extraMetadata);
 
         putCustomMetadata(METADATA_CREATOR, creatorReference);
         putCustomMetadata(METADATA_CREATE, create);
@@ -89,7 +91,8 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentEntity
     {
         initialize(this.documentMessageTool.getDocumentReference(message),
             this.messageReader.getMetadata(message, METADATA_CREATOR, true, UserReference.class),
-            this.messageReader.getMetadata(message, METADATA_CREATE, false, true), message.getCustomMetadata());
+            this.messageReader.getMetadata(message, METADATA_CREATE, false, true), message.getReceivers(),
+            message.getCustomMetadata());
 
         // Relay the source information
         this.id = message.getId();

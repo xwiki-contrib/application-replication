@@ -43,7 +43,7 @@ public interface ReplicationSender
      * Asynchronously send a message to passed instances.
      * 
      * @param message the data to send
-     * @param targets the instances to send message to
+     * @param targets the instances to send the message to
      * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to queue the replication message
      */

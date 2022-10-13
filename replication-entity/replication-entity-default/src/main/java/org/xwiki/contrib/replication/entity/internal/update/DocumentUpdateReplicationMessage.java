@@ -32,7 +32,7 @@ import javax.inject.Provider;
 
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.AbstractEntityReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationMessage;
 import org.xwiki.filter.instance.input.DocumentInstanceInputProperties;
 import org.xwiki.filter.output.DefaultOutputStreamOutputTarget;
 import org.xwiki.filter.xar.output.XAROutputProperties;
@@ -50,7 +50,7 @@ import com.xpn.xwiki.doc.rcs.XWikiRCSNodeInfo;
  * @version $Id$
  */
 @Component(roles = DocumentUpdateReplicationMessage.class)
-public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationMessage<DocumentReference>
+public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicationMessage
 {
     /**
      * The message type for these messages.
@@ -97,12 +97,14 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
      * 
      * @param document the the document to send
      * @param attachments the attachments content to send
-     * @param metadata custom metadata to add to the message
+     * @param receivers the instances which are supposed to handler the message
+     * @param extraMetadata custom metadata to add to the message
      */
-    public void initializeUpdate(XWikiDocument document, Set<String> attachments,
-        Map<String, Collection<String>> metadata)
+    public void initializeUpdate(XWikiDocument document, Set<String> attachments, Collection<String> receivers,
+        Map<String, Collection<String>> extraMetadata)
     {
-        initialize(document.getDocumentReferenceWithLocale(), document.getVersion(), false, null, metadata);
+        initialize(document.getDocumentReferenceWithLocale(), document.getVersion(), false, null, receivers,
+            extraMetadata);
 
         this.attachments = attachments;
 
@@ -128,20 +130,33 @@ public class DocumentUpdateReplicationMessage extends AbstractEntityReplicationM
      * Initialize a message for a complete replication.
      * 
      * @param documentReference the reference of the document affected by this message
-     * @param creator the user who created the document
      * @param version the version of the document
-     * @param metadata custom metadata to add to the message
+     * @param creator the user who created the document
+     * @param receivers the instances which are supposed to handler the message
+     * @param extraMetadata custom metadata to add to the message
+     * @since 1.1
      */
-    public void initializeComplete(DocumentReference documentReference, UserReference creator, String version,
-        Map<String, Collection<String>> metadata)
+    public void initializeComplete(DocumentReference documentReference, String version, UserReference creator,
+        Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
     {
-        initialize(documentReference, version, true, creator, metadata);
+        initialize(documentReference, version, true, creator, receivers, extraMetadata);
     }
 
+    /**
+     * Initialize a message for a complete replication.
+     * 
+     * @param documentReference the reference of the document affected by this message
+     * @param version the version of the document
+     * @param complete true if it's a creation
+     * @param creator the user who created the document
+     * @param receivers the instances which are supposed to handler the message
+     * @param extraMetadata custom metadata to add to the message
+     * @since 1.1
+     */
     protected void initialize(DocumentReference documentReference, String version, boolean complete,
-        UserReference creator, Map<String, Collection<String>> metadata)
+        UserReference creator, Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
     {
-        super.initialize(documentReference, metadata);
+        super.initialize(documentReference, receivers, extraMetadata);
 
         this.complete = complete;
 

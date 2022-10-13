@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
 
@@ -40,6 +41,8 @@ public abstract class AbstractReplicationSenderMessage extends AbstractReplicati
 
     protected String source;
 
+    protected Collection<String> receivers;
+
     @Override
     public String getId()
     {
@@ -56,6 +59,12 @@ public abstract class AbstractReplicationSenderMessage extends AbstractReplicati
     public String getSource()
     {
         return this.source;
+    }
+
+    @Override
+    public Collection<String> getReceivers()
+    {
+        return this.receivers;
     }
 
     protected void initialize()

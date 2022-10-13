@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -63,6 +64,8 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
     private static final String PROPERTY_TYPE = "type";
 
     private static final String PROPERTY_SOURCE = "source";
+
+    private static final String PROPERTY_RECEIVERS = "receivers";
 
     private static final String PROPERTY_DATE = "date";
 
@@ -115,6 +118,8 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
 
         protected String source;
 
+        protected Collection<String> receivers;
+
         protected File dataFile;
 
         protected AbstractFileReplicationMessage(File messageFolder) throws ConfigurationException, ReplicationException
@@ -154,6 +159,9 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
             this.id = (String) metadata.getProperty(PROPERTY_ID);
             this.type = (String) metadata.getProperty(PROPERTY_TYPE);
             this.source = (String) metadata.getProperty(PROPERTY_SOURCE);
+            if (metadata.containsKey(PROPERTY_RECEIVERS)) {
+                this.receivers = Set.of(metadata.getStringArray(PROPERTY_RECEIVERS));
+            }
 
             String dateString = (String) metadata.getProperty(PROPERTY_DATE);
             this.date = new Date(Long.parseLong(dateString));
@@ -176,6 +184,12 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
         public String getSource()
         {
             return this.source;
+        }
+
+        @Override
+        public Collection<String> getReceivers()
+        {
+            return this.receivers;
         }
 
         @Override
@@ -288,6 +302,9 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
         configuration.setProperty(PROPERTY_TYPE, message.getType());
         configuration.setProperty(PROPERTY_DATE, ReplicationUtils.toString(message.getDate()));
         configuration.setProperty(PROPERTY_SOURCE, message.getSource());
+        if (message.getReceivers() != null) {
+            configuration.setProperty(PROPERTY_RECEIVERS, message.getSource());
+        }
     }
 
     protected abstract void storeData(M message, File file) throws IOException;

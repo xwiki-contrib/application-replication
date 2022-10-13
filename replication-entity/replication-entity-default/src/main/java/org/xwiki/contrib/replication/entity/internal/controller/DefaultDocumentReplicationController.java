@@ -29,9 +29,11 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfiguration;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
+import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -59,6 +61,13 @@ public class DefaultDocumentReplicationController implements DocumentReplication
         throws ReplicationException
     {
         return getController(entityReference).getReplicationConfiguration(entityReference);
+    }
+
+    @Override
+    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference,
+        Collection<String> receivers) throws ReplicationException
+    {
+        return getController(entityReference).getReplicationConfiguration(entityReference, receivers);
     }
 
     @Override
@@ -97,6 +106,20 @@ public class DefaultDocumentReplicationController implements DocumentReplication
         DocumentReplicationLevel minimumLevel) throws ReplicationException
     {
         getController(entityReference).send(messageProducer, entityReference, minimumLevel);
+    }
+
+    @Override
+    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
+        DocumentReplicationLevel minimumLevel, Collection<String> receivers) throws ReplicationException
+    {
+        getController(entityReference).send(messageProducer, entityReference, minimumLevel, receivers);
+    }
+
+    @Override
+    public void replicateDocument(DocumentReference documentReference, Collection<String> receivers)
+        throws ReplicationException
+    {
+        getController(documentReference).replicateDocument(documentReference, receivers);
     }
 
     @Override

@@ -23,14 +23,14 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
 /**
  * @version $Id$
  */
 @Component(roles = DocumentReplicationConflictMessage.class)
-public class DocumentReplicationConflictMessage extends AbstractNoContentEntityReplicationMessage<DocumentReference>
+public class DocumentReplicationConflictMessage extends AbstractNoContentDocumentReplicationMessage
 {
     /**
      * The message type for these messages.
@@ -56,12 +56,12 @@ public class DocumentReplicationConflictMessage extends AbstractNoContentEntityR
     /**
      * @param documentReference the reference of the document for which to replicated the conflict status
      * @param conflict true if the document has a replication conflict
-     * @param metadata custom metadata to add to the message
+     * @param extraMetadata custom metadata to add to the message
      */
     public void initialize(DocumentReference documentReference, boolean conflict,
-        Map<String, Collection<String>> metadata)
+        Map<String, Collection<String>> extraMetadata)
     {
-        super.initialize(documentReference, metadata);
+        super.initialize(documentReference, null, extraMetadata);
 
         putCustomMetadata(METADATA_CONFLICT, conflict);
     }

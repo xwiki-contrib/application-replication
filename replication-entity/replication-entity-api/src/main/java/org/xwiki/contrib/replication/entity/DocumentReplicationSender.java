@@ -48,6 +48,23 @@ public interface DocumentReplicationSender
         Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException;
 
     /**
+     * @param messageProducer called to generate the message to send
+     * @param receivers the instances which are supposed to handler the message
+     * @param entityReference the reference of the document to send
+     * @param minimumLevel the minimum level required from an instance configuration to receive the document
+     * @param configurations the replication configuration to follow or null if it should be asked to the controller
+     * @param metadata custom metadata to add to the message
+     * @throws ReplicationException when failing to send the document
+     * @since 1.1
+     */
+    default void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
+        DocumentReplicationLevel minimumLevel, Collection<String> receivers, Map<String, Collection<String>> metadata,
+        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
+    {
+        send(messageProducer, entityReference, minimumLevel, metadata, configurations);
+    }
+
+    /**
      * @param documentReference the reference of the document to send
      * @param complete true if the complete document (with history and attachments content) should be sent
      * @param create true if it's a document creation
@@ -113,4 +130,21 @@ public interface DocumentReplicationSender
     void sendDocumentHistoryDelete(DocumentReference documentReference, String from, String to,
         Map<String, Collection<String>> metadata, Collection<DocumentReplicationControllerInstance> configurations)
         throws ReplicationException;
+
+    /**
+     * Force replicate the complete current state of the document to configured instances.
+     * 
+     * @param documentReference the reference of the document to replicate
+     * @param receivers the instances which are supposed to handler the message
+     * @param metadata custom metadata to add to the message
+     * @param configurations the replication configuration to follow or null if it should be asked to the controller
+     * @throws ReplicationException when failing to replicate the document
+     * @since 1.1
+     */
+    default void replicateDocument(DocumentReference documentReference, Collection<String> receivers,
+        Map<String, Collection<String>> metadata, Collection<DocumentReplicationControllerInstance> configurations)
+        throws ReplicationException
+    {
+
+    }
 }

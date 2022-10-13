@@ -68,20 +68,38 @@ public class EntityReplicationControllerSender
      * @throws ReplicationException when failing to send replication configuration to other instances
      */
     public CompletableFuture<ReplicationSenderMessage> send(EntityReference reference,
-        List<DocumentReplicationControllerInstance> configuration) throws ReplicationException
+        Collection<DocumentReplicationControllerInstance> configuration) throws ReplicationException
     {
-        // Send the configuration to everyone, each instance will decide what to do with it (including when they are not
-        // or not anymore supposed to be part of the replication)
-        // TODO: cut this in two different messaging for adding new instance and removing instances ?
-        Collection<ReplicationInstance> instances = this.instanceManager.getRegisteredInstances();
+        return send(reference, configuration, null);
+    }
+
+    /**
+     * @param reference the reference of the configured entity
+     * @param configuration the replication configuration of the entity
+     * @param instances the instances to send the message to
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
+     * @throws ReplicationException when failing to send replication configuration to other instances
+     * @since 1.1
+     */
+    public CompletableFuture<ReplicationSenderMessage> send(EntityReference reference,
+        Collection<DocumentReplicationControllerInstance> configuration, Collection<ReplicationInstance> instances)
+        throws ReplicationException
+    {
+        Collection<ReplicationInstance> targets = instances;
+        if (targets == null) {
+            // Send the configuration to everyone, each instance will decide what to do with it (including when they are
+            // not or not anymore supposed to be part of the replication)
+            // TODO: cut this in two different messaging for adding new instance and removing instances ?
+            targets = this.instanceManager.getRegisteredInstances();
+        }
 
         CompletableFuture<ReplicationSenderMessage> future;
-        if (!instances.isEmpty()) {
+        if (!targets.isEmpty()) {
             EntityReplicationControllerMessage message = this.messageProvider.get();
 
             message.initialize(reference, configuration);
 
-            future = this.sender.send(message, instances);
+            future = this.sender.send(message, targets);
         } else {
             // Nothing to send
             future = new CompletableFuture<>();

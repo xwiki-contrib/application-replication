@@ -35,6 +35,8 @@ import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.context.Execution;
 import org.xwiki.context.ExecutionContext;
 import org.xwiki.contrib.replication.ReplicationMessage;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.internal.DefaultReplicationSenderMessage;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.contrib.replication.message.log.ReplicationMessageEventInitializer;
 import org.xwiki.eventstream.Event;
@@ -73,6 +75,26 @@ public class ReplicationMessageLogStore
 
     @Inject
     private Logger logger;
+
+    /**
+     * @param type the replication type
+     * @return the event type
+     * @since 1.1
+     */
+    public static String serializeMessageType(String type)
+    {
+        return "replication_message_" + type;
+    }
+
+    /**
+     * @param replicationMetadata the name of the metadata in a replication message
+     * @return the name of the field on event store side
+     * @since 1.1
+     */
+    public static String toEventField(String replicationMetadata)
+    {
+        return ReplicationMessageEventQuery.PREFIX_CUSTOM_METADATA + replicationMetadata;
+    }
 
     /**
      * @param messageId the identifier of the message
@@ -160,7 +182,7 @@ public class ReplicationMessageLogStore
         event.setImportance(Importance.BACKGROUND);
 
         event.setDate(message.getDate());
-        event.setType("replication_message_" + message.getType());
+        event.setType(serializeMessageType(message.getType()));
 
         Map<String, Object> properties = new HashMap<>();
 
@@ -168,11 +190,14 @@ public class ReplicationMessageLogStore
         properties.put(ReplicationMessageEventQuery.KEY_ID, message.getId());
         properties.put(ReplicationMessageEventQuery.KEY_DATE, message.getDate());
         properties.put(ReplicationMessageEventQuery.KEY_SOURCE, message.getSource());
+        if (message.getReceivers() != null) {
+            properties.put(ReplicationMessageEventQuery.KEY_RECEIVERS, message.getReceivers());
+        }
         properties.put(ReplicationMessageEventQuery.KEY_TYPE, message.getType());
 
         // Add custom metadata
         for (Map.Entry<String, Collection<String>> entry : message.getCustomMetadata().entrySet()) {
-            properties.put(ReplicationMessageEventQuery.PREFIX_CUSTOM_METADATA + entry.getKey(), entry.getValue());
+            properties.put(toEventField(entry.getKey()), entry.getValue());
         }
 
         event.setCustom(properties);
@@ -202,5 +227,35 @@ public class ReplicationMessageLogStore
     public CompletableFuture<Optional<Event>> deleteAsync(String messageId)
     {
         return this.store.deleteEvent(messageId);
+    }
+
+    /**
+     * @param id the identifier of the logged message
+     * @return the message extracted from the log or null if none exist for this id
+     * @throws EventStreamException when failing to load the event matching the id
+     * @since 1.1
+     */
+    public ReplicationSenderMessage loadMessage(String id) throws EventStreamException
+    {
+        Optional<Event> eventOptional = this.store.getEvent(id);
+
+        if (eventOptional.isEmpty()) {
+            return null;
+        }
+
+        Event event = eventOptional.get();
+
+        String source = (String) event.getCustom().get(ReplicationMessageEventQuery.KEY_SOURCE);
+        Collection<String> receivers = (Collection) event.getCustom().get(ReplicationMessageEventQuery.KEY_RECEIVERS);
+        String type = (String) event.getCustom().get(ReplicationMessageEventQuery.KEY_TYPE);
+
+        Map<String, Collection<String>> metadata = new HashMap<>(event.getCustom().size());
+        for (Map.Entry<String, Object> entry : event.getCustom().entrySet()) {
+            if (entry.getKey().startsWith(ReplicationMessageEventQuery.PREFIX_CUSTOM_METADATA)) {
+                metadata.put(entry.getKey(), (Collection<String>) entry.getValue());
+            }
+        }
+
+        return new DefaultReplicationSenderMessage(id, event.getDate(), type, source, receivers, metadata, null);
     }
 }

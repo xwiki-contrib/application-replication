@@ -25,6 +25,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfiguration;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.event.Event;
 
@@ -45,6 +46,7 @@ public class DocumentReplicationControllerConfigurationInvalidator extends Abstr
     public static final String NAME = "DocumentReplicationControllerConfigurationInvalidator";
 
     @Inject
+    @Named("standard")
     private Provider<DocumentReplicationControllerConfiguration> configurationProvider;
 
     /**
@@ -58,6 +60,11 @@ public class DocumentReplicationControllerConfigurationInvalidator extends Abstr
     @Override
     public void onEvent(Event event, Object source, Object data)
     {
-        this.configurationProvider.get().invalidate(((XWikiDocument) source).getDocumentReference().getParent());
+        DocumentReplicationControllerConfiguration controllerConfiguration = this.configurationProvider.get();
+
+        if (controllerConfiguration instanceof StandardDocumentReplicationControllerConfiguration) {
+            ((StandardDocumentReplicationControllerConfiguration) controllerConfiguration)
+                .invalidate(((XWikiDocument) source).getDocumentReference().getParent());
+        }
     }
 }

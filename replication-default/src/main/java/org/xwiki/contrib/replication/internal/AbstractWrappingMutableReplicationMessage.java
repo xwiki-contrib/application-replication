@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.internal;
 
+import java.util.Collection;
 import java.util.Date;
 
 import org.xwiki.contrib.replication.AbstractReplicationMessage;
@@ -59,6 +60,12 @@ public abstract class AbstractWrappingMutableReplicationMessage<M extends Replic
     public String getSource()
     {
         return this.message.getSource();
+    }
+
+    @Override
+    public Collection<String> getReceivers()
+    {
+        return this.message.getReceivers();
     }
 
     @Override

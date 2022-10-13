@@ -23,15 +23,14 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
 /**
  * @version $Id$
  */
 @Component(roles = DocumentHistoryDeleteReplicationMessage.class)
-public class DocumentHistoryDeleteReplicationMessage
-    extends AbstractNoContentEntityReplicationMessage<DocumentReference>
+public class DocumentHistoryDeleteReplicationMessage extends AbstractNoContentDocumentReplicationMessage
 {
     /**
      * The message type for these messages.
@@ -57,12 +56,12 @@ public class DocumentHistoryDeleteReplicationMessage
      * @param documentReference the reference of the document affected by this message
      * @param from the lowest version to delete
      * @param to the highest version to delete
-     * @param metadata custom metadata to add to the message
+     * @param extraMetadata custom metadata to add to the message
      */
     public void initialize(DocumentReference documentReference, String from, String to,
-        Map<String, Collection<String>> metadata)
+        Map<String, Collection<String>> extraMetadata)
     {
-        initialize(documentReference, metadata);
+        initialize(documentReference, receivers, extraMetadata);
 
         putCustomMetadata(METADATA_VERSION_FROM, from);
         putCustomMetadata(METADATA_VERSION_TO, to);

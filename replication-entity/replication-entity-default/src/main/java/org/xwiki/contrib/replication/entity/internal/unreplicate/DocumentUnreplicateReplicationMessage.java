@@ -20,14 +20,13 @@
 package org.xwiki.contrib.replication.entity.internal.unreplicate;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
-import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentReplicationMessage;
 
 /**
  * @version $Id$
  */
 @Component(roles = DocumentUnreplicateReplicationMessage.class)
-public class DocumentUnreplicateReplicationMessage extends AbstractNoContentEntityReplicationMessage<DocumentReference>
+public class DocumentUnreplicateReplicationMessage extends AbstractNoContentDocumentReplicationMessage
 {
     /**
      * The message type for these messages.

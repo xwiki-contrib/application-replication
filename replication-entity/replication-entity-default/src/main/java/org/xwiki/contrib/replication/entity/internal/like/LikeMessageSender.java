@@ -20,53 +20,48 @@
 package org.xwiki.contrib.replication.entity.internal.like;
 
 import java.util.Collection;
-import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.AbstractNoContentEntityReplicationMessage;
+import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.user.UserReference;
 
 /**
  * @version $Id$
+ * @since 1.1
  */
-@Component(roles = LikeMessage.class)
-public class LikeMessage extends AbstractNoContentEntityReplicationMessage<EntityReference>
+@Component(roles = LikeMessageSender.class)
+@Singleton
+public class LikeMessageSender
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "like";
+    @Inject
+    private Provider<LikeMessage> likeMessageProvider;
 
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
-
-    /**
-     * The name of the metadata indicating if it's a like or an unlike.
-     */
-    public static final String METADATA_LIKE = METADATA_PREFIX + "LIKE";
-
-    @Override
-    public String getType()
-    {
-        return TYPE;
-    }
+    @Inject
+    private DocumentReplicationController replicationController;
 
     /**
      * @param user the reference of the user who performs the like
      * @param entity the reference of the entity being target of the like
      * @param like true if it's a like and false if it's an unlike
      * @param receivers the instances which are supposed to handler the message
-     * @param metadata custom metadata to add to the message
+     * @throws ReplicationException when failing to send the message
      */
-    public void initialize(UserReference user, EntityReference entity, boolean like, Collection<String> receivers,
-        Map<String, Collection<String>> metadata)
+    public void send(UserReference user, EntityReference entity, boolean like, Collection<String> receivers)
+        throws ReplicationException
     {
-        super.initialize(entity, receivers, metadata);
+        this.replicationController.send(m -> {
+            LikeMessage likeMessage = this.likeMessageProvider.get();
 
-        putCustomMetadata(METADATA_CREATOR, user);
-        putCustomMetadata(METADATA_LIKE, like);
+            likeMessage.initialize(user, entity, like, receivers, m);
+
+            return likeMessage;
+        }, entity, DocumentReplicationLevel.ALL, receivers);
     }
 }

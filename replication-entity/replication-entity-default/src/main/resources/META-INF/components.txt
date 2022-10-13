@@ -1,6 +1,7 @@
 org.xwiki.contrib.replication.entity.internal.DefaultDocumentReplicationMessageReader
 org.xwiki.contrib.replication.entity.internal.DefaultDocumentReplicationSender
 org.xwiki.contrib.replication.entity.internal.DefaultEntityReplication
+org.xwiki.contrib.replication.entity.internal.DocumentReplicationInstanceRecoverHandler
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationListener
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationRelay
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils
@@ -8,11 +9,12 @@ org.xwiki.contrib.replication.entity.internal.EntityReplicationMessageEventIniti
 org.xwiki.contrib.replication.entity.internal.conflict.DocumentReplicationConflictMessage
 org.xwiki.contrib.replication.entity.internal.conflict.DocumentReplicationConflictReceiver
 org.xwiki.contrib.replication.entity.internal.controller.DefaultDocumentReplicationController
-org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfiguration
+org.xwiki.contrib.replication.entity.internal.controller.DefaultDocumentReplicationControllerConfiguration
 org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfigurationInvalidator
 org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfigurationStore
 org.xwiki.contrib.replication.entity.internal.controller.MinimumDocumentReplicationController
 org.xwiki.contrib.replication.entity.internal.controller.ReplicationEntityConfigurationClassInitializer
+org.xwiki.contrib.replication.entity.internal.controller.StandardDocumentReplicationControllerConfiguration
 org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationMessage
 org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage
@@ -23,7 +25,9 @@ org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentInitializ
 org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore
 org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStoreCleanerListener
 org.xwiki.contrib.replication.entity.internal.like.LikeMessage
+org.xwiki.contrib.replication.entity.internal.like.LikeMessageSender
 org.xwiki.contrib.replication.entity.internal.like.LikeReceiver
+org.xwiki.contrib.replication.entity.internal.like.LikeRecoverHandler
 org.xwiki.contrib.replication.entity.internal.like.LikeReplicationListener
 org.xwiki.contrib.replication.entity.internal.notification.ReplicationDocumentConflictDescriptor
 org.xwiki.contrib.replication.entity.internal.notification.ReplicationDocumentConflictEventConverter

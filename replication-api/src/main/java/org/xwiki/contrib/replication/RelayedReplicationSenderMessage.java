@@ -74,6 +74,12 @@ public class RelayedReplicationSenderMessage implements ReplicationSenderMessage
     }
 
     @Override
+    public Collection<String> getReceivers()
+    {
+        return this.source.getReceivers();
+    }
+
+    @Override
     public String getType()
     {
         return this.source.getType();

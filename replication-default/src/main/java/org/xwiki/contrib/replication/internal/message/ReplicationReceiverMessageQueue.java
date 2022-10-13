@@ -141,23 +141,27 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
             // Relay the message and wait until it's stored
             replicationReceiver.relay(message).get();
 
-            // Execute the receiver
-            replicationReceiver.receive(message);
+            // Execute the receiver if the current instance is supposed to
+            ReplicationInstance currentInstance = this.instances.getCurrentInstance();
+            if (message.getReceivers() == null || message.getReceivers().contains(currentInstance.getURI())) {
+                replicationReceiver.receive(message);
 
-            // Log the successfully handled message
-            this.logStore.saveAsync(message, (m, e) -> {
-                Map<String, Object> custom = new HashMap<>(e.getCustom());
+                // Log the successfully handled message
+                this.logStore.saveAsync(message, (m, e) -> {
+                    Map<String, Object> custom = new HashMap<>(e.getCustom());
 
-                // Generate a new id to avoid overwriting the stored one
-                e.setId(UUID.randomUUID().toString());
+                    // Generate a new id to avoid overwriting the stored one
+                    e.setId(UUID.randomUUID().toString());
 
-                // Make the event date be the handled date
-                e.setDate(new Date());
+                    // Make the event date be the handled date
+                    e.setDate(new Date());
 
-                custom.put(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_HANDLED);
+                    custom.put(ReplicationMessageEventQuery.KEY_STATUS,
+                        ReplicationMessageEventQuery.VALUE_STATUS_HANDLED);
 
-                e.setCustom(custom);
-            });
+                    e.setCustom(custom);
+                });
+            }
         } catch (InvalidReplicationMessageException e) {
             this.logger.error("Message with id [{}] is invalid and is not going to be tried again", message.getId(), e);
         } finally {

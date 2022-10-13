@@ -32,6 +32,7 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
+import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -50,6 +51,13 @@ public class MinimumDocumentReplicationController implements DocumentReplication
     @Override
     public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference)
         throws ReplicationException
+    {
+        return List.of();
+    }
+
+    @Override
+    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference,
+        Collection<String> receivers) throws ReplicationException
     {
         return List.of();
     }
@@ -88,6 +96,20 @@ public class MinimumDocumentReplicationController implements DocumentReplication
     @Override
     public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
         DocumentReplicationLevel minimumLevel) throws ReplicationException
+    {
+        // Do nothing
+    }
+
+    @Override
+    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
+        DocumentReplicationLevel minimumLevel, Collection<String> receivers) throws ReplicationException
+    {
+        // Do nothing
+    }
+
+    @Override
+    public void replicateDocument(DocumentReference documentReference, Collection<String> receivers)
+        throws ReplicationException
     {
         // Do nothing
     }

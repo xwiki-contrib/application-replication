@@ -20,7 +20,6 @@
 package org.xwiki.contrib.replication.entity.internal.message;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
@@ -60,9 +59,10 @@ public class EntityReplicationControllerMessage extends AbstractNoContentEntityR
      * @param entityReference the reference of the entity to configure
      * @param configuration the configuration of the entity
      */
-    public void initialize(EntityReference entityReference, List<DocumentReplicationControllerInstance> configuration)
+    public void initialize(EntityReference entityReference,
+        Collection<DocumentReplicationControllerInstance> configuration)
     {
-        super.initialize(entityReference, null);
+        super.initialize(entityReference, null, null);
 
         // Serialize the configuration
         setConfiguration(this.modifiableMetadata, configuration);
@@ -73,7 +73,7 @@ public class EntityReplicationControllerMessage extends AbstractNoContentEntityR
      * @param configuration the configuration of the entity
      */
     public static void setConfiguration(Map<String, Collection<String>> metadata,
-        List<DocumentReplicationControllerInstance> configuration)
+        Collection<DocumentReplicationControllerInstance> configuration)
     {
         metadata.put(METADATA_CONFIGURATION, DocumentReplicationControllerInstanceConverter.toStrings(configuration));
     }

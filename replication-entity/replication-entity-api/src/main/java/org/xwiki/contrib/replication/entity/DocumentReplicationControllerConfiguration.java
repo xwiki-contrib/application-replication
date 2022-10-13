@@ -17,41 +17,35 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal.message;
+package org.xwiki.contrib.replication.entity;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import java.util.Map;
+import java.util.Optional;
 
-import org.xwiki.component.annotation.Component;
+import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationSender;
+import org.xwiki.model.reference.EntityReference;
 
 /**
- * Helper to send various instance related messages.
+ * Indicate which controller to use for a given entity.
  * 
  * @version $Id$
+ * @since 1.1
  */
-@Component(roles = ReplicationInstanceMessageSender.class)
-@Singleton
-public class ReplicationInstanceMessageSender
+@Role
+public interface DocumentReplicationControllerConfiguration
 {
-    @Inject
-    private Provider<ReplicationInstanceUpdateMessage> messageProvider;
-
-    @Inject
-    private ReplicationSender sender;
+    /**
+     * @return the available controllers or null if the configuration is dynamic
+     * @throws ReplicationException when failing to lookup components
+     */
+    Optional<Map<String, DocumentReplicationController>> getControllers() throws ReplicationException;
 
     /**
-     * Send an update of the current instance to linked instances.
-     * 
-     * @throws ReplicationException when failing to create the message
+     * @param entityReference the reference of the entity to replicate
+     * @return the replication controller in charge of the document
+     * @throws ReplicationException when failing to retrieve the configured controller
      */
-    public void updateCurrentInstance() throws ReplicationException
-    {
-        ReplicationInstanceUpdateMessage message = this.messageProvider.get();
-        message.initializeCurrent();
-
-        this.sender.send(message);
-    }
+    DocumentReplicationController resolveDocumentReplicationController(EntityReference entityReference)
+        throws ReplicationException;
 }

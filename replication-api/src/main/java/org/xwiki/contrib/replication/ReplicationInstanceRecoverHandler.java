@@ -19,46 +19,24 @@
  */
 package org.xwiki.contrib.replication;
 
-import java.util.Collection;
 import java.util.Date;
-import java.util.Map;
+
+import org.xwiki.component.annotation.Role;
 
 /**
+ * Called when another instance sends a recovery request.
+ * 
  * @version $Id$
+ * @since 1.1
  */
-public interface ReplicationMessage
+@Role
+public interface ReplicationInstanceRecoverHandler
 {
     /**
-     * @return the unique identifier of the message
+     * @param dateMin the minimum date for which to send back changes
+     * @param dateMax the maximum date for which to send changes.
+     * @param message the message received
+     * @throws ReplicationException when failing to manipulate the received data
      */
-    String getId();
-
-    /**
-     * @return the date and time at which this message was produced
-     */
-    Date getDate();
-
-    /**
-     * @return the instance from which the message is originally coming
-     */
-    String getSource();
-
-    /**
-     * @return the identifier of the handler associated with the message
-     */
-    String getType();
-
-    /**
-     * @return the specific instances to send the message to, null for all instances
-     * @since 1.1
-     */
-    default Collection<String> getReceivers()
-    {
-        return null;
-    }
-
-    /**
-     * @return custom metadata to associate with the message
-     */
-    Map<String, Collection<String>> getCustomMetadata();
+    void receive(Date dateMin, Date dateMax, ReplicationReceiverMessage message) throws ReplicationException;
 }

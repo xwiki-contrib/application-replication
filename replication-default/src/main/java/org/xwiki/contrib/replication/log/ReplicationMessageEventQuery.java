@@ -87,6 +87,13 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
     public static final String KEY_SOURCE = "source";
 
     /**
+     * The instances which should handle the message.
+     * 
+     * @since 1.1
+     */
+    public static final String KEY_RECEIVERS = "receivers";
+
+    /**
      * The type of the message.
      */
     public static final String KEY_TYPE = "type";
@@ -101,7 +108,7 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
      */
     public static final Map<String, Type> CUSTOM_TYPES =
         Map.of(KEY_STATUS, String.class, KEY_TARGET, String.class, KEY_TARGETS, List.class, KEY_ID, String.class,
-            KEY_DATE, Date.class, KEY_SOURCE, String.class, KEY_TYPE, String.class);
+            KEY_DATE, Date.class, KEY_SOURCE, String.class, KEY_RECEIVERS, List.class, KEY_TYPE, String.class);
 
     /**
      * Helper to set the right type depending on the property name.

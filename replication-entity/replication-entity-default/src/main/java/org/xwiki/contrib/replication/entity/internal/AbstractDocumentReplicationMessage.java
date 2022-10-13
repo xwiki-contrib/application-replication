@@ -17,48 +17,30 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication;
+package org.xwiki.contrib.replication.entity.internal;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
+
+import org.xwiki.model.reference.DocumentReference;
 
 /**
  * @version $Id$
+ * @since 1.1
  */
-public interface ReplicationMessage
+public abstract class AbstractDocumentReplicationMessage extends AbstractEntityReplicationMessage<DocumentReference>
 {
     /**
-     * @return the unique identifier of the message
+     * The value used to group all document related messages.
      */
-    String getId();
+    public static final String VALUE_RECOVER_TYPE = TYPE_PREFIX + "document";
 
-    /**
-     * @return the date and time at which this message was produced
-     */
-    Date getDate();
-
-    /**
-     * @return the instance from which the message is originally coming
-     */
-    String getSource();
-
-    /**
-     * @return the identifier of the handler associated with the message
-     */
-    String getType();
-
-    /**
-     * @return the specific instances to send the message to, null for all instances
-     * @since 1.1
-     */
-    default Collection<String> getReceivers()
+    @Override
+    protected void initialize(DocumentReference documentReference, Collection<String> receivers,
+        Map<String, Collection<String>> extraMetadata)
     {
-        return null;
-    }
+        super.initialize(documentReference, receivers, extraMetadata);
 
-    /**
-     * @return custom metadata to associate with the message
-     */
-    Map<String, Collection<String>> getCustomMetadata();
+        putCustomMetadata(METADATA_RECOVER_TYPE, VALUE_RECOVER_TYPE);
+    }
 }

@@ -41,6 +41,7 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
+import org.xwiki.contrib.replication.entity.EntityReplication;
 import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
 import org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage;
@@ -99,6 +100,9 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
     private ReplicationInstanceManager instanceManager;
 
     @Inject
+    private EntityReplication entityReplication;
+
+    @Inject
     private Provider<XWikiContext> xcontextProvider;
 
     @Override
@@ -126,8 +130,8 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
         send(m -> {
             DocumentRepairReplicationMessage message = this.repairMessageProvider.get();
 
-            message.initializeRepair(document.getDocumentReferenceWithLocale(), document.getAuthors().getCreator(),
-                document.getVersion(), authors, m);
+            message.initializeRepair(document.getDocumentReferenceWithLocale(), document.getVersion(),
+                document.getAuthors().getCreator(), authors, null, m);
 
             return message;
         }, document.getDocumentReference(), DocumentReplicationLevel.ALL, metadata, configurations);
@@ -138,20 +142,35 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
         Map<String, Collection<String>> metadata, DocumentReplicationLevel minimumLevel,
         Collection<DocumentReplicationControllerInstance> inputConfigurations) throws ReplicationException
     {
+        sendDocument(document, complete, create, null, metadata, minimumLevel, inputConfigurations);
+    }
+
+    private void sendDocument(XWikiDocument document, boolean complete, boolean create, Collection<String> receivers,
+        Map<String, Collection<String>> metadata, DocumentReplicationLevel minimumLevel,
+        Collection<DocumentReplicationControllerInstance> inputConfigurations) throws ReplicationException
+    {
         Collection<DocumentReplicationControllerInstance> configurations = inputConfigurations;
         if (configurations == null) {
-            configurations = this.controllerProvider.get().getReplicationConfiguration(document.getDocumentReference());
+            configurations =
+                this.controllerProvider.get().getReplicationConfiguration(document.getDocumentReference(), receivers);
+        }
+
+        // No replication configuration
+        if (configurations == null || configurations.isEmpty()) {
+            // No instance to send the message to
+            return;
         }
 
         // The message to send to instances allowed to receive full document
-        sendDocument(document, complete, create, metadata, DocumentReplicationLevel.ALL, minimumLevel, configurations);
+        sendDocument(document, complete, create, receivers, metadata, DocumentReplicationLevel.ALL, minimumLevel,
+            configurations);
 
         // The message to send to instances allowed to receive only the reference
-        sendDocument(document, complete, create, metadata, DocumentReplicationLevel.REFERENCE, minimumLevel,
+        sendDocument(document, complete, create, receivers, metadata, DocumentReplicationLevel.REFERENCE, minimumLevel,
             configurations);
     }
 
-    private void sendDocument(XWikiDocument document, boolean complete, boolean create,
+    private void sendDocument(XWikiDocument document, boolean complete, boolean create, Collection<String> receivers,
         Map<String, Collection<String>> metadata, DocumentReplicationLevel level, DocumentReplicationLevel minimumLevel,
         Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
     {
@@ -180,46 +199,46 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
             message = this.documentReferenceMessageProvider.get();
 
             ((DocumentReferenceReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
-                document.getAuthors().getCreator(), create, metadata);
+                document.getAuthors().getCreator(), create, receivers, metadata);
         } else if (create) {
             // Sending the creation of a new fulldocument
             message = this.documentCreateMessageProvider.get();
 
             ((DocumentCreateReplicationMessage) message).initializeComplete(document.getDocumentReferenceWithLocale(),
-                document.getAuthors().getCreator(), document.getVersion(), metadata);
+                document.getVersion(), document.getAuthors().getCreator(), receivers, metadata);
         } else {
             // Sending the update of a document
             message = this.documentUpdateMessageProvider.get();
 
             if (complete) {
                 ((DocumentUpdateReplicationMessage) message).initializeComplete(
-                    document.getDocumentReferenceWithLocale(), document.getAuthors().getCreator(),
-                    document.getVersion(), metadata);
+                    document.getDocumentReferenceWithLocale(), document.getVersion(),
+                    document.getAuthors().getCreator(), receivers, metadata);
             } else {
                 ((DocumentUpdateReplicationMessage) message).initializeUpdate(document,
-                    getModifiedAttachments(document), metadata);
+                    getModifiedAttachments(document), receivers, metadata);
             }
         }
 
         this.sender.send(message, instances);
     }
 
-    /**
-     * @param messageProducer provide the message t send
-     * @param entityReference the reference of entity to which the message is associated
-     * @param minimumLevel the minimum level required from an instance configuration to receive the document
-     * @param inputConfigurations the replication configuration to follow or null if it should be asked to the
-     *            controller
-     * @throws ReplicationException when failing to send the message
-     */
     @Override
     public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
         DocumentReplicationLevel minimumLevel, Map<String, Collection<String>> metadata,
         Collection<DocumentReplicationControllerInstance> inputConfigurations) throws ReplicationException
     {
+        send(messageProducer, entityReference, minimumLevel, null, metadata, inputConfigurations);
+    }
+
+    @Override
+    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
+        DocumentReplicationLevel minimumLevel, Collection<String> receivers, Map<String, Collection<String>> metadata,
+        Collection<DocumentReplicationControllerInstance> inputConfigurations) throws ReplicationException
+    {
         Collection<DocumentReplicationControllerInstance> configurations = inputConfigurations;
         if (configurations == null) {
-            configurations = this.controllerProvider.get().getReplicationConfiguration(entityReference);
+            configurations = this.controllerProvider.get().getReplicationConfiguration(entityReference, receivers);
         }
 
         // No replication configuration
@@ -285,13 +304,27 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
     public void sendDocumentDelete(DocumentReference documentReference, Map<String, Collection<String>> metadata,
         Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
     {
+        sendDocumentDelete(documentReference, null, metadata, configurations);
+    }
+
+    /**
+     * @param documentReference the reference of the document to delete
+     * @param receivers the instances which are supposed to handler the message
+     * @param metadata custom metadata to add to the message
+     * @param configurations the replication configuration to follow or null if it should be asked to the controller
+     * @throws ReplicationException when failing to send the document delete
+     */
+    private void sendDocumentDelete(DocumentReference documentReference, Collection<String> receivers,
+        Map<String, Collection<String>> metadata, Collection<DocumentReplicationControllerInstance> configurations)
+        throws ReplicationException
+    {
         send(m -> {
             DocumentDeleteReplicationMessage message = this.documentDeleteMessageProvider.get();
 
-            message.initialize(documentReference, m);
+            message.initialize(documentReference, receivers, m);
 
             return message;
-        }, documentReference, DocumentReplicationLevel.REFERENCE, metadata, configurations);
+        }, documentReference, DocumentReplicationLevel.REFERENCE, receivers, metadata, configurations);
     }
 
     @Override
@@ -301,7 +334,7 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
         send(m -> {
             DocumentUnreplicateReplicationMessage message = this.documentUnreplicateMessageProvider.get();
 
-            message.initialize(documentReference, m);
+            message.initialize(documentReference, null, m);
 
             return message;
         }, documentReference, DocumentReplicationLevel.REFERENCE, metadata, configurations);
@@ -326,5 +359,42 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
     {
         return configurations.stream().filter(c -> c.getLevel() == level)
             .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
+    }
+
+    @Override
+    public void replicateDocument(DocumentReference documentReference, Collection<String> receivers,
+        Map<String, Collection<String>> metadata, Collection<DocumentReplicationControllerInstance> inputConfigurations)
+        throws ReplicationException
+    {
+        Collection<DocumentReplicationControllerInstance> configurations = inputConfigurations;
+        if (configurations == null) {
+            configurations = this.controllerProvider.get().getReplicationConfiguration(documentReference, receivers);
+        }
+
+        // No replication configuration
+        if (configurations == null || configurations.isEmpty()) {
+            // No instance to send the message to
+            return;
+        }
+
+        XWikiContext xcontext = this.xcontextProvider.get();
+
+        XWikiDocument document;
+        try {
+            document = xcontext.getWiki().getDocument(documentReference, xcontext);
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to get the document content", e);
+        }
+
+        if (document.isNew()) {
+            sendDocumentDelete(documentReference, receivers, metadata, configurations);
+        } else {
+            // Check if current instance is the owner of the document
+            ReplicationInstance currentInstance = this.instanceManager.getCurrentInstance();
+            String ownerURI = this.entityReplication.getOwner(documentReference);
+
+            sendDocument(document, true, currentInstance.getURI().equals(ownerURI), receivers, metadata,
+                DocumentReplicationLevel.REFERENCE, configurations);
+        }
     }
 }

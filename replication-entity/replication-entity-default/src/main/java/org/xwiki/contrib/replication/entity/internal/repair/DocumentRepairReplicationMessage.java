@@ -58,15 +58,17 @@ public class DocumentRepairReplicationMessage extends DocumentUpdateReplicationM
      * Initialize a message for a complete replication.
      * 
      * @param documentReference the reference of the document affected by this message
-     * @param creator the user who created the document
      * @param version the version of the document
+     * @param creator the user who created the document
      * @param authors the users involved in the conflict
+     * @param receivers the instances which are supposed to handler the message
      * @param metadata custom metadata to add to the message
+     * @since 1.1
      */
-    public void initializeRepair(DocumentReference documentReference, UserReference creator, String version,
-        Collection<String> authors, Map<String, Collection<String>> metadata)
+    public void initializeRepair(DocumentReference documentReference, String version, UserReference creator,
+        Collection<String> authors, Collection<String> receivers, Map<String, Collection<String>> metadata)
     {
-        initialize(documentReference, version, true, creator, metadata);
+        initialize(documentReference, version, true, creator, receivers, metadata);
 
         putCustomMetadata(METADATA_CONFLICT_AUTHORS, authors);
     }

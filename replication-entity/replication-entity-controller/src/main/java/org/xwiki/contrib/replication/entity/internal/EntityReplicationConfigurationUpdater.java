@@ -99,12 +99,12 @@ public class EntityReplicationConfigurationUpdater
 
     /**
      * @param reference the reference of the entity
-     * @param instances the instance to send the entity to
+     * @param configurations the instance to send the entity to
      * @throws XWikiException when failing to store entity replication configuration
      * @throws ReplicationException when failing to update the configuration
      * @throws QueryException when failing to gather documents to update
      */
-    public void save(EntityReference reference, List<DocumentReplicationControllerInstance> instances)
+    public void save(EntityReference reference, List<DocumentReplicationControllerInstance> configurations)
         throws XWikiException, ReplicationException, QueryException
     {
         // Resolve pre-save configuration
@@ -113,7 +113,7 @@ public class EntityReplicationConfigurationUpdater
 
         // Resolve post-save configuration
         Map<String, DocumentReplicationControllerInstance> postConfigurations =
-            this.store.resolveControllerInstancesMap(instances);
+            this.store.resolveControllerInstancesMap(configurations);
 
         // Calculate the configuration diff
         List<DocumentReplicationControllerInstance> newInstances = new ArrayList<>();
@@ -130,14 +130,14 @@ public class EntityReplicationConfigurationUpdater
         checkChanges(documentsToUpdate, removedInstances, changes);
 
         // Save new configuration
-        this.store.storeHibernateEntityReplication(reference, instances);
+        this.store.storeHibernateEntityReplication(reference, configurations);
 
         // Send unreplicate messages according to configuration diff
         sendUnreplicateMessages(documentsToUpdate, removedInstances, xcontext);
 
         // Synchronize configuration with other instances
         try {
-            this.configurationSender.send(reference, instances);
+            this.configurationSender.send(reference, configurations);
         } catch (Exception e) {
             // TODO: put this in a retry queue
             this.logger.error("Failed to notify other instances about the replication configuration change", e);

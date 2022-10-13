@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.internal.enpoint.message;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
@@ -57,6 +58,13 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
      * The request parameter containing the message source instance.
      */
     public static final String PARAMETER_SOURCE = "source";
+
+    /**
+     * The request parameter containing the instances which should handle the message.
+     * 
+     * @since 1.1
+     */
+    public static final String PARAMETER_RECEIVERS = "receivers";
 
     /**
      * The request parameter containing the message data type.
@@ -128,6 +136,14 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
     public String getSource()
     {
         return this.request.getParameter(PARAMETER_SOURCE);
+    }
+
+    @Override
+    public Collection<String> getReceivers()
+    {
+        String[] receivers = this.request.getParameterValues(PARAMETER_RECEIVERS);
+
+        return receivers != null ? Arrays.asList(receivers) : null;
     }
 
     @Override
