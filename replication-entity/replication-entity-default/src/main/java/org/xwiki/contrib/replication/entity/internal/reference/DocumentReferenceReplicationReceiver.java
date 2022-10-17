@@ -29,7 +29,6 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
@@ -51,9 +50,6 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
 {
     @Inject
     private ReplicationDocumentStore documentStore;
-
-    @Inject
-    private DocumentReplicationController controller;
 
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,

@@ -23,9 +23,12 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 
+import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
@@ -40,15 +43,32 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
     @Inject
     protected DocumentReplicationRelay documentRelay;
 
+    @Inject
+    protected DocumentReplicationController controller;
+
     @Override
     protected void receiveEntity(ReplicationReceiverMessage message, EntityReference entityReference,
         XWikiContext xcontext) throws ReplicationException
     {
         DocumentReference documentReference = this.documentMessageReader.getDocumentReference(message, entityReference);
 
-        // TODO: check if this message instance is allowed to replicate this document
+        // Check if this message instance is allowed to replicate this document
+        checkMessageInstance(message, documentReference);
 
         receiveDocument(message, documentReference, xcontext);
+    }
+
+    protected void checkMessageInstance(ReplicationReceiverMessage message, DocumentReference documentReference)
+        throws ReplicationException
+    {
+        for (DocumentReplicationControllerInstance instance : this.controller
+            .getReplicationConfiguration(documentReference)) {
+            if (instance.getInstance() == message.getInstance()
+                && (instance.isReadonly() || instance.getLevel() == DocumentReplicationLevel.REFERENCE)) {
+                throw new InvalidReplicationMessageException("The instance [" + message.getInstance()
+                    + "] is not allowed to send messages for document [" + documentReference + "]");
+            }
+        }
     }
 
     protected abstract void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,

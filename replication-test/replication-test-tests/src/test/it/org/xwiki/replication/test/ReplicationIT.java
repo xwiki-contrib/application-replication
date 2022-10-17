@@ -688,7 +688,9 @@ public class ReplicationIT extends AbstractTest
         getUtil().switchExecutor(0);
         page.setContent("content");
         getUtil().rest().save(page);
-        assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("content", page.getContent());
+        assertEquals("1.1", page.getVersion());
 
         // ASSERT) The page should exist but be empty on XWiki 1
         getUtil().switchExecutor(1);
@@ -712,21 +714,47 @@ public class ReplicationIT extends AbstractTest
         getUtil().switchExecutor(0);
         page.setContent("modified content");
         getUtil().rest().save(page);
-        assertEquals("modified content", getUtil().rest().<Page>get(documentReference).getContent());
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("modified content", page.getContent());
+        assertEquals("2.1", page.getVersion());
+
+        // We have to wait for a given time since we don't really have any criteria to test that something was not done,
+        // let's hope 5s is enough for nothing to happen...
+        Thread.sleep(5000);
 
         // ASSERT) That should not have any kind of impact on XWiki 1
         getUtil().switchExecutor(1);
-        assertEqualsContentWithTimeout(documentReference,
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}",
+            page.getContent());
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
 
         // ASSERT) The page should exist but be empty on XWiki 2
         getUtil().switchExecutor(2);
-        assertEqualsContentWithTimeout(documentReference,
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}",
+            page.getContent());
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+
+        ////////////////////////////////////
+        // Edit on XWiki 1
+        ////////////////////////////////////
+
+        getUtil().switchExecutor(1);
+        page.setContent("forbidden modified content");
+        getUtil().rest().save(page);
+        // TODO: this should actually be forbidden (see https://jira.xwiki.org/browse/REPLICAT-113)
+        assertEquals("forbidden modified content", getUtil().rest().<Page>get(documentReference).getContent());
+
+        // We have to wait for a given time since we don't really have any criteria to test that something was not done,
+        // let's hope 5s is enough for nothing to happen...
+        Thread.sleep(5000);
+
+        // ASSERT) That should not have any kind of impact on XWiki 0
+        getUtil().switchExecutor(0);
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Document was modified", "modified content", page.getContent());
+        assertEquals("2.1", page.getVersion());
 
         ////////////////////////////////////
         // Delete document on XWiki 0
