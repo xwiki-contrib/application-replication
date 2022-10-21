@@ -194,4 +194,22 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
         // Add the data to the queue
         this.queue.add(storedMessage);
     }
+
+    /**
+     * @param maxDate the maximum date to take into account
+     * @return the date of the most recent know message
+     * @since 1.1
+     */
+    public Date getLastMessageBefore(Date maxDate)
+    {
+        Date date = null;
+
+        for (ReplicationReceiverMessage message : this.queue) {
+            if (date == null || date.after(message.getDate())) {
+                date = message.getDate();
+            }
+        }
+
+        return date;
+    }
 }

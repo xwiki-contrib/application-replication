@@ -22,7 +22,6 @@ package org.xwiki.contrib.replication.entity.internal;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -36,12 +35,10 @@ import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.EntityReplication;
-import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.eventstream.Event;
 import org.xwiki.eventstream.EventSearchResult;
 import org.xwiki.eventstream.EventStore;
-import org.xwiki.eventstream.query.SimpleEventQuery;
 import org.xwiki.eventstream.query.SortableEventQuery.SortClause.Order;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
@@ -57,7 +54,7 @@ import org.xwiki.properties.ConverterManager;
 public class DocumentReplicationInstanceRecoverHandler extends AbstractEntityReplicationInstanceRecoverHandler
 {
     private static final String EVENT_FIELD_METADATA_LOCALE =
-        ReplicationMessageLogStore.toEventField(AbstractEntityReplicationMessage.METADATA_LOCALE);
+        ReplicationMessageEventQuery.customMetadataName(AbstractEntityReplicationMessage.METADATA_LOCALE);
 
     @Inject
     private EventStore eventStore;
@@ -77,32 +74,31 @@ public class DocumentReplicationInstanceRecoverHandler extends AbstractEntityRep
     @Override
     public void receive(Date dateMin, Date dateMax, ReplicationReceiverMessage message) throws ReplicationException
     {
-        SimpleEventQuery query = new SimpleEventQuery();
+        ReplicationMessageEventQuery query = new ReplicationMessageEventQuery();
 
-        // Get all message related to document updates
-        query.custom().in(
-            ReplicationMessageLogStore.toEventField(AbstractEntityReplicationMessage.METADATA_RECOVER_TYPE),
+        // Get only messages related to document updates
+        query.customMetadata().eq(EVENT_FIELD_METADATA_RECOVER_TYPE,
             AbstractDocumentReplicationMessage.VALUE_RECOVER_TYPE);
 
-        // But only the stored and received ones
-        query.custom().in(ReplicationMessageLogStore.toEventField(ReplicationMessageEventQuery.KEY_STATUS),
-            ReplicationMessageEventQuery.VALUE_STATUS_STORED, ReplicationMessageEventQuery.VALUE_STATUS_RECEIVED);
+        // And only the stored and received ones
+        query.custom().in(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_STORED,
+            ReplicationMessageEventQuery.VALUE_STATUS_RECEIVED);
 
         // Minimum date
         query.after(dateMin);
         query.before(dateMax);
 
         // Sort by document reference
-        query.addSort(EVENT_FIELD_METADATA_REFERENCE, Order.ASC);
+        query.custom().addSort(EVENT_FIELD_METADATA_REFERENCE, Order.ASC);
         // Then by locale
-        query.addSort(EVENT_FIELD_METADATA_LOCALE, Order.ASC);
+        query.custom().addSort(EVENT_FIELD_METADATA_LOCALE, Order.ASC);
         // And by date
         query.addSort(Event.FIELD_DATE, Order.DESC);
 
         // Search with only the needed field in the result
         // TODO: reduce the number of results with field collapsing when support for it is added to the event store API
-        try (EventSearchResult result =
-            this.eventStore.search(query, Set.of(EVENT_FIELD_METADATA_REFERENCE, EVENT_FIELD_METADATA_LOCALE))) {
+        // TODO: reduce the field fetched when support for custom fields is added
+        try (EventSearchResult result = this.eventStore.search(query)) {
             handle(result, message.getSource());
         } catch (Exception e) {
             throw new ReplicationException("Failed to request messages log", e);
@@ -119,8 +115,8 @@ public class DocumentReplicationInstanceRecoverHandler extends AbstractEntityRep
         boolean skipCurrentDocument = false;
         DocumentReference documentReference = null;
         for (Event event : (Iterable<Event>) result.stream()::iterator) {
-            String documentReferenceString = (String) event.getCustom().get(EVENT_FIELD_METADATA_REFERENCE);
-            String documentLocaleString = (String) event.getCustom().get(EVENT_FIELD_METADATA_LOCALE);
+            String documentReferenceString = getCustomMetadata(event, EVENT_FIELD_METADATA_REFERENCE);
+            String documentLocaleString = getCustomMetadata(event, EVENT_FIELD_METADATA_LOCALE);
             if (StringUtils.equals(documentReferenceString, currentDocumentReferenceString)) {
                 // Same document
                 if (skipCurrentDocument) {
@@ -150,6 +146,9 @@ public class DocumentReplicationInstanceRecoverHandler extends AbstractEntityRep
 
                 skipCurrentDocument = false;
             }
+
+            currentDocumentReferenceString = documentReferenceString;
+            currentLocaleString = documentLocaleString;
 
             // If any message was "lost" make sure to replicate the current status of the document locale
             this.controller.replicateDocument(documentReference, List.of(source));

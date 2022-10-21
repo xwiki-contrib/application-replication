@@ -28,8 +28,10 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
@@ -38,10 +40,17 @@ import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
 import org.xwiki.contrib.replication.internal.message.DefaultReplicationSender;
+import org.xwiki.contrib.replication.internal.message.ReplicationInstanceRecoverMessage;
+import org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageQueue;
 import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageQueue;
+import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
 import org.xwiki.contrib.replication.internal.sign.SignatureManager;
 import org.xwiki.script.service.ScriptService;
 import org.xwiki.script.service.ScriptServiceManager;
+import org.xwiki.security.authorization.AccessDeniedException;
+import org.xwiki.security.authorization.ContextualAuthorizationManager;
+import org.xwiki.security.authorization.Right;
+import org.xwiki.stability.Unstable;
 
 /**
  * Entry point of replication related script services.
@@ -58,6 +67,8 @@ public class ReplicationScriptService implements ScriptService
      */
     public static final String ROLEHINT = "replication";
 
+    private static final Date START_DATE = new Date();
+
     @Inject
     private ScriptServiceManager scriptServiceManager;
 
@@ -69,6 +80,21 @@ public class ReplicationScriptService implements ScriptService
 
     @Inject
     private SignatureManager signatureManager;
+
+    @Inject
+    private ContextualAuthorizationManager authorization;
+
+    @Inject
+    private Provider<ReplicationInstanceRecoverMessage> recoverMessageProvider;
+
+    @Inject
+    private ReplicationReceiverMessageQueue receiverQueue;
+
+    @Inject
+    private ReplicationMessageLogStore logStore;
+
+    @Inject
+    private Logger logger;
 
     /**
      * @param <S> the type of the {@link ScriptService}
@@ -208,5 +234,56 @@ public class ReplicationScriptService implements ScriptService
     public String getReceiveFingerprint(ReplicationInstance instance) throws IOException, ReplicationException
     {
         return this.signatureManager.getFingerprint(instance.getReceiveKey());
+    }
+
+    /**
+     * @param minDate the minimum date for which to send back changes
+     * @param maxDate the maximum date for which to send changes
+     * @throws AccessDeniedException when the current author is not allowed to use this API
+     * @throws ReplicationException when failing to initialize the message
+     * @since 1.1
+     */
+    public void recover(Date minDate, Date maxDate) throws AccessDeniedException, ReplicationException
+    {
+        this.authorization.checkAccess(Right.PROGRAM);
+
+        ReplicationInstanceRecoverMessage message = this.recoverMessageProvider.get();
+        message.initialize(minDate, maxDate);
+
+        this.sender.send(message);
+    }
+
+    /**
+     * @return the date at which XWiki was started
+     * @since 1.1
+     */
+    // TODO: make it more generic
+    @Unstable
+    public Date getLastStartDate()
+    {
+        return START_DATE;
+    }
+
+    /**
+     * @param maxDate the maximum date to take into account
+     * @return the date of the most recent know message
+     * @since 1.1
+     */
+    public Date getLastMessageBefore(Date maxDate)
+    {
+        Date queueDate = this.receiverQueue.getLastMessageBefore(maxDate);
+
+        Date logDate = null;
+        try {
+            logDate = this.logStore.getLastMessageBefore(maxDate);
+        } catch (Exception e) {
+            this.logger.error("Failed to search for the last message logged before [{}]", maxDate);
+        }
+
+        if (queueDate == null || queueDate.before(logDate)) {
+            return logDate;
+        }
+
+        return queueDate;
     }
 }

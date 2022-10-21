@@ -257,6 +257,44 @@
 #else
   {{warning}}{{translation key="replication.admin.subwiki"/}}{{/warning}}
 #end
+{{/velocity}}
+
+=== {{translation key="replication.admin.recover.title"/}}
+
+{{translation key="replication.admin.recover.description"/}}
+
+{{velocity}}
+#if ($request.recover_date_min &amp;&amp; $request.recover_date_max)
+  #set($dateMin = $datetool.toDate("yyyy-MM-dd'T'kk:mm:ss", $request.recover_date_min))
+  #set($dateMax = $datetool.toDate("yyyy-MM-dd'T'kk:mm:ss", $request.recover_date_max))
+  #if ($request.current_recover)
+    #set($void = $services.replication.recover($dateMin, $dateMax))
+    {{success}}
+      {{translation key="replication.admin.recover.message.success"/}}
+    {{/success}}
+  #end
+#else
+  #set($dateMax = $services.replication.lastStartDate)
+  #set($dateMin = $services.replication.getLastMessageBefore($dateMax))
+#end
+{{/velocity}}
+
+{{velocity}}
+{{html}}
+&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
+  &lt;dl&gt;
+    &lt;dt&gt;&lt;label for="recover_date_min"&gt;$escapetool.xml($services.localization.render('replication.admin.recover.form.dateMin'))&lt;/label&gt;&lt;/dt&gt;
+    &lt;dd&gt;
+      &lt;input id="recover_date_min" type="datetime-local" name="recover_date_min" step="1" value="$datetool.format("yyyy-MM-dd'T'kk:mm:ss", $dateMin)"/&gt;
+    &lt;/dd&gt;
+    &lt;dt&gt;&lt;label for="recover_date_max"&gt;$escapetool.xml($services.localization.render('replication.admin.recover.form.dateMax'))&lt;/label&gt;&lt;/dt&gt;
+    &lt;dd&gt;
+      &lt;input id="recover_date_max" type="datetime-local" name="recover_date_max" step="1" value="$datetool.format("yyyy-MM-dd'T'kk:mm:ss", $dateMax)"/&gt;
+    &lt;/dd&gt;
+  &lt;/dl&gt;
+  &lt;button class="btn" name="current_recover"&gt;$escapetool.xml($services.localization.render('replication.admin.recover.button'))&lt;/button&gt;
+&lt;/form&gt;
+{{/html}}
 {{/velocity}}</content>
   <object>
     <name>XWiki.Replication.Admin</name>

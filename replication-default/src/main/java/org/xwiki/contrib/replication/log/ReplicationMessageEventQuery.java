@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.eventstream.query.SimpleEventQuery;
 
 /**
@@ -111,6 +112,30 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
             KEY_DATE, Date.class, KEY_SOURCE, String.class, KEY_RECEIVERS, List.class, KEY_TYPE, String.class);
 
     /**
+     * Convert the {@link ReplicationMessage} custom metadata name to its {@link org.xwiki.eventstream.Event} version.
+     * 
+     * @param replicationMetadata the name of the metadata in a replication message
+     * @return the name of the field on event store side
+     * @since 1.1
+     */
+    public static String customMetadataName(String replicationMetadata)
+    {
+        return ReplicationMessageEventQuery.PREFIX_CUSTOM_METADATA + replicationMetadata;
+    }
+
+    /**
+     * Convert the {@link ReplicationMessage} type to its {@link org.xwiki.eventstream.Event} version.
+     * 
+     * @param type the replication type
+     * @return the event type
+     * @since 1.1
+     */
+    public static String messageTypeValue(String type)
+    {
+        return "replication_message_" + type;
+    }
+
+    /**
      * Helper to set the right type depending on the property name.
      * 
      * @param key the name of the replication event custom property
@@ -118,6 +143,17 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
      */
     public ReplicationMessageEventQuery custom(String key)
     {
-        return (ReplicationMessageEventQuery) super.custom(CUSTOM_TYPES.get(key));
+        return (ReplicationMessageEventQuery) super.custom();
+    }
+
+    /**
+     * Next call will be about custom replication message metadata.
+     * 
+     * @return this {@link ReplicationMessageEventQuery}
+     * @since 1.1
+     */
+    public ReplicationMessageEventQuery customMetadata()
+    {
+        return (ReplicationMessageEventQuery) super.custom(List.class);
     }
 }

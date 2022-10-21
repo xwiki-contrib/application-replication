@@ -33,6 +33,19 @@ import org.xwiki.component.annotation.Role;
 public interface ReplicationInstanceRecoverHandler
 {
     /**
+     * The default priority.
+     */
+    int DEFAULT_PRIORITY = 1000;
+
+    /**
+     * @return the priority of the handler
+     */
+    default int getPriority()
+    {
+        return DEFAULT_PRIORITY;
+    }
+
+    /**
      * @param dateMin the minimum date for which to send back changes
      * @param dateMax the maximum date for which to send changes.
      * @param message the message received

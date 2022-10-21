@@ -65,9 +65,9 @@ public class ReplicationInstanceRecoverMessage extends AbstractReplicationSender
      * @param maxDate the maximum date for which to send changes
      * @throws ReplicationException when failing to initialize the message
      */
-    public void initializeCurrent(Date minDate, Date maxDate) throws ReplicationException
+    public void initialize(Date minDate, Date maxDate) throws ReplicationException
     {
-        super.initialize();
+        initialize();
 
         putCustomMetadata(METADATA_DATE_MIN, minDate);
         putCustomMetadata(METADATA_DATE_MAX, maxDate);

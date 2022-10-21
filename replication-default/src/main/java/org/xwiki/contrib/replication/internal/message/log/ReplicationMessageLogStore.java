@@ -20,10 +20,13 @@
 package org.xwiki.contrib.replication.internal.message.log;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -42,13 +45,14 @@ import org.xwiki.contrib.replication.message.log.ReplicationMessageEventInitiali
 import org.xwiki.eventstream.Event;
 import org.xwiki.eventstream.Event.Importance;
 import org.xwiki.eventstream.EventFactory;
+import org.xwiki.eventstream.EventSearchResult;
 import org.xwiki.eventstream.EventStore;
 import org.xwiki.eventstream.EventStreamException;
+import org.xwiki.eventstream.query.SimpleEventQuery;
+import org.xwiki.eventstream.query.SortableEventQuery.SortClause.Order;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.user.api.XWikiRightService;
-
-import groovyjarjarpicocli.CommandLine.ExecutionException;
 
 /**
  * @version $Id$
@@ -75,26 +79,6 @@ public class ReplicationMessageLogStore
 
     @Inject
     private Logger logger;
-
-    /**
-     * @param type the replication type
-     * @return the event type
-     * @since 1.1
-     */
-    public static String serializeMessageType(String type)
-    {
-        return "replication_message_" + type;
-    }
-
-    /**
-     * @param replicationMetadata the name of the metadata in a replication message
-     * @return the name of the field on event store side
-     * @since 1.1
-     */
-    public static String toEventField(String replicationMetadata)
-    {
-        return ReplicationMessageEventQuery.PREFIX_CUSTOM_METADATA + replicationMetadata;
-    }
 
     /**
      * @param messageId the identifier of the message
@@ -182,7 +166,7 @@ public class ReplicationMessageLogStore
         event.setImportance(Importance.BACKGROUND);
 
         event.setDate(message.getDate());
-        event.setType(serializeMessageType(message.getType()));
+        event.setType(ReplicationMessageEventQuery.messageTypeValue(message.getType()));
 
         Map<String, Object> properties = new HashMap<>();
 
@@ -197,7 +181,7 @@ public class ReplicationMessageLogStore
 
         // Add custom metadata
         for (Map.Entry<String, Collection<String>> entry : message.getCustomMetadata().entrySet()) {
-            properties.put(toEventField(entry.getKey()), entry.getValue());
+            properties.put(ReplicationMessageEventQuery.customMetadataName(entry.getKey()), entry.getValue());
         }
 
         event.setCustom(properties);
@@ -257,5 +241,39 @@ public class ReplicationMessageLogStore
         }
 
         return new DefaultReplicationSenderMessage(id, event.getDate(), type, source, receivers, metadata, null);
+    }
+
+    /**
+     * @param dateMax the maximum date to take into account
+     * @return the date of the most recent know message
+     * @throws Exception when failing to search for the last message date
+     * @since 1.1
+     */
+    public Date getLastMessageBefore(Date dateMax) throws Exception
+    {
+        SimpleEventQuery query = new SimpleEventQuery();
+
+        // Only events related to replication messages
+        query.eq(Event.FIELD_APPLICATION, ReplicationMessageEventQuery.VALUE_APPLICATION);
+
+        // Minimum date
+        query.before(dateMax);
+
+        // Sort by date
+        query.addSort(Event.FIELD_DATE, Order.DESC);
+
+        // We are only interested in the first result
+        query.setLimit(1);
+
+        // Search with only the needed field in the result
+        // TODO: reduce the number of results with field collapsing when support for it is added to the event store API
+        try (EventSearchResult result = this.store.search(query, Set.of(Event.FIELD_DATE))) {
+            Optional<Event> firstMessage = result.stream().findFirst();
+            if (firstMessage.isPresent()) {
+                return firstMessage.get().getDate();
+            }
+        }
+
+        return null;
     }
 }

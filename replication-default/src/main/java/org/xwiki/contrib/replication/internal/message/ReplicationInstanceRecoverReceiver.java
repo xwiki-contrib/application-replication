@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.internal.message;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -57,6 +58,9 @@ public class ReplicationInstanceRecoverReceiver extends AbstractReplicationRecei
         } catch (ComponentLookupException e) {
             throw new ReplicationException("Failed to lookup ReplicationInstanceRecoverHandler instances", e);
         }
+
+        // Sort handlers according to priority
+        Collections.sort(handlers, (h1, h2) -> h1.getPriority() - h2.getPriority());
 
         Date dateMin = this.messageReader.getMetadata(message, ReplicationInstanceRecoverMessage.METADATA_DATE_MIN,
             true, Date.class);

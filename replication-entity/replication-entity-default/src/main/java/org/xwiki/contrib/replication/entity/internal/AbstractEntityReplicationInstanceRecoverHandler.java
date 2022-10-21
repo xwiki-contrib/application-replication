@@ -19,8 +19,12 @@
  */
 package org.xwiki.contrib.replication.entity.internal;
 
+import java.util.List;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.xwiki.contrib.replication.ReplicationInstanceRecoverHandler;
-import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
+import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
+import org.xwiki.eventstream.Event;
 
 /**
  * @version $Id$
@@ -29,5 +33,18 @@ import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogS
 public abstract class AbstractEntityReplicationInstanceRecoverHandler implements ReplicationInstanceRecoverHandler
 {
     protected static final String EVENT_FIELD_METADATA_REFERENCE =
-        ReplicationMessageLogStore.toEventField(AbstractEntityReplicationMessage.METADATA_REFERENCE);
+        ReplicationMessageEventQuery.customMetadataName(AbstractEntityReplicationMessage.METADATA_REFERENCE);
+
+    protected static final String EVENT_FIELD_METADATA_RECOVER_TYPE =
+        ReplicationMessageEventQuery.customMetadataName(AbstractEntityReplicationMessage.METADATA_RECOVER_TYPE);
+
+    protected String getCustomMetadata(Event event, String field)
+    {
+        List<String> values = (List<String>) event.getCustom().get(field);
+        if (CollectionUtils.isNotEmpty(values)) {
+            return values.get(0);
+        }
+
+        return null;
+    }
 }

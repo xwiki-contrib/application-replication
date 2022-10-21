@@ -22,7 +22,6 @@ package org.xwiki.contrib.replication.entity.internal.message;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -35,16 +34,12 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractEntityReplicationInstanceRecoverHandler;
-import org.xwiki.contrib.replication.entity.internal.AbstractEntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationStore;
-import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.eventstream.Event;
 import org.xwiki.eventstream.EventSearchResult;
 import org.xwiki.eventstream.EventStore;
-import org.xwiki.eventstream.query.SimpleEventQuery;
 import org.xwiki.eventstream.query.SortableEventQuery.SortClause.Order;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.properties.ConverterManager;
@@ -76,35 +71,39 @@ public class EntityReplicationControllerRecoverHandler extends AbstractEntityRep
     private EntityReplicationControllerSender sender;
 
     @Override
+    public int getPriority()
+    {
+        // Replication configuration needs to be updated first as otherwise the other instance may refuse the document
+        // update messages
+        return DEFAULT_PRIORITY / 2;
+    }
+
+    @Override
     public void receive(Date dateMin, Date dateMax, ReplicationReceiverMessage message) throws ReplicationException
     {
-        SimpleEventQuery query = new SimpleEventQuery();
+        ReplicationMessageEventQuery query = new ReplicationMessageEventQuery();
 
-        // Get all message related to replication configuration
+        // Get only the messages related to replication configuration
         query.eq(Event.FIELD_TYPE,
-            ReplicationMessageLogStore.serializeMessageType(EntityReplicationControllerMessage.TYPE));
+            ReplicationMessageEventQuery.messageTypeValue(EntityReplicationControllerMessage.TYPE));
 
-        // Get all message related to document updates
-        query.custom().in(
-            ReplicationMessageLogStore.toEventField(AbstractEntityReplicationMessage.METADATA_RECOVER_TYPE),
-            AbstractDocumentReplicationMessage.VALUE_RECOVER_TYPE);
-
-        // But only the stored and received ones
-        query.custom().in(ReplicationMessageLogStore.toEventField(ReplicationMessageEventQuery.KEY_STATUS),
-            ReplicationMessageEventQuery.VALUE_STATUS_STORED, ReplicationMessageEventQuery.VALUE_STATUS_RECEIVED);
+        // And only the stored and received ones
+        query.custom().in(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_STORED,
+            ReplicationMessageEventQuery.VALUE_STATUS_RECEIVED);
 
         // Minimum date
         query.after(dateMin);
         query.before(dateMax);
 
         // Sort by document reference
-        query.addSort(EVENT_FIELD_METADATA_REFERENCE, Order.ASC);
+        query.custom().addSort(EVENT_FIELD_METADATA_REFERENCE, Order.ASC);
         // And by date
         query.addSort(Event.FIELD_DATE, Order.DESC);
 
         // Search with only the needed field in the result
         // TODO: reduce the number of results with field collapsing when support for it is added to the event store API
-        try (EventSearchResult result = this.eventStore.search(query, Set.of(EVENT_FIELD_METADATA_REFERENCE))) {
+        // TODO: reduce the field fetched when support for custom fields is added
+        try (EventSearchResult result = this.eventStore.search(query)) {
             handle(result, message.getSource());
         } catch (Exception e) {
             throw new ReplicationException("Failed to request messages log", e);
@@ -123,10 +122,12 @@ public class EntityReplicationControllerRecoverHandler extends AbstractEntityRep
         // If any message was "lost" make sure to replicate the current configuration of the entity
         String currentEntityReferenceString = null;
         for (Event event : (Iterable<Event>) result.stream()::iterator) {
-            String entityReferenceString = (String) event.getCustom().get(EVENT_FIELD_METADATA_REFERENCE);
+            String entityReferenceString = getCustomMetadata(event, EVENT_FIELD_METADATA_REFERENCE);
             if (!StringUtils.equals(entityReferenceString, currentEntityReferenceString)) {
                 EntityReference entityReference =
                     this.converter.<EntityReference>convert(EntityReference.class, entityReferenceString);
+
+                currentEntityReferenceString = entityReferenceString;
 
                 // Get current configuration
                 Collection<DocumentReplicationControllerInstance> configurations =
