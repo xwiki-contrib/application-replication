@@ -47,7 +47,8 @@
   [[{{translation key="replication.admin.noinstance"/}}&gt;&gt;path:$wikiAdminURL]]
 #else
   #set ($controllers = $services.replication.document.getDocumentReplicationControllers())
-  #if ($controllers)
+  #set ($resolvedController = $services.replication.document.resolveDocumentReplicationController($replicationDocument.documentReference.parent))
+  #if ($controllers || $resolvedController)
     == {{translation key="replication.admin.controller"/}}
 
     #set ($parentController = $services.replication.document.resolveDocumentReplicationController($replicationDocument.documentReference.parent.parent))
@@ -65,7 +66,7 @@
     #set ($resolvedController = $services.replication.document.resolveDocumentReplicationController($replicationDocument.documentReference.parent))
     #set ($controllers = $services.replication.document.getDocumentReplicationControllers())
     #if ($resolvedController)
-      #if ($controllers.size() == 1)
+      #if (!$controllers || $controllers.size() == 1)
         {{translation key="replication.controller.${resolvedController}.name"/}}
         {{translation key="replication.controller.${resolvedController}.description"/}}
       #elseif ($controllers.size() &gt; 1)

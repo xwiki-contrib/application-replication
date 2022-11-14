@@ -21,13 +21,11 @@
   #set ($resolvedInstances = $services.replication.document.getDocumentInstances($doc.documentReference))
 
   #set ($controllers = $services.replication.document.getDocumentReplicationControllers())
-  #if ($controllers.size() > 1)
+  #set ($resolvedController = $services.replication.document.resolveDocumentReplicationController($doc.documentReference))
+  #if ((!$controllers && $resolvedController) || $controllers.size() > 1)
     <dl>
       <dt>$escapetool.xml($services.localization.render("replication.admin.controller"))</dt>
-      <dd>
-        #set ($resolvedController = $services.replication.document.resolveDocumentReplicationController($doc.documentReference))
-        $escapetool.xml($services.localization.render("replication.controller.${resolvedController}.name"))
-      </dd>
+      <dd>$escapetool.xml($services.localization.render("replication.controller.${resolvedController}.name"))</dd>
     </dl>
   #end
 

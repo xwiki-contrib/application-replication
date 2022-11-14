@@ -214,7 +214,8 @@
 #end
 
 #set ($controllers = $services.replication.document.getDocumentReplicationControllers())
-#if ($controllers)
+#set ($resolvedController = $services.replication.document.resolveDocumentReplicationController($wikiReference))
+#if ($controllers || $resolvedController)
   === {{translation key="replication.admin.controller"/}}
 
   #set ($parentController = $services.replication.document.resolveDocumentReplicationController($NULL))
@@ -233,7 +234,7 @@
   #set ($resolvedController = $services.replication.document.resolveDocumentReplicationController($wikiReference))
   #set ($controllers = $services.replication.document.getDocumentReplicationControllers())
   #if ($resolvedController)
-    #if ($controllers.size() == 1)
+    #if (!$controllers || $controllers.size() == 1)
       {{translation key="replication.controller.${resolvedController}.name"/}}
       {{translation key="replication.controller.${resolvedController}.description"/}}
     #elseif ($controllers.size() &gt; 1)

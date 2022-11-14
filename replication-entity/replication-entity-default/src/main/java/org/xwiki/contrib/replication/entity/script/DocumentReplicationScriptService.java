@@ -26,9 +26,12 @@ import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.component.manager.ComponentLookupException;
+import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfiguration;
@@ -68,6 +71,10 @@ public class DocumentReplicationScriptService implements ScriptService
 
     @Inject
     private ContextualAuthorizationManager authorization;
+
+    @Inject
+    @Named("context")
+    private Provider<ComponentManager> componentManagerProvider;
 
     /**
      * Indicate the list of registered instances this document should be replicated to.
@@ -120,13 +127,18 @@ public class DocumentReplicationScriptService implements ScriptService
         DocumentReplicationController entityController =
             this.controllerConfiguration.resolveDocumentReplicationController(entityReference);
 
-        Optional<Map<String, DocumentReplicationController>> controllers =
-            this.controllerConfiguration.getControllers();
-        if (controllers.isPresent()) {
-            for (Map.Entry<String, DocumentReplicationController> entry : controllers.get().entrySet()) {
-                if (entry.getValue() == entityController) {
-                    return entry.getKey();
-                }
+        // Find the id of the controller
+
+        Map<String, DocumentReplicationController> controllers;
+        try {
+            controllers = this.componentManagerProvider.get().getInstanceMap(DocumentReplicationController.class);
+        } catch (ComponentLookupException e) {
+            throw new ReplicationException("Failed to lookup document replication controllers", e);
+        }
+
+        for (Map.Entry<String, DocumentReplicationController> entry : controllers.entrySet()) {
+            if (entry.getValue() == entityController) {
+                return entry.getKey();
             }
         }
 
