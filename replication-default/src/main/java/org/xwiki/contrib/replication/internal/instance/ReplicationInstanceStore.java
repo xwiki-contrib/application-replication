@@ -76,7 +76,7 @@ public class ReplicationInstanceStore
     private Provider<XWikiContext> xcontextProvider;
 
     @Inject
-    private InstanceIdManager instanceId;
+    private Provider<InstanceIdManager> instanceIdProvider;
 
     @Inject
     private SignatureManager signatureManager;
@@ -145,7 +145,7 @@ public class ReplicationInstanceStore
 
     private String getDefaultCurrentName()
     {
-        return this.instanceId.getInstanceId().getInstanceId();
+        return this.instanceIdProvider.get().getInstanceId().getInstanceId();
     }
 
     @FunctionalInterface
