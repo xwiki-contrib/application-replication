@@ -25,6 +25,7 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
@@ -34,6 +35,7 @@ import org.xwiki.contrib.replication.AbstractReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceRecoverHandler;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSender;
 
 /**
  * Dispatch recovering request to the various {@link ReplicationInstanceRecoverHandler} implementations.
@@ -48,6 +50,12 @@ public class ReplicationInstanceRecoverReceiver extends AbstractReplicationRecei
 {
     @Inject
     private ComponentManager componentManager;
+
+    @Inject
+    private Provider<ReplicationInstanceRecoveredMessage> recoveredMessageProvider;
+
+    @Inject
+    private ReplicationSender sender;
 
     @Override
     public void receive(ReplicationReceiverMessage message) throws ReplicationException
@@ -70,5 +78,10 @@ public class ReplicationInstanceRecoverReceiver extends AbstractReplicationRecei
         for (ReplicationInstanceRecoverHandler handler : handlers) {
             handler.receive(dateMin, dateMax, message);
         }
+
+        // Notify we are done with the recovery process
+        ReplicationInstanceRecoveredMessage recoveredMessage = this.recoveredMessageProvider.get();
+        recoveredMessage.initialize(dateMin, dateMax, message);
+        this.sender.send(recoveredMessage);
     }
 }

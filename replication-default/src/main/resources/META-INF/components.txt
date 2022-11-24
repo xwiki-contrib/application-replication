@@ -18,6 +18,8 @@ org.xwiki.contrib.replication.internal.instance.StandardReplicationInstanceClass
 org.xwiki.contrib.replication.internal.instance.WikiDescriptorListener
 org.xwiki.contrib.replication.internal.message.DefaultReplicationSender
 org.xwiki.contrib.replication.internal.message.ReplicationInstanceMessageSender
+org.xwiki.contrib.replication.internal.message.ReplicationInstanceRecoveredMessage
+org.xwiki.contrib.replication.internal.message.ReplicationInstanceRecoveredReceiver
 org.xwiki.contrib.replication.internal.message.ReplicationInstanceRecoverMessage
 org.xwiki.contrib.replication.internal.message.ReplicationInstanceRecoverReceiver
 org.xwiki.contrib.replication.internal.message.ReplicationInstanceUpdateRecoverHandler

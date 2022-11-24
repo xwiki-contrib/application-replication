@@ -19,23 +19,28 @@
  */
 package org.xwiki.contrib.replication.internal.message;
 
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.AbstractReplicationReceiver;
+import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 
 /**
+ * Receive the {@link ReplicationInstanceRecoveredMessage} message.
+ * 
  * @version $Id$
- * @since 1.1
+ * @since 1.2.0
  */
-@Component(roles = ReplicationInstanceRecoverMessage.class)
-public class ReplicationInstanceRecoverMessage extends AbstractReplicationInstanceRecoverMessage
+@Component
+@Singleton
+@Named(ReplicationInstanceRecoveredMessage.TYPE)
+public class ReplicationInstanceRecoveredReceiver extends AbstractReplicationReceiver
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "requested";
-
     @Override
-    public String getType()
+    public void receive(ReplicationReceiverMessage message) throws ReplicationException
     {
-        return TYPE;
+        // Nothing to do, this message is just logged right now
     }
 }
