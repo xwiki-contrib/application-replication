@@ -24,6 +24,8 @@ import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.eventstream.Event;
 
 /**
+ * Extension point to implement to be called to be able to modify the {@link Event} stored for each message.
+ * 
  * @version $Id$
  */
 @Role

@@ -143,7 +143,7 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
      */
     public ReplicationMessageEventQuery custom(String key)
     {
-        return (ReplicationMessageEventQuery) super.custom();
+        return (ReplicationMessageEventQuery) super.custom(CUSTOM_TYPES.get(key));
     }
 
     /**

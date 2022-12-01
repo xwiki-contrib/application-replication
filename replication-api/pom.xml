@@ -59,6 +59,11 @@
       <artifactId>xwiki-commons-crypto-pkix</artifactId>
       <version>${commons.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.xwiki.platform</groupId>
+      <artifactId>xwiki-platform-eventstream-api</artifactId>
+      <version>${platform.version}</version>
+    </dependency>
 
     <!-- Test Dependencies -->
     <dependency>
