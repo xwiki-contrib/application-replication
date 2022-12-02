@@ -153,6 +153,18 @@ public class ReplicationMessageLogStore
     private CompletableFuture<Event> saveAsyncInternal(ReplicationMessage message,
         ReplicationMessageEventInitializer initializer)
     {
+        // Store the message only if none with the same ide already exist
+        try {
+            Optional<Event> existingEvent = this.store.getEvent(message.getId());
+
+            if (existingEvent.isPresent()) {
+                return CompletableFuture.completedFuture(existingEvent.get());
+            }
+        } catch (EventStreamException e) {
+            this.logger.error("Failed to check the existance of the message with id [{}]. Trying to store it.",
+                message.getId(), e);
+        }
+
         Event event = this.eventFactory.createRawEvent();
 
         // We don't want this even to go through pre filtering so we mark it as done
