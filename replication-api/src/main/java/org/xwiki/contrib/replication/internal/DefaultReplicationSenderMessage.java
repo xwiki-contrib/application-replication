@@ -105,8 +105,10 @@ public class DefaultReplicationSenderMessage extends AbstractReplicationMessage 
     @Override
     public void write(OutputStream stream) throws IOException
     {
-        try (InputStreamInputSource inputSource = this.data) {
-            IOUtils.copy(inputSource.getInputStream(), stream);
+        if (this.data != null) {
+            try (InputStreamInputSource inputSource = this.data) {
+                IOUtils.copy(inputSource.getInputStream(), stream);
+            }
         }
     }
 }
