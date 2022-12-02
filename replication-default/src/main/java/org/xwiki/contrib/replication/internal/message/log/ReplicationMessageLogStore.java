@@ -249,7 +249,8 @@ public class ReplicationMessageLogStore
         Map<String, Collection<String>> metadata = new HashMap<>(event.getCustom().size());
         for (Map.Entry<String, Object> entry : event.getCustom().entrySet()) {
             if (entry.getKey().startsWith(ReplicationMessageEventQuery.PREFIX_CUSTOM_METADATA)) {
-                metadata.put(entry.getKey(), (Collection<String>) entry.getValue());
+                metadata.put(entry.getKey().substring(ReplicationMessageEventQuery.PREFIX_CUSTOM_METADATA.length()),
+                    (Collection<String>) entry.getValue());
             }
         }
 
