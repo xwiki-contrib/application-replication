@@ -221,6 +221,18 @@ public class ReplicationMessageLogStore
      */
     public ReplicationSenderMessage loadMessage(String id) throws EventStreamException
     {
+        return loadMessage(id, null);
+    }
+
+    /**
+     * @param id the identifier of the logged message
+     * @return the message extracted from the log or null if none exist for this id
+     * @param receivers the instances which should handle the message
+     * @throws EventStreamException when failing to load the event matching the id
+     * @since 1.3.0
+     */
+    public ReplicationSenderMessage loadMessage(String id, Collection<String> receivers) throws EventStreamException
+    {
         Optional<Event> eventOptional = this.store.getEvent(id);
 
         if (eventOptional.isEmpty()) {
@@ -230,7 +242,8 @@ public class ReplicationMessageLogStore
         Event event = eventOptional.get();
 
         String source = (String) event.getCustom().get(ReplicationMessageEventQuery.KEY_SOURCE);
-        Collection<String> receivers = (Collection) event.getCustom().get(ReplicationMessageEventQuery.KEY_RECEIVERS);
+        Collection<String> finalReceivers = receivers != null ? receivers
+            : (Collection) event.getCustom().get(ReplicationMessageEventQuery.KEY_RECEIVERS);
         String type = (String) event.getCustom().get(ReplicationMessageEventQuery.KEY_TYPE);
 
         Map<String, Collection<String>> metadata = new HashMap<>(event.getCustom().size());
@@ -240,7 +253,7 @@ public class ReplicationMessageLogStore
             }
         }
 
-        return new DefaultReplicationSenderMessage(id, event.getDate(), type, source, receivers, metadata, null);
+        return new DefaultReplicationSenderMessage(id, event.getDate(), type, source, finalReceivers, metadata, null);
     }
 
     /**

@@ -118,18 +118,13 @@
             </revapi.differences>
             -->
             <revapi.differences>
-              <justification>Those classes are still there but moved to replication-api</justification>
-              <criticality>allowed</criticality>
+              <justification>No default implementation really make sense for this new API</justification>
+              <criticality>documented</criticality>
               <differences>
                 <item>
                   <ignore>true</ignore>
-                  <code>java.class.removed</code>
-                  <old>class org.xwiki.contrib.replication.log.ReplicationMessageEventQuery</old>
-                </item>
-                <item>
-                  <ignore>true</ignore>
-                  <code>java.class.removed</code>
-                  <old>interface org.xwiki.contrib.replication.message.log.ReplicationMessageEventInitializer</old>
+                  <code>java.method.addedToInterface</code>
+                  <new>method void org.xwiki.contrib.replication.ReplicationSender::resend(org.xwiki.contrib.replication.log.ReplicationMessageEventQuery, java.util.Collection&lt;java.lang.String&gt;) throws org.xwiki.contrib.replication.ReplicationException</new>
                 </item>
               </differences>
             </revapi.differences>

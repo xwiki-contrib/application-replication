@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 import org.xwiki.component.annotation.Role;
+import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 
 /**
  * @version $Id$
@@ -57,4 +58,12 @@ public interface ReplicationSender
      * @param instance the instance which sent a ping
      */
     void ping(ReplicationInstance instance);
+
+    /**
+     * @param query the query to match logged events to send
+     * @param receivers the specific instances to send the message to, null for all instances
+     * @throws ReplicationException when failing to query or send logged messages
+     * @since 1.3.0
+     */
+    void resend(ReplicationMessageEventQuery query, Collection<String> receivers) throws ReplicationException;
 }

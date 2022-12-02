@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,6 +55,9 @@ import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageStore.FileReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
+import org.xwiki.eventstream.Event;
+import org.xwiki.eventstream.EventSearchResult;
+import org.xwiki.eventstream.EventStore;
 
 /**
  * @version $Id$
@@ -80,6 +84,9 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
     @Inject
     private ReplicationMessageLogStore logStore;
+
+    @Inject
+    private EventStore eventStore;
 
     @Inject
     private Logger logger;
@@ -365,6 +372,18 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
         if (queue != null) {
             queue.wakeUp();
+        }
+    }
+
+    @Override
+    public void resend(ReplicationMessageEventQuery query, Collection<String> receivers) throws ReplicationException
+    {
+        try (EventSearchResult result = this.eventStore.search(query, Set.of(Event.FIELD_ID))) {
+            for (Event event : (Iterable<Event>) result.stream()::iterator) {
+                send(this.logStore.loadMessage(event.getId(), receivers));
+            }
+        } catch (Exception e) {
+            throw new ReplicationException("Failed to query logged messages", e);
         }
     }
 }
