@@ -40,11 +40,15 @@ import org.xwiki.model.reference.EntityReference;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.ObservationManager;
 import org.xwiki.observation.event.Event;
+import org.xwiki.observation.remote.RemoteObservationManagerContext;
 
+import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.internal.event.XObjectEvent;
 import com.xpn.xwiki.objects.BaseObject;
 import com.xpn.xwiki.objects.BaseObjectReference;
+import com.xpn.xwiki.store.XWikiCacheStore;
+import com.xpn.xwiki.store.XWikiStoreInterface;
 
 /**
  * @version $Id$
@@ -78,6 +82,12 @@ public class ReplicationInstanceListener extends AbstractEventListener
     private ObservationManager observation;
 
     @Inject
+    private Provider<XWikiContext> xcontextProvider;
+
+    @Inject
+    private RemoteObservationManagerContext remoteContext;
+
+    @Inject
     private Logger logger;
 
     /**
@@ -89,12 +99,29 @@ public class ReplicationInstanceListener extends AbstractEventListener
             BaseObjectReference.anyEvents(StandardReplicationInstanceClassInitializer.CLASS_FULLNAME));
     }
 
+    private void forceResetDocumentCache(Event event, Object source, Object data)
+    {
+        XWikiContext xcontext = this.xcontextProvider.get();
+        if (xcontext != null) {
+            XWikiStoreInterface store = xcontext.getWiki().getStore();
+            if (store instanceof XWikiCacheStore) {
+                ((XWikiCacheStore) store).onEvent(event, source, data);
+            }
+        }        
+    }
+
     @Override
     public void onEvent(Event event, Object source, Object data)
     {
         if (event instanceof ApplicationReadyEvent) {
             initialize();
         } else if (event instanceof XObjectEvent) {
+            // Workaround https://jira.xwiki.org/browse/XWIKI-20564
+            // Make sure the document in the cache is the right one in cache of remote events
+            if (this.remoteContext.isRemoteState()) {
+                forceResetDocumentCache(event, source, data);
+            }
+
             ReplicationInstanceManager instancesManager = this.instanceProvider.get();
 
             try {

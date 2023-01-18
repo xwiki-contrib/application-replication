@@ -21,34 +21,20 @@ package org.xwiki.contrib.replication.internal.sign;
 
 import java.io.File;
 import java.net.URLEncoder;
-import java.util.EnumSet;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.component.phase.Initializable;
-import org.xwiki.component.phase.InitializationException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.internal.ReplicationFileStore;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
-import org.xwiki.crypto.KeyPairGenerator;
-import org.xwiki.crypto.params.cipher.asymmetric.AsymmetricKeyPair;
-import org.xwiki.crypto.pkix.CertificateGenerator;
-import org.xwiki.crypto.pkix.CertificateGeneratorFactory;
-import org.xwiki.crypto.pkix.X509ExtensionBuilder;
 import org.xwiki.crypto.pkix.params.CertifiedKeyPair;
-import org.xwiki.crypto.pkix.params.CertifiedPublicKey;
-import org.xwiki.crypto.pkix.params.x509certificate.DistinguishedName;
-import org.xwiki.crypto.pkix.params.x509certificate.X509CertificateGenerationParameters;
-import org.xwiki.crypto.pkix.params.x509certificate.X509CertificateParameters;
-import org.xwiki.crypto.pkix.params.x509certificate.extension.KeyUsage;
-import org.xwiki.crypto.signer.Signer;
-import org.xwiki.crypto.signer.SignerFactory;
 import org.xwiki.crypto.store.FileStoreReference;
 import org.xwiki.crypto.store.KeyStore;
 import org.xwiki.crypto.store.KeyStoreException;
+import org.xwiki.observation.ObservationManager;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -59,38 +45,20 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 @Component(roles = CertifiedKeyPairStore.class)
 @Singleton
-public class CertifiedKeyPairStore implements Initializable
+public class CertifiedKeyPairStore
 {
+    @Inject
+    private CryptTools cryptTools;
+
     @Inject
     @Named("X509file")
     private KeyStore keyStore;
 
     @Inject
-    @Named("RSA")
-    private KeyPairGenerator keyPairGenerator;
-
-    @Inject
-    @Named("X509")
-    private CertificateGeneratorFactory certificateGeneratorFactory;
-
-    @Inject
-    private X509ExtensionBuilder extensionBuilder;
-
-    @Inject
-    @Named("SHA256withRSAEncryption")
-    private SignerFactory signerFactory;
-
-    @Inject
     private ReplicationFileStore fileStore;
 
-    private X509CertificateGenerationParameters generationParameters;
-
-    @Override
-    public void initialize() throws InitializationException
-    {
-        this.generationParameters = new X509CertificateGenerationParameters(0, this.extensionBuilder
-            .addBasicConstraints(true).addKeyUsage(true, EnumSet.of(KeyUsage.keyCertSign, KeyUsage.cRLSign)).build());
-    }
+    @Inject
+    private ObservationManager observation;
 
     /**
      * @param instance the instance for which to get the {@link CertifiedKeyPair}
@@ -122,22 +90,30 @@ public class CertifiedKeyPairStore implements Initializable
      */
     public CertifiedKeyPair createCertifiedKeyPair(String instance) throws ReplicationException
     {
-        AsymmetricKeyPair keys = this.keyPairGenerator.generate();
-        Signer signer = this.signerFactory.getInstance(true, keys.getPrivate());
-        CertificateGenerator certificateGenerator =
-            this.certificateGeneratorFactory.getInstance(signer, this.generationParameters);
-
         try {
-            // TODO: give more information about the owner instance and the target one
-            CertifiedPublicKey certifiedPublicKey = certificateGenerator.generate(new DistinguishedName("O=XWiki"),
-                keys.getPublic(), new X509CertificateParameters());
-            CertifiedKeyPair keyPair = new CertifiedKeyPair(keys.getPrivate(), certifiedPublicKey);
-            this.keyStore.store(buildFileStoreReference(instance), keyPair);
+            CertifiedKeyPair keyPair = cryptTools.createCertifiedKeyPair();
+
+            // Store the key pair
+            storeCertifiedKeyPair(instance, keyPair);
+
+            // Notify about the new key
+            this.observation.notify(new CertifiedKeyPairCreatedEvent(instance), keyPair);
 
             return keyPair;
         } catch (Exception e) {
             throw new ReplicationException("Error during the asymetric key creation.", e);
         }
+    }
+
+    /**
+     * @param instance the instance associated with the {@link CertifiedKeyPair} to store
+     * @param keyPair the {@link CertifiedKeyPair} associated with the passed instance
+     * @throws KeyStoreException when failing to store the {@link CertifiedKeyPair}
+     * @since 1.4.0
+     */
+    public void storeCertifiedKeyPair(String instance, CertifiedKeyPair keyPair) throws KeyStoreException
+    {
+        this.keyStore.store(buildFileStoreReference(instance), keyPair);
     }
 
     private FileStoreReference buildFileStoreReference(String instance)

@@ -19,7 +19,13 @@
  */
 package org.xwiki.replication.test;
 
+import java.util.List;
+
+import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xwiki.test.integration.XWikiExecutor;
 import org.xwiki.test.ui.PageObjectSuite;
 
 /**
@@ -28,7 +34,41 @@ import org.xwiki.test.ui.PageObjectSuite;
  * @version $Id: 11a75bb6173a87e719b5af67bd16b664a8ff23a7 $
  */
 @RunWith(PageObjectSuite.class)
-@PageObjectSuite.Executors(3)
+@PageObjectSuite.Executors(4)
 public class AllITs
 {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(AllITs.class);
+
+    public static final int INSTANCE_0 = 0;
+
+    public static final int INSTANCE_0_2 = 3;
+
+    public static final int INSTANCE_1 = 1;
+
+    public static final int INSTANCE_2 = 2;
+
+    @PageObjectSuite.PreStart
+    public void preStart(List<XWikiExecutor> executors) throws Exception
+    {
+        setupChannel(executors.get(INSTANCE_0), "tcp");
+        setupChannel(executors.get(INSTANCE_0_2), "tcp");
+    }
+
+    private void setupChannel(XWikiExecutor executor, String channelName) throws Exception
+    {
+        if (executor.getExecutionDirectory() != null) {
+            PropertiesConfiguration properties = executor.loadXWikiPropertiesConfiguration();
+            properties.setProperty("observation.remote.enabled", "true");
+            properties.setProperty("observation.remote.channels", channelName);
+            executor.saveXWikiProperties();
+
+            setupExecutor(executor);
+        }
+    }
+
+    public static void setupExecutor(XWikiExecutor executor)
+    {
+        // Force bind_addr since tcp jgroups configuration expect cluster members to listen localhost by default
+        executor.setXWikiOpts("-Djgroups.bind_addr=localhost -Xmx512m");
+    }
 }

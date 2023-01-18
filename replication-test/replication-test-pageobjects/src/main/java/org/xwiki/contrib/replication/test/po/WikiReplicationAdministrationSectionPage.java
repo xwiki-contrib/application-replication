@@ -63,10 +63,26 @@ public class WikiReplicationAdministrationSectionPage extends AdministrationSect
         return new WikiReplicationAdministrationSectionPage();
     }
 
+    /**
+     * @since 1.4.0
+     */
+    public String getCurrentName()
+    {
+        return this.currentNameInput.getAttribute("value");
+    }
+
     public void setCurrentName(String name)
     {
         this.currentNameInput.clear();
         this.currentNameInput.sendKeys(name);
+    }
+
+    /**
+     * @since 1.4.0
+     */
+    public String getCurrentURI()
+    {
+        return this.currentURIInput.getAttribute("value");
     }
 
     public void setCurrentURI(String uri)

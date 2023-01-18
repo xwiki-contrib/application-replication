@@ -30,6 +30,9 @@ org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageStore
 org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageQueue
 org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageStore
 org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore
+org.xwiki.contrib.replication.internal.sign.CertifiedKeyPairEventConverter
+org.xwiki.contrib.replication.internal.sign.CertifiedKeyPairListener
 org.xwiki.contrib.replication.internal.sign.CertifiedKeyPairStore
+org.xwiki.contrib.replication.internal.sign.CryptTools
 org.xwiki.contrib.replication.internal.sign.SignatureManager
 org.xwiki.contrib.replication.script.ReplicationScriptService

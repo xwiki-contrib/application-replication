@@ -20,24 +20,16 @@
 package org.xwiki.contrib.replication.internal.sign;
 
 import java.io.IOException;
-import java.util.Base64;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.crypto.params.cipher.asymmetric.PrivateKeyParameters;
-import org.xwiki.crypto.pkix.CertificateFactory;
 import org.xwiki.crypto.pkix.params.CertifiedPublicKey;
-import org.xwiki.crypto.signer.Signer;
-import org.xwiki.crypto.signer.SignerFactory;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Deal with the concerns related to the management, storage and use of asymetric keys.
@@ -52,12 +44,7 @@ public class SignatureManager
     private CertifiedKeyPairStore store;
 
     @Inject
-    @Named("X509")
-    private CertificateFactory certificateFactory;
-
-    @Inject
-    @Named("SHA256withRSAEncryption")
-    private SignerFactory signerFactory;
+    private CryptTools cryptTools;
 
     /**
      * @param instance the instance for which to sign the content
@@ -84,14 +71,7 @@ public class SignatureManager
      */
     public String sign(PrivateKeyParameters pk, String content) throws ReplicationException
     {
-        try {
-            Signer signer = this.signerFactory.getInstance(true, pk);
-            signer.update(content.getBytes(UTF_8));
-
-            return Base64.getEncoder().encodeToString(signer.generate());
-        } catch (Exception e) {
-            throw new ReplicationException(String.format("Error while signing [%s]", content), e);
-        }
+        return this.cryptTools.sign(pk, content);
     }
 
     /**
@@ -104,20 +84,7 @@ public class SignatureManager
     public boolean verify(ReplicationInstance instance, String content, String signedContent)
         throws ReplicationException
     {
-        // If no signature associated accept anything
-        if (instance.getReceiveKey() == null) {
-            return true;
-        }
-
-        try {
-            Signer signer = this.signerFactory.getInstance(false, instance.getReceiveKey().getPublicKeyParameters());
-            signer.update(content.getBytes(UTF_8));
-
-            return signer.verify(Base64.getDecoder().decode(signedContent));
-        } catch (Exception e) {
-            throw new ReplicationException(
-                String.format("Error while verifying signature [%s] for [%s]", signedContent, instance), e);
-        }
+        return this.cryptTools.verify(instance, content, signedContent);
     }
 
     /**
@@ -147,7 +114,7 @@ public class SignatureManager
      */
     public CertifiedPublicKey unserializeKey(String key) throws IOException
     {
-        return StringUtils.isEmpty(key) ? null : this.certificateFactory.decode(Base64.getDecoder().decode(key));
+        return this.cryptTools.unserializePublicKey(key);
     }
 
     /**
@@ -157,13 +124,7 @@ public class SignatureManager
      */
     public String serializeKey(CertifiedPublicKey key) throws IOException
     {
-        if (key == null) {
-            return null;
-        }
-
-        byte[] encoded = key.getEncoded();
-
-        return Base64.getEncoder().encodeToString(encoded);
+        return cryptTools.serializePublicKey(key);
     }
 
     /**

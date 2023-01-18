@@ -58,6 +58,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
+import static org.xwiki.replication.test.AllITs.INSTANCE_0;
+import static org.xwiki.replication.test.AllITs.INSTANCE_0_2;
+import static org.xwiki.replication.test.AllITs.INSTANCE_1;
+import static org.xwiki.replication.test.AllITs.INSTANCE_2;
+
 /**
  * Verify the document cache update based on distributed events.
  * 
@@ -260,14 +265,14 @@ public class ReplicationIT extends AbstractTest
     @Test
     public void all() throws Exception
     {
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().loginAsSuperAdmin();
         this.uri0 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         this.uri1 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
         getUtil().loginAsSuperAdmin();
         this.uri1 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         this.uri2 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
         getUtil().loginAsSuperAdmin();
         this.uri2 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
@@ -313,31 +318,35 @@ public class ReplicationIT extends AbstractTest
     private void instances() throws InterruptedException
     {
         // Configure instance0 name and URI
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         WikiReplicationAdministrationSectionPage admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
         admin0.setCurrentName(INSTANCE_NAME_0);
         admin0.setCurrentURI(this.proxyURI0);
         admin0 = admin0.clickSaveButton();
+        // Make sure the other cluster member have the changes
+        getUtil().switchExecutor(INSTANCE_0_2);
+        admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
+        assertEquals(INSTANCE_NAME_0, admin0.getCurrentName());
+        assertEquals(this.proxyURI0, admin0.getCurrentURI());
         // Configure instance1 name and URI
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         WikiReplicationAdministrationSectionPage admin1 = WikiReplicationAdministrationSectionPage.gotoPage();
         admin1.setCurrentName(INSTANCE_NAME_1);
         admin1.setCurrentURI(this.proxyURI1);
         admin1 = admin0.clickSaveButton();
         // Configure instance2 name and URI
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         WikiReplicationAdministrationSectionPage admin2 = WikiReplicationAdministrationSectionPage.gotoPage();
         admin2.setCurrentName(INSTANCE_NAME_2);
         admin2.setCurrentURI(this.proxyURI2);
         admin2 = admin0.clickSaveButton();
 
         // Go back to instance1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
         // Link to instance1
         admin0.setRequestedURI(this.proxyURI1);
         admin0 = admin0.requestInstance();
-
         // Check if the instance has been added to requested instances
         List<RequestedInstancePane> requestedInstances = admin0.getRequestedInstances();
         assertEquals(1, requestedInstances.size());
@@ -345,8 +354,18 @@ public class ReplicationIT extends AbstractTest
         assertEquals(this.proxyURI1, requestedInstance.getURI());
         String sendkey0To1 = requestedInstance.getSendKey();
 
+        // Make sure the other cluster member have the changes
+        getUtil().switchExecutor(INSTANCE_0_2);
+        admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
+        // Check if the instance has been added to requested instances
+        requestedInstances = admin0.getRequestedInstances();
+        assertEquals(1, requestedInstances.size());
+        requestedInstance = requestedInstances.get(0);
+        assertEquals(this.proxyURI1, requestedInstance.getURI());
+        assertEquals(sendkey0To1, requestedInstance.getSendKey());
+
         // Go to instance1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         // Check if the instance has been added to requesting instances
         admin1 = assertEqualsRequestingInstancesWithTimeout(1);
 
@@ -379,7 +398,7 @@ public class ReplicationIT extends AbstractTest
         assertEquals(0, requestingInstances.size());
 
         // Go back to instance0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         // Check if the instance has been moved to registered instances
         admin0 = assertEqualsRequestedInstancesWithTimeout(0);
 
@@ -390,7 +409,6 @@ public class ReplicationIT extends AbstractTest
         assertEquals(this.proxyURI1, registeredInstance.getURI());
         assertEquals(INSTANCE_NAME_1, registeredInstance.getName());
         String receivekey1To0 = registeredInstance.getReceiveKey();
-
         assertEquals(sendkey1To0, receivekey1To0);
 
         // Reset the send key to instance1
@@ -399,8 +417,19 @@ public class ReplicationIT extends AbstractTest
         registeredInstance = registeredInstances.get(0);
         sendkey0To1 = registeredInstance.getSendKey();
 
+        // Make sure the other cluster member have the changes
+        getUtil().switchExecutor(INSTANCE_0);
+        // Check if the instance has been moved to registered instances
+        admin0 = assertEqualsRequestedInstancesWithTimeout(0);
+        registeredInstances = admin0.getRegisteredInstances();
+        assertEquals(1, registeredInstances.size());
+        registeredInstance = registeredInstances.get(0);
+        assertEquals(this.proxyURI1, registeredInstance.getURI());
+        assertEquals(INSTANCE_NAME_1, registeredInstance.getName());
+        assertEquals(sendkey1To0, registeredInstance.getReceiveKey());
+
         // Go to instance1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         // Make sure the receive key for instance0 was updated
         admin1 = WikiReplicationAdministrationSectionPage.gotoPage();
         registeredInstances = admin1.getRegisteredInstances();
@@ -410,7 +439,7 @@ public class ReplicationIT extends AbstractTest
         assertEquals(sendkey0To1, receivekey0To1);
 
         // Go to instance2
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         // Check if the instance has been added to requesting instances
         admin2 = assertEqualsRequestingInstancesWithTimeout(1);
 
@@ -429,20 +458,25 @@ public class ReplicationIT extends AbstractTest
         // FULL replication
 
         // Configure ReplicationALL space replication on instance0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         PageReplicationAdministrationSectionPage replicationPageAdmin =
             PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_ALL);
         replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.ALL);
         // Save replication configuration
         replicationPageAdmin.save();
 
+        // Make sure the other cluster member have the changes
+        getUtil().switchExecutor(INSTANCE_0_2);
+        replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL.getParent(), "all");
+        assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
+
         // Make sure the configuration is replicated on instance1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL.getParent(), "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
 
         // Make sure the configuration is replicated on instance2
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL.getParent(), "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
 
@@ -450,7 +484,7 @@ public class ReplicationIT extends AbstractTest
         // REFERENCE replication
 
         // Configure ReplicationREFERENCE space replication on instance0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_REFERENCE);
         replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.REFERENCE);
         // Save replication configuration
@@ -473,14 +507,14 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Edit a page on XWiki 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         page.setContent("content");
         getUtil().rest().save(page);
         assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
         assertEquals("Current instance", gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
 
         // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
@@ -488,7 +522,7 @@ public class ReplicationIT extends AbstractTest
             gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
 
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
@@ -499,19 +533,19 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Edit a page on XWiki 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         page.setContent("minor content");
         saveMinor(page);
         assertEquals("minor content", getUtil().rest().<Page>get(documentReference).getContent());
 
         // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsContentWithTimeout(documentReference, "minor content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.2", page.getVersion());
 
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertEqualsContentWithTimeout(documentReference, "minor content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.2", page.getVersion());
@@ -521,19 +555,19 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Modify content of the page on XWiki 1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         page.setContent("modified content");
         getUtil().rest().save(page);
         assertEquals("modified content", getUtil().rest().<Page>get(documentReference).getContent());
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsContentWithTimeout(documentReference, "modified content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "2.1", page.getVersion());
 
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 1
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertEqualsContentWithTimeout(documentReference, "modified content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "2.1", page.getVersion());
@@ -543,19 +577,19 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Modify content of the page on XWiki 2
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         page.setContent("modified content 2");
         getUtil().rest().save(page);
         assertEquals("modified content 2", getUtil().rest().<Page>get(documentReference).getContent());
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 2
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsContentWithTimeout(documentReference, "modified content 2");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "3.1", page.getVersion());
 
         // ASSERT) The content in XWiki 1 should be the one set in XWiki 2
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsContentWithTimeout(documentReference, "modified content 2");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "3.1", page.getVersion());
@@ -565,7 +599,7 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Delete a page history version on XWiki 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         History history = getHistory(documentReference);
         HistorySummary historySummary = history.getHistorySummaries().get(0);
         assertEquals("3.1", historySummary.getVersion());
@@ -589,7 +623,7 @@ public class ReplicationIT extends AbstractTest
         assertEquals("1.1", historySummary.getVersion());
 
         // ASSERT) The history in XWiki 1 should be the one set in XWiki 0
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsHistorySizeWithTimeout(documentReference, 3);
         history = getHistory(documentReference);
         historySummary = history.getHistorySummaries().get(0);
@@ -600,7 +634,7 @@ public class ReplicationIT extends AbstractTest
         assertEquals("1.1", historySummary.getVersion());
 
         // ASSERT) The history in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsHistorySizeWithTimeout(documentReference, 3);
         history = getHistory(documentReference);
         historySummary = history.getHistorySummaries().get(0);
@@ -615,7 +649,7 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Delete a page history version on XWiki 1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         getUtil().gotoPage(page.getSpace(), page.getName());
         getUtil().recacheSecretToken();
         getUtil().deleteVersion(page.getSpace(), page.getName(), "3.1");
@@ -628,7 +662,7 @@ public class ReplicationIT extends AbstractTest
         assertEquals("1.1", historySummary.getVersion());
 
         // ASSERT) The history in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsHistorySizeWithTimeout(documentReference, 2);
         assertEquals("modified content", getUtil().rest().<Page>get(documentReference).getContent());
         history = getHistory(documentReference);
@@ -638,7 +672,7 @@ public class ReplicationIT extends AbstractTest
         assertEquals("1.1", historySummary.getVersion());
 
         // ASSERT) The history in XWiki 2 should be the one set in XWiki 1
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertEqualsHistorySizeWithTimeout(documentReference, 2);
         assertEquals("modified content", getUtil().rest().<Page>get(documentReference).getContent());
         history = getHistory(documentReference);
@@ -651,20 +685,20 @@ public class ReplicationIT extends AbstractTest
         // Delete document on XWiki 0
         ////////////////////////////////////
 
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().rest().delete(documentReference);
 
         // TODO: ASSERT) Get the deleted document id
 
         // ASSERT) The document should not exist anymore on XWiki 1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
         assertDoesNotExistWithTimeout(documentReference);
 
         // TODO: ASSERT) The deleted document has the expected id
 
         // ASSERT) The document should not exist anymore on XWiki 2
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
         assertDoesNotExistWithTimeout(documentReference);
     }
@@ -685,7 +719,7 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Edit a page on XWiki 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         page.setContent("content");
         getUtil().rest().save(page);
         page = getUtil().rest().<Page>get(documentReference);
@@ -693,14 +727,14 @@ public class ReplicationIT extends AbstractTest
         assertEquals("1.1", page.getVersion());
 
         // ASSERT) The page should exist but be empty on XWiki 1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsContentWithTimeout(documentReference,
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
 
         // ASSERT) The page should exist but be empty on XWiki 2
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertEqualsContentWithTimeout(documentReference,
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         page = getUtil().rest().<Page>get(documentReference);
@@ -711,7 +745,7 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Edit a page on XWiki 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         page.setContent("modified content");
         getUtil().rest().save(page);
         page = getUtil().rest().<Page>get(documentReference);
@@ -723,14 +757,14 @@ public class ReplicationIT extends AbstractTest
         Thread.sleep(5000);
 
         // ASSERT) That should not have any kind of impact on XWiki 1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}",
             page.getContent());
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
 
         // ASSERT) The page should exist but be empty on XWiki 2
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}",
             page.getContent());
@@ -740,7 +774,7 @@ public class ReplicationIT extends AbstractTest
         // Edit on XWiki 1
         ////////////////////////////////////
 
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         page.setContent("forbidden modified content");
         getUtil().rest().save(page);
         // TODO: this should actually be forbidden (see https://jira.xwiki.org/browse/REPLICAT-113)
@@ -751,7 +785,7 @@ public class ReplicationIT extends AbstractTest
         Thread.sleep(5000);
 
         // ASSERT) That should not have any kind of impact on XWiki 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Document was modified", "modified content", page.getContent());
         assertEquals("2.1", page.getVersion());
@@ -760,13 +794,13 @@ public class ReplicationIT extends AbstractTest
         // Delete document on XWiki 0
         ////////////////////////////////////
 
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().rest().delete(documentReference);
 
         // TODO: ASSERT) Get the deleted document id
 
         // ASSERT) The document should not exist anymore on XWiki 1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
         assertDoesNotExistWithTimeout(documentReference);
 
@@ -813,15 +847,15 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Set replication configuration
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         setConfiguration(page1_1, DocumentReplicationLevel.ALL);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsContentWithTimeout(page1_1, "content1_1");
         assertDoesNotExistWithTimeout(page1_1_1);
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertEqualsContentWithTimeout(page1_1, "content1_1");
         assertDoesNotExistWithTimeout(page1_1_1);
 
@@ -830,16 +864,16 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Set replication configuration
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         setConfiguration(page1_1, DocumentReplicationLevel.REFERENCE);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsContentWithTimeout(page1_1,
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         assertDoesNotExistWithTimeout(page1_1_1);
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertEqualsContentWithTimeout(page1_1,
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         assertDoesNotExistWithTimeout(page1_1_1);
@@ -849,15 +883,15 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Set replication configuration
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         setConfiguration(page1_1, null);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertDoesNotExistWithTimeout(page1_1);
         assertDoesNotExistWithTimeout(page1_1_1);
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertDoesNotExistWithTimeout(page1_1);
         assertDoesNotExistWithTimeout(page1_1_1);
 
@@ -866,17 +900,17 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Set replication configuration
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         setConfiguration(page1Space, DocumentReplicationLevel.ALL);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsContentWithTimeout(page1, "content1");
         assertDoesNotExistWithTimeout(page1_1);
         assertEqualsContentWithTimeout(page1_1_1, "content1_1_1");
         assertEqualsContentWithTimeout(page1_2, "content1_2");
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertEqualsContentWithTimeout(page1, "content1");
         assertDoesNotExistWithTimeout(page1_1);
         assertEqualsContentWithTimeout(page1_1_1, "content1_1_1");
@@ -887,11 +921,11 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Set replication configuration
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         setConfiguration(page1Space, DocumentReplicationLevel.REFERENCE);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsContentWithTimeout(page1,
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         assertDoesNotExistWithTimeout(page1_1);
@@ -900,7 +934,7 @@ public class ReplicationIT extends AbstractTest
         assertEqualsContentWithTimeout(page1_2,
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertEqualsContentWithTimeout(page1,
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         assertDoesNotExistWithTimeout(page1_1);
@@ -914,17 +948,17 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Set replication configuration
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         setConfiguration(page1Space, null);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertDoesNotExistWithTimeout(page1);
         assertDoesNotExistWithTimeout(page1_1);
         assertDoesNotExistWithTimeout(page1_1_1);
         assertDoesNotExistWithTimeout(page1_2);
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertDoesNotExistWithTimeout(page1);
         assertDoesNotExistWithTimeout(page1_1);
         assertDoesNotExistWithTimeout(page1_1_1);
@@ -935,17 +969,17 @@ public class ReplicationIT extends AbstractTest
         ////////////////////////////////////
 
         // Set replication configuration
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         setConfiguration(page1Space, this.proxyURI0, DocumentReplicationLevel.ALL);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsContentWithTimeout(page1, "content1");
         assertDoesNotExistWithTimeout(page1_1);
         assertEqualsContentWithTimeout(page1_1_1, "content1_1_1");
         assertEqualsContentWithTimeout(page1_2, "content1_2");
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertDoesNotExistWithTimeout(page1);
         assertDoesNotExistWithTimeout(page1_1);
         assertDoesNotExistWithTimeout(page1_1_1);
@@ -955,17 +989,17 @@ public class ReplicationIT extends AbstractTest
         // Start ALL replication of page1.page1 space on XWIKI 2
         ////////////////////////////////////
 
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         setConfiguration(page1Space, this.proxyURI2, DocumentReplicationLevel.ALL);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsContentWithTimeout(page1, "content1");
         assertDoesNotExistWithTimeout(page1_1);
         assertEqualsContentWithTimeout(page1_1_1, "content1_1_1");
         assertEqualsContentWithTimeout(page1_2, "content1_2");
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertEqualsContentWithTimeout(page1, "content1");
         assertDoesNotExistWithTimeout(page1_1);
         assertEqualsContentWithTimeout(page1_1_1, "content1_1_1");
@@ -975,17 +1009,17 @@ public class ReplicationIT extends AbstractTest
         // Stop replication of page1.page1 space on XWIKI 0
         ////////////////////////////////////
 
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         setConfiguration(page1Space, this.proxyURI0, null);
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertDoesNotExistWithTimeout(page1);
         assertDoesNotExistWithTimeout(page1_1);
         assertDoesNotExistWithTimeout(page1_1_1);
         assertDoesNotExistWithTimeout(page1_2);
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
-        getUtil().switchExecutor(2);
+        getUtil().switchExecutor(INSTANCE_2);
         assertEqualsContentWithTimeout(page1, "content1");
         assertDoesNotExistWithTimeout(page1_1);
         assertEqualsContentWithTimeout(page1_1_1, "content1_1_1");
@@ -997,34 +1031,34 @@ public class ReplicationIT extends AbstractTest
         LocalDocumentReference reference = new LocalDocumentReference("Like", "WebHome");
 
         // Clean any pre-existing
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().rest().delete(reference);
 
         // Configure replication
         setConfiguration(reference, DocumentReplicationLevel.ALL);
         // Make sure to wait until the configuration is replicated
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertReplicationModeWithTimeout(reference, "all");
 
         // Create a new page on XWIKI 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().rest().savePage(reference, "content", "");
         getUtil().rest().<Page>get(reference);
 
         // Make sure the page replicated on XWIKI 1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsContentWithTimeout(reference, "content");
         getUtil().rest().<Page>get(reference);
 
         // Set like on XWIKI 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().gotoPage(reference);
         LikeButton like = new LikeButton();
         like.clickToLike();
         assertEqualsLikeWithTimeout(reference, 1);
 
         // Make sure the like is replicated
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsLikeWithTimeout(reference, 1);
     }
 
@@ -1033,29 +1067,29 @@ public class ReplicationIT extends AbstractTest
         LocalDocumentReference documentReference = new LocalDocumentReference("Network", "WebHome");
 
         // Clean any pre-existing
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().rest().delete(documentReference);
 
         // Configure replication
         setConfiguration(documentReference, DocumentReplicationLevel.ALL);
         // Make sure to wait until the configuration is replicated
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertReplicationModeWithTimeout(documentReference, "all");
 
         // Block the proxy
         this.proxy1.stubFor(this.proxyFailingBuilder);
 
         // Create a new page on XWIKI 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().rest().savePage(documentReference, "content", "");
         Page page0 = getUtil().rest().<Page>get(documentReference);
 
         // Make sure the page is not replicated on XWIKI 1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertDoesNotExistWithTimeout(documentReference);
 
         // Make sure the UI indicate this waiting message
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         WikiReplicationAdministrationSectionPage admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
         List<RegisteredInstancePane> instances = admin0.getRegisteredInstances();
         RegisteredInstancePane instance = instances.get(0);
@@ -1072,7 +1106,7 @@ public class ReplicationIT extends AbstractTest
         instance.clickRetry();
 
         // Make sure the document is finally replicated on XWIKI 1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsContentWithTimeout(documentReference, "content");
         Page page1 = getUtil().rest().<Page>get(documentReference);
 
@@ -1085,22 +1119,22 @@ public class ReplicationIT extends AbstractTest
         LocalDocumentReference documentReference = new LocalDocumentReference("Conflict", "WebHome");
 
         // Clean any pre-existing
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().rest().delete(documentReference);
 
         // Configure replication
         setConfiguration(documentReference, DocumentReplicationLevel.ALL);
         // Make sure to wait until the configuration is replicated
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertReplicationModeWithTimeout(documentReference, "all");
 
         // Create a new page on XWIKI 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().rest().savePage(documentReference, "content", "");
         assertEqualsHistorySizeWithTimeout(documentReference, 1);
 
         // Make sure the page is replicated
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsContentWithTimeout(documentReference, "content");
         assertEqualsHistorySizeWithTimeout(documentReference, 1);
 
@@ -1109,11 +1143,11 @@ public class ReplicationIT extends AbstractTest
         this.proxy1.stubFor(this.proxyFailingBuilder);
 
         // Modify the page in XWIKI 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().rest().savePage(documentReference, "content0", "");
 
         // Modify the page in XWIKI 1
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         getUtil().rest().savePage(documentReference, "content1", "");
 
         // Make sure that at there is at least 1 second between the save and the replication to have an impact on the
@@ -1121,9 +1155,9 @@ public class ReplicationIT extends AbstractTest
         Thread.sleep(1000);
 
         // Make sure the message are blocked
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsHistorySizeWithTimeout(documentReference, 2);
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsHistorySizeWithTimeout(documentReference, 2);
 
         // Enabled back network
@@ -1131,27 +1165,27 @@ public class ReplicationIT extends AbstractTest
         this.proxy1.stubFor(this.proxyStubBuilder1);
 
         // Force pushing waiting messages on XWIKI 0
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         WikiReplicationAdministrationSectionPage.gotoPage().getRegisteredInstances().get(0).clickRetry();
 
         // Wait for the conflict resolution
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsHistorySizeWithTimeout(documentReference, 3);
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsHistorySizeWithTimeout(documentReference, 3);
 
         // Check the result of the conflict resolution is the same on both instances
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         assertEqualsContentWithTimeout(documentReference, "content1");
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsContentWithTimeout(documentReference, "content1");
 
         // Make sure a warning is shown in case of conflict
-        getUtil().switchExecutor(0);
+        getUtil().switchExecutor(INSTANCE_0);
         ReplicationPage page0 = gotoPage(documentReference);
         ReplicationConflictPane conflict0 = page0.getReplicationConflictPane();
         assertNotNull(conflict0);
-        getUtil().switchExecutor(1);
+        getUtil().switchExecutor(INSTANCE_1);
         ReplicationPage page1 = gotoPage(documentReference);
         ReplicationConflictPane conflict1 = page1.getReplicationConflictPane();
         assertNotNull(conflict1);
