@@ -5,6 +5,7 @@ org.xwiki.contrib.replication.entity.internal.DocumentReplicationInstanceRecover
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationListener
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationRelay
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils
+org.xwiki.contrib.replication.entity.internal.EntityReplicationConfiguration
 org.xwiki.contrib.replication.entity.internal.EntityReplicationMessageEventInitializer
 org.xwiki.contrib.replication.entity.internal.conflict.DocumentReplicationConflictMessage
 org.xwiki.contrib.replication.entity.internal.conflict.DocumentReplicationConflictReceiver

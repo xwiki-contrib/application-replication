@@ -33,6 +33,7 @@ import javax.inject.Provider;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.EntityReplicationConfiguration;
 import org.xwiki.filter.instance.input.DocumentInstanceInputProperties;
 import org.xwiki.filter.output.DefaultOutputStreamOutputTarget;
 import org.xwiki.filter.xar.output.XAROutputProperties;
@@ -84,6 +85,9 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     private DocumentRevisionProvider revisionProvider;
 
     @Inject
+    private EntityReplicationConfiguration configuration;
+
+    @Inject
     private Logger logger;
 
     private String version;
@@ -113,11 +117,15 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
         try {
             XWikiDocumentArchive archive = document.getDocumentArchive(xcontext);
             Collection<XWikiRCSNodeInfo> nodes = archive.getNodes();
-            List<DocumentAncestor> ancestors = new ArrayList<>(nodes.size());
+            int maxCount = this.configuration.getDocumentAncestorMaxCount();
+            List<DocumentAncestor> ancestors = new ArrayList<>(Integer.min(maxCount, nodes.size()));
             for (XWikiRCSNodeInfo node : nodes) {
                 String nodeVersion = node.getVersion().toString();
                 if (!nodeVersion.equals(document.getVersion())) {
                     ancestors.add(new DocumentAncestor(nodeVersion, node.getDate()));
+                }
+                if (ancestors.size() == maxCount) {
+                    break;
                 }
             }
             this.modifiableMetadata.put(METADATA_ANCESTORS, DocumentAncestorConverter.toStrings(ancestors));

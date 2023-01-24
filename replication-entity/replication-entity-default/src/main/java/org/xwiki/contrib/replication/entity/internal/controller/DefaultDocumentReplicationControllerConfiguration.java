@@ -34,6 +34,7 @@ import org.xwiki.configuration.ConfigurationSource;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfiguration;
+import org.xwiki.contrib.replication.entity.internal.EntityReplicationConfiguration;
 import org.xwiki.model.reference.EntityReference;
 
 /**
@@ -60,7 +61,8 @@ public class DefaultDocumentReplicationControllerConfiguration implements Docume
         throws ReplicationException
     {
         if (this.controllerConfiguration == null) {
-            String hint = this.configuration.getProperty("replication.controller.configuration", "standard");
+            String hint = this.configuration
+                .getProperty(EntityReplicationConfiguration.PREFIX + "controller.configuration", "standard");
 
             try {
                 this.controllerConfiguration = this.componentManagerProvider.get()
