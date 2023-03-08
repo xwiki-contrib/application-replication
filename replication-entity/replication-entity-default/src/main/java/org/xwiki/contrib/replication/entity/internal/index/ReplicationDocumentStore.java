@@ -54,6 +54,8 @@ public class ReplicationDocumentStore
 
     private static final String PROP_CONFLICT = "conflict";
 
+    private static final String PROP_DOCID = "docId";
+
     @Inject
     @Named(XWikiHibernateBaseStore.HINT)
     private XWikiStoreInterface hibernateStore;
@@ -116,10 +118,11 @@ public class ReplicationDocumentStore
 
     private Void updateConflict(long docId, boolean conflict, Session session)
     {
+        // Not using the Hibernate session entity API to avoid classloader problems
         Query<?> query =
             session.createQuery("UPDATE HibernateReplicationDocument SET conflict=:conflict WHERE docId=:docId");
         query.setParameter(PROP_CONFLICT, conflict);
-        query.setParameter("docId", docId);
+        query.setParameter(PROP_DOCID, docId);
         query.executeUpdate();
 
         return null;
@@ -127,7 +130,10 @@ public class ReplicationDocumentStore
 
     private Void deleteHibernateReplicationDocument(long docId, Session session)
     {
-        session.delete(new HibernateReplicationDocument(docId));
+        // Not using the Hibernate session entity API to avoid classloader problems
+        Query<?> query = session.createQuery("DELETE HibernateReplicationDocument WHERE docId=:docId");
+        query.setParameter(PROP_DOCID, docId);
+        query.executeUpdate();
 
         return null;
     }
@@ -209,6 +215,7 @@ public class ReplicationDocumentStore
         try {
             xcontext.setWikiReference(reference.getWikiReference());
 
+            // Not using the Hibernate session entity API to avoid classloader problems
             return store
                 .executeRead(xcontext,
                     s -> s.createQuery(
