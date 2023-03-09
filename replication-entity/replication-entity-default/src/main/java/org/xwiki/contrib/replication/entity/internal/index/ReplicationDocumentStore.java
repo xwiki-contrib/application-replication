@@ -28,6 +28,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.hibernate.Session;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
@@ -106,23 +107,56 @@ public class ReplicationDocumentStore
      */
     public void setConflict(DocumentReference document, boolean conflict) throws ReplicationException
     {
-        executeWrite(session -> updateConflict(toDocumentId(document), conflict, session), document.getWikiReference());
+        executeWrite(session -> update(toDocumentId(document), PROP_CONFLICT, conflict, session),
+            document.getWikiReference());
     }
 
-    private Void saveHibernateReplicationDocument(long docId, String owner, Session session)
+    private Void saveHibernateReplicationDocument(long docId, String owner, Session session) throws XWikiException
     {
-        session.saveOrUpdate(new HibernateReplicationDocument(docId, owner));
+        XWikiContext xcontext = this.xcontextProvider.get();
+
+        if (get(docId, PROP_DOCID, Long.class, xcontext) != null) {
+            update(docId, PROP_OWNER, owner, session);
+        } else {
+            insert(docId, owner, false, session);
+        }
 
         return null;
     }
 
-    private Void updateConflict(long docId, boolean conflict, Session session)
+    private Void update(long docId, String propertyName, Object propertyValue, Session session)
     {
         // Not using the Hibernate session entity API to avoid classloader problems
-        Query<?> query =
-            session.createQuery("UPDATE HibernateReplicationDocument SET conflict=:conflict WHERE docId=:docId");
-        query.setParameter(PROP_CONFLICT, conflict);
+        Query<?> query = session.createQuery(
+            "UPDATE HibernateReplicationDocument SET " + propertyName + " = :propertyUpdate WHERE docId = :docId");
         query.setParameter(PROP_DOCID, docId);
+        query.setParameter("propertyUpdate", propertyValue);
+
+        query.executeUpdate();
+
+        return null;
+    }
+
+    private <T> T get(long docId, String propertyName, Class<T> resultType, Session session)
+    {
+        // Not using the Hibernate session entity API to avoid classloader problems
+        Query<T> query = session.createQuery(
+            "SELECT " + propertyName + " FROM HibernateReplicationDocument where docId = :docId", resultType);
+        query.setParameter(PROP_DOCID, docId);
+
+        return query.uniqueResult();
+    }
+
+    private Void insert(long docId, String owner, boolean conflict, Session session)
+    {
+        // Not using the Hibernate session entity API to avoid classloader problems
+        // Using native query since it's impossible to insert values with HQL
+        NativeQuery<?> query = session.createNativeQuery(
+            "INSERT INTO replication_document (docId, owner, conflict) VALUES (:docId, :owner, :conflict)");
+        query.setParameter(PROP_DOCID, docId);
+        query.setParameter(PROP_OWNER, owner);
+        query.setParameter(PROP_CONFLICT, conflict);
+
         query.executeUpdate();
 
         return null;
@@ -169,7 +203,7 @@ public class ReplicationDocumentStore
 
         try {
             return store.executeRead(xcontext, s -> s
-                .createQuery("select owner from HibernateReplicationDocument where docId in :documents", String.class)
+                .createQuery("SELECT owner FROM HibernateReplicationDocument WHERE docId IN :documents", String.class)
                 .setParameter("documents", documents.stream().map(this::toDocumentId).collect(Collectors.toList()))
                 .list());
         } catch (XWikiException e) {
@@ -206,25 +240,27 @@ public class ReplicationDocumentStore
         }
     }
 
+    private <T> T get(long docId, String property, Class<T> resultType, XWikiContext xcontext) throws XWikiException
+    {
+        XWikiHibernateStore store = (XWikiHibernateStore) this.hibernateStore;
+
+        // Not using the Hibernate session entity API to avoid classloader problems
+        return store.executeRead(xcontext, s -> get(docId, property, resultType, s));
+    }
+
     private <T> T get(DocumentReference reference, String property, Class<T> resultType) throws ReplicationException
     {
         XWikiContext xcontext = this.xcontextProvider.get();
-        XWikiHibernateStore store = (XWikiHibernateStore) this.hibernateStore;
 
         WikiReference currentWiki = xcontext.getWikiReference();
         try {
             xcontext.setWikiReference(reference.getWikiReference());
 
-            // Not using the Hibernate session entity API to avoid classloader problems
-            return store
-                .executeRead(xcontext,
-                    s -> s.createQuery(
-                        "select " + property + " from HibernateReplicationDocument where docId = :document", resultType)
-                        .setParameter("document", toDocumentId(reference)).uniqueResult());
+            return get(toDocumentId(reference), property, resultType, xcontext);
         } catch (XWikiException e) {
-            throw new ReplicationException("Failed to execute the read", e);
+            throw new ReplicationException("Failed to execute the select", e);
         } finally {
-            xcontext.setWikiReference(currentWiki);            
+            xcontext.setWikiReference(currentWiki);
         }
     }
 }
