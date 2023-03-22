@@ -33,6 +33,7 @@ import org.xwiki.model.reference.LocalDocumentReference;
 
 import com.xpn.xwiki.doc.AbstractMandatoryClassInitializer;
 import com.xpn.xwiki.objects.classes.BaseClass;
+import com.xpn.xwiki.objects.classes.TextAreaClass.ContentType;
 
 /**
  * @version $Id$
@@ -101,7 +102,7 @@ public class StandardReplicationInstanceClassInitializer extends AbstractMandato
     {
         xclass.addTextField(FIELD_URI, "URI", 30);
         xclass.addTextField(FIELD_NAME, "Name", 30);
-        xclass.addTextAreaField(FIELD_RECEIVEKEY, "Receive key", 30, 1);
+        xclass.addTextAreaField(FIELD_RECEIVEKEY, "Receive key", 30, 1, ContentType.PURE_TEXT);
 
         xclass.addStaticListField(FIELD_STATUS, "Status",
             Status.REGISTERED.name() + '|' + Status.REQUESTED.name() + '|' + Status.REQUESTING.name());
