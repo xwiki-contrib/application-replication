@@ -30,6 +30,7 @@ import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.EntityReplication;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
@@ -88,6 +89,6 @@ public class DocumentUnreplicateReplicationReceiver extends AbstractDocumentRepl
     public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
         throws ReplicationException
     {
-        return this.documentRelay.relayDocumentUnreplicate(message);
+        return this.documentRelay.relay(message, DocumentReplicationLevel.REFERENCE);
     }
 }

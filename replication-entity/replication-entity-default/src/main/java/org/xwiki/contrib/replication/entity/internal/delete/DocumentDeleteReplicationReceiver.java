@@ -29,6 +29,7 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.refactoring.batch.BatchOperationExecutor;
@@ -82,6 +83,6 @@ public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicati
     public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
         throws ReplicationException
     {
-        return this.documentRelay.relayDocumentDelete(message);
+        return this.documentRelay.relay(message, DocumentReplicationLevel.REFERENCE);
     }
 }
