@@ -21,21 +21,27 @@ package org.xwiki.contrib.replication.entity.internal.update;
 
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils;
+import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
+import org.xwiki.contrib.replication.entity.internal.repairrequest.DocumentRepairRequestReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.XWikiContext;
@@ -58,6 +64,12 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
 
     @Inject
     private DocumentUpdateConflictResolver conflictResolver;
+
+    @Inject
+    private ReplicationDocumentStore documentStore;
+
+    @Inject
+    private Provider<DocumentRepairRequestReplicationMessage> repairRequestMessageProvider;
 
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
@@ -112,29 +124,50 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             throw new ReplicationException("Failed to save document update", e);
         }
 
-        // Deal with conflict only if the current instance is the document owner (others just wait for the correction)
-        if (this.controllerUtils.isOwner(documentReference)) {
-            Collection<String> values =
-                message.getCustomMetadata().get(DocumentUpdateReplicationMessage.METADATA_ANCESTORS);
+        // Identify a conflict
+        Collection<String> values =
+            message.getCustomMetadata().get(DocumentUpdateReplicationMessage.METADATA_ANCESTORS);
 
-            // If no ancestor is provided we cannot really know if there is a conflict
-            if (values != null) {
-                // Get previous database version
-                String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
-                Date currentVersionDate = currentDocument.isNew() ? null : currentDocument.getDate();
+        // If no ancestor is provided we cannot really know if there is a conflict
+        if (values != null) {
+            // Get previous database version
+            String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
+            Date currentVersionDate = currentDocument.isNew() ? null : currentDocument.getDate();
 
-                List<DocumentAncestor> ancestors = DocumentAncestorConverter.toDocumentAncestors(values);
+            List<DocumentAncestor> ancestors = DocumentAncestorConverter.toDocumentAncestors(values);
 
-                String previousAncestorVersion = ancestors.get(0).getVersion();
-                Date previousAncestorVersionDate = ancestors.get(0).getDate();
+            String previousAncestorVersion = ancestors.get(0).getVersion();
+            Date previousAncestorVersionDate = ancestors.get(0).getDate();
 
-                // Check if the previous version is the expected one
-                if (!Objects.equals(currentVersion, previousAncestorVersion)
-                    || !Objects.equals(currentVersionDate, previousAncestorVersionDate)) {
-                    // If not create and save a merged version of the document
+            // Check if the previous version is the expected one
+            if (!Objects.equals(currentVersion, previousAncestorVersion)
+                || !Objects.equals(currentVersionDate, previousAncestorVersionDate)) {
+                if (this.controllerUtils.isOwner(documentReference)) {
+                    // Actually handle the conflict only of the current instance is the owner
+                    // Create and save a merged version of the document
                     this.conflictResolver.merge(ancestors, currentDocument, newDocument, xcontext);
+                } else {
+                    // Otherwise just ask the owner for a repair (it case the owner did not notice)
+                    requestRepair(documentReference);
                 }
             }
+        }
+    }
+
+    private void requestRepair(DocumentReference documentReference) throws ReplicationException
+    {
+        String owner = this.documentStore.getOwner(documentReference);
+
+        if (owner != null) {
+            Set<String> receivers = Collections.singleton(owner);
+
+            this.controller.send(m -> {
+                DocumentRepairRequestReplicationMessage repairRequestMessage = this.repairRequestMessageProvider.get();
+
+                repairRequestMessage.initialize(documentReference, receivers, m);
+
+                return repairRequestMessage;
+            }, documentReference, DocumentReplicationLevel.ALL, receivers);
         }
     }
 
