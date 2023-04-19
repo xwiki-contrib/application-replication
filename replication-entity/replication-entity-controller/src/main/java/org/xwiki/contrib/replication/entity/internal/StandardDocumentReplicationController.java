@@ -32,10 +32,12 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.AbstractDocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
 import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.XWikiException;
@@ -53,6 +55,9 @@ public class StandardDocumentReplicationController extends AbstractDocumentRepli
     @Inject
     private EntityReplicationStore store;
 
+    @Inject
+    private DocumentReplicationMessageReader documentMessageTool;
+
     @Override
     public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference)
         throws ReplicationException
@@ -61,10 +66,20 @@ public class StandardDocumentReplicationController extends AbstractDocumentRepli
     }
 
     @Override
+    @Deprecated(since = "1.6.0")
     public List<DocumentReplicationControllerInstance> getRelayConfiguration(EntityReference entityReference)
         throws ReplicationException
     {
         return getConfiguration(entityReference, true);
+    }
+
+    @Override
+    public List<DocumentReplicationControllerInstance> getRelayConfiguration(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        EntityReference reference = this.documentMessageTool.getEntityReference(message);
+
+        return getConfiguration(reference, true);
     }
 
     private DocumentReplicationControllerInstance getConfiguration(EntityReference entityReference,

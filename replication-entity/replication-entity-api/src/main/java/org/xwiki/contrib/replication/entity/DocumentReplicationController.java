@@ -20,6 +20,7 @@
 package org.xwiki.contrib.replication.entity;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.xwiki.component.annotation.Role;
@@ -68,9 +69,28 @@ public interface DocumentReplicationController
      *            case of a relay
      * @return the registered instances on which to replicate the document
      * @throws ReplicationException when failing to get the configuration
+     * @deprecated use {@link #getRelayConfiguration(ReplicationReceiverMessage)} instead
      */
-    List<DocumentReplicationControllerInstance> getRelayConfiguration(EntityReference entityReference)
-        throws ReplicationException;
+    @Deprecated(since = "1.6.0")
+    default List<DocumentReplicationControllerInstance> getRelayConfiguration(EntityReference entityReference)
+        throws ReplicationException
+    {
+        return Collections.emptyList();
+    }
+
+    /**
+     * Indicate the list of registered instances this messages should be relayed to.
+     * 
+     * @param message the message to relay
+     * @return the registered instances on which to replicate the document
+     * @throws ReplicationException when failing to get the configuration
+     * @since 1.6.0
+     */
+    default List<DocumentReplicationControllerInstance> getRelayConfiguration(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        return Collections.emptyList();
+    }
 
     /**
      * @param document the created document

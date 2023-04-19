@@ -40,7 +40,6 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstanc
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
 import org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage;
-import org.xwiki.model.reference.DocumentReference;
 
 /**
  * @version $Id$
@@ -71,10 +70,10 @@ public class DocumentReplicationRelay
             .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
     }
 
-    private List<ReplicationInstance> getRelayInstances(DocumentReference reference,
+    private List<ReplicationInstance> getRelayInstances(ReplicationReceiverMessage message,
         DocumentReplicationLevel minimumLevel) throws ReplicationException
     {
-        List<DocumentReplicationControllerInstance> instances = this.controller.getRelayConfiguration(reference);
+        List<DocumentReplicationControllerInstance> instances = this.controller.getRelayConfiguration(message);
 
         return instances.stream().filter(i -> i.getLevel().ordinal() >= minimumLevel.ordinal())
             .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
@@ -90,8 +89,7 @@ public class DocumentReplicationRelay
         DocumentReplicationLevel minimumLevel) throws ReplicationException
     {
         // Find the instances allowed to receive the message
-        List<ReplicationInstance> targets =
-            getRelayInstances(this.documentMessageTool.getDocumentReference(message), minimumLevel);
+        List<ReplicationInstance> targets = getRelayInstances(message, minimumLevel);
 
         // Relay the message
         return this.relay.relay(message, targets);
@@ -105,9 +103,7 @@ public class DocumentReplicationRelay
     public CompletableFuture<ReplicationSenderMessage> relayDocumentUpdate(ReplicationReceiverMessage message)
         throws ReplicationException
     {
-        DocumentReference reference = this.documentMessageTool.getDocumentReference(message);
-
-        List<DocumentReplicationControllerInstance> allInstances = this.controller.getRelayConfiguration(reference);
+        List<DocumentReplicationControllerInstance> allInstances = this.controller.getRelayConfiguration(message);
 
         // Send the message as is for instances allowed to receive complete updates
         CompletableFuture<ReplicationSenderMessage> future =
