@@ -32,6 +32,7 @@ import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.configuration.ConfigurationSource;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfiguration;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationConfiguration;
@@ -87,5 +88,12 @@ public class DefaultDocumentReplicationControllerConfiguration implements Docume
         throws ReplicationException
     {
         return getDocumentReplicationControllerConfiguration().resolveDocumentReplicationController(entityReference);
+    }
+
+    @Override
+    public DocumentReplicationController resolveDocumentReplicationController(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        return getDocumentReplicationControllerConfiguration().resolveDocumentReplicationController(message);
     }
 }

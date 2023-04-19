@@ -32,7 +32,6 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfiguration;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
-import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
 import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
@@ -52,12 +51,14 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     @Inject
     private DocumentReplicationControllerConfiguration configuration;
 
-    @Inject
-    private DocumentReplicationMessageReader documentMessageTool;
-
     private DocumentReplicationController getController(EntityReference documentReference) throws ReplicationException
     {
         return this.configuration.resolveDocumentReplicationController(documentReference);
+    }
+
+    private DocumentReplicationController getController(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        return this.configuration.resolveDocumentReplicationController(message);
     }
 
     @Override
@@ -86,9 +87,7 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     public List<DocumentReplicationControllerInstance> getRelayConfiguration(ReplicationReceiverMessage message)
         throws ReplicationException
     {
-        EntityReference reference = this.documentMessageTool.getEntityReference(message);
-
-        return getController(reference).getRelayConfiguration(message);
+        return getController(message).getRelayConfiguration(message);
     }
 
     @Override

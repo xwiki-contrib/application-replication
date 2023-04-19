@@ -119,13 +119,13 @@
             -->
             <revapi.differences>
               <justification>No default implementation really make sense for this new API</justification>
-              <criticality>documented</criticality>
+              <criticality>highlight</criticality>
               <differences>
-                <item>
-                  <ignore>true</ignore>
-                  <code>java.method.addedToInterface</code>
-                  <new>method void org.xwiki.contrib.replication.ReplicationSender::resend(org.xwiki.contrib.replication.log.ReplicationMessageEventQuery, java.util.Collection&lt;java.lang.String&gt;) throws org.xwiki.contrib.replication.ReplicationException</new>
-                </item>
+		        <item>
+		          <ignore>true</ignore>
+		          <code>java.method.addedToInterface</code>
+		          <new>method org.xwiki.contrib.replication.entity.DocumentReplicationController org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfiguration::resolveDocumentReplicationController(org.xwiki.contrib.replication.ReplicationReceiverMessage) throws org.xwiki.contrib.replication.ReplicationException</new>
+		        </item>
               </differences>
             </revapi.differences>
           </analysisConfiguration>

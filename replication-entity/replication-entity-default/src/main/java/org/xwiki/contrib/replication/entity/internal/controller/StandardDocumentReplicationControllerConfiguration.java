@@ -36,8 +36,10 @@ import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.configuration.ConfigurationSource;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfiguration;
+import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
 import org.xwiki.model.EntityType;
 import org.xwiki.model.internal.reference.EntityReferenceFactory;
 import org.xwiki.model.reference.EntityReference;
@@ -68,6 +70,9 @@ public class StandardDocumentReplicationControllerConfiguration implements Docum
     @Inject
     @Named("minimum")
     private DocumentReplicationController minimumController;
+
+    @Inject
+    private DocumentReplicationMessageReader documentMessageTool;
 
     private Map<String, DocumentReplicationController> controllers;
 
@@ -244,6 +249,15 @@ public class StandardDocumentReplicationControllerConfiguration implements Docum
         }
 
         return controller != null ? controller : this.fallbackController;
+    }
+
+    @Override
+    public DocumentReplicationController resolveDocumentReplicationController(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        EntityReference reference = this.documentMessageTool.getEntityReference(message);
+
+        return resolveDocumentReplicationController(reference);
     }
 
     private synchronized DocumentReplicationController loadDocumentReplicationController(SpaceReference spaceReference)

@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.model.reference.EntityReference;
 
 /**
@@ -47,5 +48,14 @@ public interface DocumentReplicationControllerConfiguration
      * @throws ReplicationException when failing to retrieve the configured controller
      */
     DocumentReplicationController resolveDocumentReplicationController(EntityReference entityReference)
+        throws ReplicationException;
+
+    /**
+     * @param message the message to relay
+     * @return the replication controller in charge of the document
+     * @throws ReplicationException when failing to retrieve the configured controller
+     * @since 1.7.0
+     */
+    DocumentReplicationController resolveDocumentReplicationController(ReplicationReceiverMessage message)
         throws ReplicationException;
 }
