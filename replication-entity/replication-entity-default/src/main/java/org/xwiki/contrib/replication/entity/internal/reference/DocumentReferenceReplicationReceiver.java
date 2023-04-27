@@ -85,7 +85,7 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
 
         // Set the document owner
         if (this.messageReader.getMetadata(message, DocumentReferenceReplicationMessage.METADATA_CREATOR, true, true)) {
-            this.documentStore.create(documentReference, message.getSource());
+            this.documentStore.setOwner(documentReference, message.getSource());
         }
     }
 

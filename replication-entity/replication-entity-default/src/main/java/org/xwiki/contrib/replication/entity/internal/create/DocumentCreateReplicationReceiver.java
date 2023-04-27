@@ -50,6 +50,6 @@ public class DocumentCreateReplicationReceiver extends DocumentUpdateReplication
         super.receiveDocument(message, documentReference, xcontext);
 
         // Set the document owner
-        this.documentStore.create(documentReference, message.getSource());
+        this.documentStore.setOwner(documentReference, message.getSource());
     }
 }

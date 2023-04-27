@@ -32,6 +32,7 @@ import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStoreCache.ReplicationDocumentStoreCacheEntry;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReferenceSerializer;
 import org.xwiki.model.reference.WikiReference;
@@ -66,18 +67,10 @@ public class ReplicationDocumentStore
     private EntityReferenceSerializer<String> idSerializer;
 
     @Inject
-    private Provider<XWikiContext> xcontextProvider;
+    private ReplicationDocumentStoreCache cache;
 
-    /**
-     * @param document the reference of the document
-     * @param owner the owner instance of the document
-     * @throws ReplicationException when failing to create the document entry
-     */
-    public void create(DocumentReference document, String owner) throws ReplicationException
-    {
-        executeWrite(session -> saveHibernateReplicationDocument(toDocumentId(document), owner, session),
-            document.getWikiReference());
-    }
+    @Inject
+    private Provider<XWikiContext> xcontextProvider;
 
     /**
      * @param document the reference of the document
@@ -85,8 +78,11 @@ public class ReplicationDocumentStore
      */
     public void deleteDocument(DocumentReference document) throws ReplicationException
     {
-        executeWrite(session -> deleteHibernateReplicationDocument(toDocumentId(document), session),
-            document.getWikiReference());
+        long id = toDocumentId(document);
+
+        executeWrite(session -> deleteHibernateReplicationDocument(id, session), document.getWikiReference());
+
+        this.cache.remove(String.valueOf(id));
     }
 
     /**
@@ -96,8 +92,11 @@ public class ReplicationDocumentStore
      */
     public void setOwner(DocumentReference document, String owner) throws ReplicationException
     {
-        executeWrite(session -> saveHibernateReplicationDocument(toDocumentId(document), owner, session),
-            document.getWikiReference());
+        long id = toDocumentId(document);
+
+        executeWrite(session -> saveHibernateReplicationDocument(id, owner, session), document.getWikiReference());
+
+        this.cache.setOwner(String.valueOf(id), owner);
     }
 
     /**
@@ -107,8 +106,11 @@ public class ReplicationDocumentStore
      */
     public void setConflict(DocumentReference document, boolean conflict) throws ReplicationException
     {
-        executeWrite(session -> update(toDocumentId(document), PROP_CONFLICT, conflict, session),
-            document.getWikiReference());
+        long id = toDocumentId(document);
+
+        executeWrite(session -> update(id, PROP_CONFLICT, conflict, session), document.getWikiReference());
+
+        this.cache.setConflict(String.valueOf(id), conflict);
     }
 
     private Void saveHibernateReplicationDocument(long docId, String owner, Session session) throws XWikiException
@@ -188,7 +190,19 @@ public class ReplicationDocumentStore
      */
     public String getOwner(DocumentReference documentReference) throws ReplicationException
     {
-        return get(documentReference, PROP_OWNER, String.class);
+        long docId = toDocumentId(documentReference);
+
+        ReplicationDocumentStoreCacheEntry cacheEntry = this.cache.getEntry(String.valueOf(docId), true);
+
+        if (cacheEntry.getOwner() != null) {
+            return cacheEntry.getOwner();
+        }
+
+        String owner = get(documentReference, docId, PROP_OWNER, String.class);
+
+        cacheEntry.setOwner(owner);
+
+        return owner;
     }
 
     /**
@@ -218,9 +232,19 @@ public class ReplicationDocumentStore
      */
     public boolean getConflict(DocumentReference documentReference) throws ReplicationException
     {
-        Boolean conflict = get(documentReference, PROP_CONFLICT, Boolean.class);
+        long docId = toDocumentId(documentReference);
 
-        return Boolean.TRUE.equals(conflict);
+        ReplicationDocumentStoreCacheEntry cacheEntry = this.cache.getEntry(String.valueOf(docId), true);
+
+        if (cacheEntry.getConflict() != null) {
+            return cacheEntry.getConflict();
+        }
+
+        boolean conflict = Boolean.TRUE.equals(get(documentReference, docId, PROP_CONFLICT, Boolean.class));
+
+        cacheEntry.setConflict(conflict);
+
+        return conflict;
     }
 
     private void executeWrite(HibernateCallback<Void> callback, WikiReference wiki) throws ReplicationException
@@ -248,7 +272,8 @@ public class ReplicationDocumentStore
         return store.executeRead(xcontext, s -> get(docId, property, resultType, s));
     }
 
-    private <T> T get(DocumentReference reference, String property, Class<T> resultType) throws ReplicationException
+    private <T> T get(DocumentReference reference, long docId, String property, Class<T> resultType)
+        throws ReplicationException
     {
         XWikiContext xcontext = this.xcontextProvider.get();
 
@@ -256,7 +281,7 @@ public class ReplicationDocumentStore
         try {
             xcontext.setWikiReference(reference.getWikiReference());
 
-            return get(toDocumentId(reference), property, resultType, xcontext);
+            return get(docId, property, resultType, xcontext);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to execute the select", e);
         } finally {
