@@ -25,7 +25,7 @@
     $escapetool.xml($services.localization.render("replication.entity.conflict.message"))
 
     <form action="$xwiki.relativeRequestURL" method="post">
-      <button class="btn" id="replication_conflict_resolve" name="replication_conflict_resolve">$escapetool.xml($services.localization.render("replication.entity.conflict.button.resolve"))</button>
+      <button class="btn pull-right" id="replication_conflict_resolve" name="replication_conflict_resolve">$escapetool.xml($services.localization.render("replication.entity.conflict.button.resolve"))</button>
     </form>
   </div>
 #end
