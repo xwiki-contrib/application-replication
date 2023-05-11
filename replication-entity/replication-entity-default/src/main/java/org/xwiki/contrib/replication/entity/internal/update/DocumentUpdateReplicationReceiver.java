@@ -143,7 +143,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             if (!Objects.equals(currentVersion, previousAncestorVersion)
                 || !Objects.equals(currentVersionDate, previousAncestorVersionDate)) {
                 if (this.controllerUtils.isOwner(documentReference)) {
-                    // Actually handle the conflict only of the current instance is the owner
+                    // Actually handle the conflict only if the current instance is the owner
                     // Create and save a merged version of the document
                     this.conflictResolver.merge(ancestors, currentDocument, newDocument, xcontext);
                 } else {
