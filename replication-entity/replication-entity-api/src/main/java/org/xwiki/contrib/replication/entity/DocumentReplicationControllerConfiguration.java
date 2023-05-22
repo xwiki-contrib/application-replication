@@ -27,6 +27,8 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.model.reference.EntityReference;
 
+import com.xpn.xwiki.doc.XWikiDocument;
+
 /**
  * Indicate which controller to use for a given entity.
  * 
@@ -58,4 +60,16 @@ public interface DocumentReplicationControllerConfiguration
      */
     DocumentReplicationController resolveDocumentReplicationController(ReplicationReceiverMessage message)
         throws ReplicationException;
+
+    /**
+     * @param document the deleted document to replicate
+     * @return the replication controller in charge of the deleted document
+     * @throws ReplicationException when failing to retrieve the configured controller
+     * @since 1.9.0
+     */
+    default DocumentReplicationController resolveDocumentDeleteReplicationController(XWikiDocument document)
+        throws ReplicationException
+    {
+        return resolveDocumentReplicationController(document.getDocumentReference());
+    }
 }

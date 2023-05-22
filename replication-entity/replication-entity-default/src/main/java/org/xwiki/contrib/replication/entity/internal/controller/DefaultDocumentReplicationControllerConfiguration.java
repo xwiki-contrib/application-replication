@@ -38,6 +38,8 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfigu
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationConfiguration;
 import org.xwiki.model.reference.EntityReference;
 
+import com.xpn.xwiki.doc.XWikiDocument;
+
 /**
  * Call the right {@link DocumentReplicationControllerConfiguration} depending on the configuration.
  * 
@@ -95,5 +97,12 @@ public class DefaultDocumentReplicationControllerConfiguration implements Docume
         throws ReplicationException
     {
         return getDocumentReplicationControllerConfiguration().resolveDocumentReplicationController(message);
+    }
+
+    @Override
+    public DocumentReplicationController resolveDocumentDeleteReplicationController(XWikiDocument document)
+        throws ReplicationException
+    {
+        return resolveDocumentReplicationController(document.getDocumentReference());
     }
 }
