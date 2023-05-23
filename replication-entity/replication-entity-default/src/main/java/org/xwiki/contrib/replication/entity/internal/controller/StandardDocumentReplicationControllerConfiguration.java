@@ -46,6 +46,8 @@ import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.SpaceReference;
 import org.xwiki.model.reference.WikiReference;
 
+import com.xpn.xwiki.doc.XWikiDocument;
+
 /**
  * @version $Id$
  * @since 1.1
@@ -258,6 +260,13 @@ public class StandardDocumentReplicationControllerConfiguration implements Docum
         EntityReference reference = this.documentMessageTool.getEntityReference(message);
 
         return resolveDocumentReplicationController(reference);
+    }
+
+    @Override
+    public DocumentReplicationController resolveDocumentDeleteReplicationController(XWikiDocument document)
+        throws ReplicationException
+    {
+        return resolveDocumentReplicationController(document.getDocumentReference());
     }
 
     private synchronized DocumentReplicationController loadDocumentReplicationController(SpaceReference spaceReference)

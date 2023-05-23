@@ -61,6 +61,12 @@ public class DefaultDocumentReplicationController implements DocumentReplication
         return this.configuration.resolveDocumentReplicationController(message);
     }
 
+    private DocumentReplicationController getDeleteReplicationController(XWikiDocument document)
+        throws ReplicationException
+    {
+        return this.configuration.resolveDocumentDeleteReplicationController(document);
+    }
+
     @Override
     public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference)
         throws ReplicationException
@@ -105,7 +111,7 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     @Override
     public void onDocumentDeleted(XWikiDocument document) throws ReplicationException
     {
-        getController(document.getDocumentReference()).onDocumentDeleted(document);
+        getDeleteReplicationController(document).onDocumentDeleted(document);
     }
 
     @Override
