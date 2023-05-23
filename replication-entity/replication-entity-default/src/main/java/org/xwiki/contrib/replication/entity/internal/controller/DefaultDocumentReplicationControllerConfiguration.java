@@ -103,6 +103,6 @@ public class DefaultDocumentReplicationControllerConfiguration implements Docume
     public DocumentReplicationController resolveDocumentDeleteReplicationController(XWikiDocument document)
         throws ReplicationException
     {
-        return resolveDocumentReplicationController(document.getDocumentReference());
+        return getDocumentReplicationControllerConfiguration().resolveDocumentDeleteReplicationController(document);
     }
 }
