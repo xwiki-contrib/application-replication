@@ -29,6 +29,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.internal.instance.ReplicationInstanceStore;
+import org.xwiki.contrib.replication.internal.instance.StandardReplicationInstanceClassInitializer;
 import org.xwiki.contrib.replication.test.po.PageReplicationAdministrationSectionPage;
 import org.xwiki.contrib.replication.test.po.RegisteredInstancePane;
 import org.xwiki.contrib.replication.test.po.ReplicationConflictPane;
@@ -38,14 +40,19 @@ import org.xwiki.contrib.replication.test.po.RequestingInstancePane;
 import org.xwiki.contrib.replication.test.po.WikiReplicationAdministrationSectionPage;
 import org.xwiki.like.test.po.LikeButton;
 import org.xwiki.model.EntityType;
+import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.LocalDocumentReference;
+import org.xwiki.model.reference.ObjectReference;
+import org.xwiki.model.reference.WikiReference;
 import org.xwiki.rest.model.jaxb.History;
 import org.xwiki.rest.model.jaxb.HistorySummary;
 import org.xwiki.rest.model.jaxb.Page;
+import org.xwiki.rest.model.jaxb.Property;
 import org.xwiki.rest.resources.pages.PageResource;
 import org.xwiki.test.ui.AbstractTest;
 import org.xwiki.test.ui.TestUtils;
+import org.xwiki.test.ui.TestUtils.RestTestUtils;
 
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -57,7 +64,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
-
 import static org.xwiki.replication.test.AllITs.INSTANCE_0;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0_2;
 import static org.xwiki.replication.test.AllITs.INSTANCE_1;
@@ -78,9 +84,15 @@ public class ReplicationIT extends AbstractTest
 
     private static final String INSTANCE_NAME_0 = "Instance 0";
 
+    private static final String INSTANCE_CUSTOM_0 = "CUSTOM 0";
+
     private static final String INSTANCE_NAME_1 = "Instance 1";
 
+    private static final String INSTANCE_CUSTOM_1 = "CUSTOM 1";
+
     private static final String INSTANCE_NAME_2 = "Instance 2";
+
+    private static final String INSTANCE_CUSTOM_2 = "CUSTOM 2";
 
     @Rule
     public WireMockRule proxy0 = new WireMockRule(WireMockConfiguration.options().port(8070));
@@ -139,6 +151,17 @@ public class ReplicationIT extends AbstractTest
                 Page page = getUtil().rest().<Page>get(documentReference, false);
 
                 return page != null ? page.getContent() : null;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private void assertEqualsCustomWithTimeout(String uri, String value) throws InterruptedException
+    {
+        assertEqualsWithTimeout(value, () -> {
+            try {
+                return getCustom(uri, false);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -315,7 +338,52 @@ public class ReplicationIT extends AbstractTest
         conflict();
     }
 
-    private void instances() throws InterruptedException
+    private void setCustom(String value) throws Exception
+    {
+        WikiReference mainWikiReference = new WikiReference("xwiki");
+        DocumentReference mainWikiInstances =
+            new DocumentReference(ReplicationInstanceStore.REPLICATION_INSTANCES, mainWikiReference);
+        ObjectReference instanceReference =
+            new ObjectReference(StandardReplicationInstanceClassInitializer.CLASS_FULLNAME + "[0]", mainWikiInstances);
+
+        org.xwiki.rest.model.jaxb.Object object =
+            (org.xwiki.rest.model.jaxb.Object) getUtil().rest().get(instanceReference);
+        RestTestUtils.getProperty("custom", object, true).setValue(value);
+        getUtil().rest().update(object);
+    }
+
+    private String getCustom(String uri) throws Exception
+    {
+        return getCustom(uri, true);
+    }
+
+    private String getCustom(String uri, boolean failIfNotFound) throws Exception
+    {
+        WikiReference mainWikiReference = new WikiReference("xwiki");
+        DocumentReference mainWikiInstances =
+            new DocumentReference(ReplicationInstanceStore.REPLICATION_INSTANCES, mainWikiReference);
+
+        for (int i = 0; i < 10; ++i) {
+            ObjectReference customReference = new ObjectReference(
+                StandardReplicationInstanceClassInitializer.CLASS_FULLNAME + '[' + i + ']', mainWikiInstances);
+
+            org.xwiki.rest.model.jaxb.Object object =
+                (org.xwiki.rest.model.jaxb.Object) getUtil().rest().get(customReference, failIfNotFound);
+
+            if (object != null) {
+                Property property =
+                    RestTestUtils.getProperty(StandardReplicationInstanceClassInitializer.FIELD_URI, object, false);
+
+                if (property.getValue().equals(uri)) {
+                    return RestTestUtils.getProperty("custom", object, false).getValue();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private void instances() throws Exception
     {
         // Configure instance0 name and URI
         getUtil().switchExecutor(INSTANCE_0);
@@ -323,6 +391,8 @@ public class ReplicationIT extends AbstractTest
         admin0.setCurrentName(INSTANCE_NAME_0);
         admin0.setCurrentURI(this.proxyURI0);
         admin0 = admin0.clickSaveButton();
+        setCustom(INSTANCE_CUSTOM_0);
+        assertEquals(INSTANCE_CUSTOM_0, getCustom(this.proxyURI0));
         // Make sure the other cluster member have the changes
         getUtil().switchExecutor(INSTANCE_0_2);
         admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
@@ -334,14 +404,18 @@ public class ReplicationIT extends AbstractTest
         admin1.setCurrentName(INSTANCE_NAME_1);
         admin1.setCurrentURI(this.proxyURI1);
         admin1 = admin0.clickSaveButton();
+        setCustom(INSTANCE_CUSTOM_1);
+        assertEquals(INSTANCE_CUSTOM_1, getCustom(this.proxyURI1));
         // Configure instance2 name and URI
         getUtil().switchExecutor(INSTANCE_2);
         WikiReplicationAdministrationSectionPage admin2 = WikiReplicationAdministrationSectionPage.gotoPage();
         admin2.setCurrentName(INSTANCE_NAME_2);
         admin2.setCurrentURI(this.proxyURI2);
         admin2 = admin0.clickSaveButton();
+        setCustom(INSTANCE_CUSTOM_2);
+        assertEquals(INSTANCE_CUSTOM_2, getCustom(this.proxyURI2));
 
-        // Go back to instance1
+        // Go back to instance0
         getUtil().switchExecutor(INSTANCE_0);
         admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
         // Link to instance1
@@ -389,6 +463,9 @@ public class ReplicationIT extends AbstractTest
         receivekey0To1 = registeredInstance.getReceiveKey();
         String sendkey1To0 = registeredInstance.getSendKey();
 
+        // Check if instance0 custom property was shared instance1
+        assertEqualsCustomWithTimeout(this.proxyURI0, INSTANCE_CUSTOM_0);
+
         // Link to instance2
         admin1.setRequestedURI(this.proxyURI2);
         admin1 = admin1.requestInstance();
@@ -410,6 +487,9 @@ public class ReplicationIT extends AbstractTest
         assertEquals(INSTANCE_NAME_1, registeredInstance.getName());
         String receivekey1To0 = registeredInstance.getReceiveKey();
         assertEquals(sendkey1To0, receivekey1To0);
+
+        // Check if instance1 custom property was shared instance0
+        assertEqualsCustomWithTimeout(this.proxyURI1, INSTANCE_CUSTOM_1);
 
         // Reset the send key to instance1
         admin0 = registeredInstance.resetKey();
@@ -450,6 +530,18 @@ public class ReplicationIT extends AbstractTest
 
         // Accept the instance
         requestingInstance.accept();
+
+        // Modify custom property on instance0
+        getUtil().switchExecutor(INSTANCE_0);
+        setCustom("modified0");
+
+        // Make sure the custom property associated with instance0 was updated on instance1
+        getUtil().switchExecutor(INSTANCE_1);
+        assertEqualsCustomWithTimeout(this.proxyURI0, "modified0");
+
+        // Make sure the custom property associated with instance0 was updated on instance2
+        getUtil().switchExecutor(INSTANCE_2);
+        assertEqualsCustomWithTimeout(this.proxyURI0, "modified0");
     }
 
     private void controller() throws Exception
@@ -526,7 +618,7 @@ public class ReplicationIT extends AbstractTest
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
-        assertEquals(this.proxyURI0, gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")", gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
 
         ////////////////////////////////////
         // Minor edit on XWiki 0

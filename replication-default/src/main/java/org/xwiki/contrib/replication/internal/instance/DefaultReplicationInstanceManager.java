@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -37,6 +38,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.internal.ReplicationClient;
+import org.xwiki.contrib.replication.internal.message.ReplicationInstanceMessageSender;
 
 /**
  * @version $Id$
@@ -50,6 +52,9 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
 
     @Inject
     private ReplicationInstanceStore store;
+
+    @Inject
+    private Provider<ReplicationInstanceMessageSender> senderProvider;
 
     @Inject
     private Logger logger;
@@ -276,6 +281,10 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         // Update
         this.store.updateInstance(newInstance);
 
+        // Send details about the current instance to the new linked one
+        // TODO: send custom properties as part of the ACCESS request along with the name ?
+        this.senderProvider.get().updateCurrentInstance(newInstance);
+
         return true;
     }
 
@@ -283,6 +292,13 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     public Collection<ReplicationInstance> getRequestingInstances() throws ReplicationException
     {
         return getInternalInstancesByURI().values().stream().filter(i -> i.getStatus() == Status.REQUESTING)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public Collection<ReplicationInstance> getRelayedInstances() throws ReplicationException
+    {
+        return getInternalInstancesByURI().values().stream().filter(i -> i.getStatus() == Status.RELAYED)
             .collect(Collectors.toList());
     }
 
@@ -308,6 +324,10 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         if (status == Status.REGISTERED) {
             // Update the instance status
             this.store.updateStatus(instance, status);
+
+            // Send details about the current instance to the new linked one
+            // TODO: send custom properties as part of the ACCESS request along with the name ?
+            this.senderProvider.get().updateCurrentInstance(instance);
 
             // The instances are now linked
             return true;

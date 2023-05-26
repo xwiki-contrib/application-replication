@@ -52,8 +52,15 @@
     <xwiki.instance.directory>${project.build.directory}/xwiki</xwiki.instance.directory>
     <xwiki.database.directory>${project.build.directory}/data/database</xwiki.database.directory>
     <xwiki.store.file.directory>${xwiki.instance.directory}/data/store/file</xwiki.store.file.directory>
+
+    <xwiki.jacoco.instructionRatio>0.00</xwiki.jacoco.instructionRatio>
   </properties>
   <dependencies>
+    <dependency>
+      <groupId>org.xwiki.contrib.replication</groupId>
+      <artifactId>replication-default</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.xwiki.contrib.replication</groupId>
       <artifactId>replication-ui</artifactId>

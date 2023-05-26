@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.internal.message;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -51,6 +52,13 @@ public class ReplicationInstanceUpdateMessage extends AbstractReplicationSenderM
      */
     public static final String METADATA_NAME = METADATA_PREFIX + "NAME";
 
+    /**
+     * The prefix used to generate the name of the custom instance properties.
+     * 
+     * @since 1.10.0
+     */
+    public static final String PREFIX_METADATE_CUSTOM = METADATA_PREFIX + "CUSTOM_";
+
     @Inject
     private ReplicationInstanceManager instances;
 
@@ -70,6 +78,10 @@ public class ReplicationInstanceUpdateMessage extends AbstractReplicationSenderM
         ReplicationInstance currentInstance = this.instances.getCurrentInstance();
 
         putCustomMetadata(METADATA_NAME, currentInstance.getName());
+
+        for (Map.Entry<String, Object> entry : currentInstance.getProperties().entrySet()) {
+            putCustomMetadata(PREFIX_METADATE_CUSTOM + entry.getKey().toUpperCase(), entry.getValue());
+        }
     }
 
     @Override

@@ -20,7 +20,7 @@
 package org.xwiki.contrib.replication.internal.instance;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -133,8 +133,16 @@ public class DefaultReplicationInstance implements ReplicationInstance
      */
     public void setProperties(Map<String, Object> properties)
     {
-        this.properties =
-            properties != null ? Collections.unmodifiableMap(new HashMap<>(properties)) : Collections.emptyMap();
+        if (properties != null) {
+            Map<String, Object> clonedProperties = new LinkedHashMap<>();
+            for (Map.Entry<String, Object> entry : properties.entrySet()) {
+                clonedProperties.put(entry.getKey().toLowerCase(), entry.getValue());
+            }
+
+            this.properties = Collections.unmodifiableMap(clonedProperties);
+        } else {
+            this.properties = Collections.emptyMap();
+        }
     }
 
     @Override

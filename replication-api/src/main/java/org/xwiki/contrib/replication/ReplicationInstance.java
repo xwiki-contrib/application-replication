@@ -48,7 +48,12 @@ public interface ReplicationInstance
         /**
          * The instance was requested but did not confirm yet.
          */
-        REQUESTED
+        REQUESTED,
+
+        /**
+         * The instance was noticed as a relayed instance in the past.
+         */
+        RELAYED
     }
 
     /**
@@ -72,7 +77,7 @@ public interface ReplicationInstance
     CertifiedPublicKey getReceiveKey();
 
     /**
-     * @return the names of the properties
+     * @return the properties (all the keys in that map are lower cased)
      */
     Map<String, Object> getProperties();
 }

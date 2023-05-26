@@ -95,7 +95,7 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
 
         // Notify the other instances that we are ready to receive messages
         try {
-            for (ReplicationInstance instance : this.instances.getInstances()) {
+            for (ReplicationInstance instance : this.instances.getRegisteredInstances()) {
                 try {
                     this.client.ping(instance);
                 } catch (Exception e) {

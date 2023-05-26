@@ -20,6 +20,7 @@
 package org.xwiki.contrib.replication;
 
 import java.util.Collection;
+import java.util.Collections;
 
 import org.xwiki.component.annotation.Role;
 
@@ -121,6 +122,16 @@ public interface ReplicationInstanceManager
      * @throws ReplicationException when failing to load the instances
      */
     Collection<ReplicationInstance> getRequestingInstances() throws ReplicationException;
+
+    /**
+     * @return all instance from which messages were received through another instance
+     * @throws ReplicationException when failing to load the instances
+     * @since 1.10.0
+     */
+    default Collection<ReplicationInstance> getRelayedInstances() throws ReplicationException
+    {
+        return Collections.emptyList();
+    }
 
     /**
      * @param uri the uri of the instance to accept

@@ -104,8 +104,8 @@ public class StandardReplicationInstanceClassInitializer extends AbstractMandato
         xclass.addTextField(FIELD_NAME, "Name", 30);
         xclass.addTextAreaField(FIELD_RECEIVEKEY, "Receive key", 30, 1, ContentType.PURE_TEXT);
 
-        xclass.addStaticListField(FIELD_STATUS, "Status",
-            Status.REGISTERED.name() + '|' + Status.REQUESTED.name() + '|' + Status.REQUESTING.name());
+        xclass.addStaticListField(FIELD_STATUS, "Status", Status.REGISTERED.name() + '|' + Status.REQUESTED.name() + '|'
+            + Status.REQUESTING.name() + '|' + Status.RELAYED.name());
 
         // Extends the class
         this.initializers.forEach(i -> i.extendClass(xclass));

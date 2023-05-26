@@ -112,6 +112,15 @@
   )))
 #end
 
+#macro(displayRelayedInstance $instance)
+  (((
+    {{html}}
+        &lt;span class="instanceName"&gt;$instance.name&lt;/span&gt; (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;)
+        &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;
+    {{/html}}
+  )))
+#end
+
 #set ($instanceManager = $services.component.getInstance('org.xwiki.contrib.replication.ReplicationInstanceManager'))
 #set ($currentInstance = $instanceManager.currentInstance)
 {{/velocity}}
@@ -213,6 +222,16 @@
   {{error}}{{translation key="replication.admin.instance.pr"/}}{{/error}}
 #end
 
+=== {{translation key="replication.admin.instance.RELAYED"/}}
+
+{{translation key="replication.admin.instance.RELAYED.description"/}}
+
+#foreach($instance in $instances)
+  #if ($instance.status.name() == 'RELAYED')
+    * #displayRelayedInstance($instance)
+  #end
+#end
+
 #set ($controllers = $services.replication.document.getDocumentReplicationControllers())
 #set ($resolvedController = $services.replication.document.resolveDocumentReplicationController($wikiReference))
 #if ($controllers || $resolvedController)
@@ -235,7 +254,7 @@
   #set ($controllers = $services.replication.document.getDocumentReplicationControllers())
   #if ($resolvedController)
     #if (!$controllers || $controllers.size() == 1)
-      {{translation key="replication.controller.${resolvedController}.name"/}}
+      {{info}}{{translation key="replication.controller.${resolvedController}.name"/}}{{/info}}
       {{translation key="replication.controller.${resolvedController}.description"/}}
     #elseif ($controllers.size() &gt; 1)
       {{html}}

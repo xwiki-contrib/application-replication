@@ -19,12 +19,15 @@
  */
 package org.xwiki.contrib.replication.internal.message;
 
+import java.util.List;
+
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSender;
 
 /**
@@ -49,9 +52,25 @@ public class ReplicationInstanceMessageSender
      */
     public void updateCurrentInstance() throws ReplicationException
     {
+        updateCurrentInstance(null);
+    }
+
+    /**
+     * Send an update of the current instance to linked instances.
+     * 
+     * @param target the instance to which to send the message
+     * @throws ReplicationException when failing to create the message
+     * @since 1.10.0
+     */
+    public void updateCurrentInstance(ReplicationInstance target) throws ReplicationException
+    {
         ReplicationInstanceUpdateMessage message = this.messageProvider.get();
         message.initializeCurrent();
 
-        this.sender.send(message);
+        if (target != null) {
+            this.sender.send(message, List.of(target));
+        } else {
+            this.sender.send(message);
+        }
     }
 }

@@ -45,6 +45,7 @@ import org.xwiki.observation.remote.RemoteObservationManagerContext;
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.internal.event.XObjectEvent;
+import com.xpn.xwiki.internal.event.XObjectUpdatedEvent;
 import com.xpn.xwiki.objects.BaseObject;
 import com.xpn.xwiki.objects.BaseObjectReference;
 import com.xpn.xwiki.store.XWikiCacheStore;
@@ -107,7 +108,7 @@ public class ReplicationInstanceListener extends AbstractEventListener
             if (store instanceof XWikiCacheStore) {
                 ((XWikiCacheStore) store).onEvent(event, source, data);
             }
-        }        
+        }
     }
 
     @Override
@@ -117,7 +118,7 @@ public class ReplicationInstanceListener extends AbstractEventListener
             initialize();
         } else if (event instanceof XObjectEvent) {
             // Workaround https://jira.xwiki.org/browse/XWIKI-20564
-            // Make sure the document in the cache is the right one in cache of remote events
+            // Make sure the document in the cache is the right one in case of remote events
             if (this.remoteContext.isRemoteState()) {
                 forceResetDocumentCache(event, source, data);
             }
@@ -133,71 +134,56 @@ public class ReplicationInstanceListener extends AbstractEventListener
             XWikiDocument document = (XWikiDocument) source;
             EntityReference objectReference = ((XObjectEvent) event).getReference();
 
-            // Check changes made to instances
-            try {
-                ReplicationInstance oldInstance = handleOldInstance(document, objectReference);
+            ReplicationInstance oldInstance = getInstance(document.getOriginalDocument(), objectReference);
+            ReplicationInstance newInstance = getInstance(document, objectReference);
 
-                handleNewInstance(document, objectReference, oldInstance);
-            } catch (ReplicationException e) {
-                this.logger.error("Failed to update the instances", e);
-            }
-        }
-    }
-
-    private ReplicationInstance handleOldInstance(XWikiDocument document, EntityReference objectReference)
-        throws ReplicationException
-    {
-        XWikiDocument documentOld = document.getOriginalDocument();
-
-        ReplicationInstanceStore store = this.storeProvider.get();
-
-        BaseObject xobjectOld = documentOld.getXObject(objectReference);
-
-        if (xobjectOld != null) {
-            Status statusOld = store.getStatus(xobjectOld);
-
-            if (statusOld == Status.REGISTERED) {
-                String uriOld = store.getURI(xobjectOld);
-                ReplicationInstance instanceOld = this.instanceProvider.get().getInstanceByURI(uriOld);
-                if (instanceOld == null || instanceOld.getStatus() != Status.REGISTERED) {
-                    this.observation.notify(new ReplicationInstanceUnregisteredEvent(uriOld),
-                        store.toReplicationInstance(xobjectOld));
-                }
-
-                return instanceOld;
-            }
-        }
-
-        return null;
-    }
-
-    private void handleNewInstance(XWikiDocument document, EntityReference objectReference,
-        ReplicationInstance instanceOld) throws ReplicationException
-    {
-        ReplicationInstanceStore store = this.storeProvider.get();
-
-        BaseObject xobjectNew = document.getXObject(objectReference);
-
-        if (xobjectNew != null) {
-            String uriNew = store.getURI(xobjectNew);
-
-            ReplicationInstance instanceNew = this.instanceProvider.get().getInstanceByURI(uriNew);
-
-            // Check if the current instance has been modified
-            if (instanceNew != null && instanceNew.getStatus() == null && instanceOld != null) {
-                try {
-                    this.instanceSenderProvider.get().updateCurrentInstance();
-                } catch (Exception e) {
-                    this.logger.error("Failed to send update message for current instance", e);
-                }
-            }
+            // Check if an instance has been unregistered
+            checkUnregistered(oldInstance, newInstance);
 
             // Check if an instance has been registered
-            if (instanceNew != null && instanceNew.getStatus() == Status.REGISTERED
-                && (instanceOld == null || !instanceOld.getURI().equals(uriNew))) {
-                this.observation.notify(new ReplicationInstanceRegisteredEvent(uriNew), instanceNew);
+            checkRegistered(oldInstance, newInstance);
+
+            // Check if current instance has been modified
+            if (event instanceof XObjectUpdatedEvent) {
+                checCurrentUpdated(oldInstance, newInstance);
             }
         }
+    }
+
+    private void checkUnregistered(ReplicationInstance oldInstance, ReplicationInstance newInstance)
+    {
+        if (oldInstance != null && oldInstance.getStatus() == Status.REGISTERED
+            && (newInstance == null || newInstance.getStatus() != Status.REGISTERED)) {
+            this.observation.notify(new ReplicationInstanceUnregisteredEvent(oldInstance.getURI()), oldInstance);
+        }
+    }
+
+    private void checkRegistered(ReplicationInstance oldInstance, ReplicationInstance newInstance)
+    {
+        if (newInstance != null && newInstance.getStatus() == Status.REGISTERED
+            && (oldInstance == null || oldInstance.getStatus() != Status.REGISTERED)) {
+            this.observation.notify(new ReplicationInstanceRegisteredEvent(newInstance.getURI()), newInstance);
+        }
+    }
+
+    private void checCurrentUpdated(ReplicationInstance oldInstance, ReplicationInstance newInstance)
+    {
+        if (oldInstance.getStatus() == null && newInstance.getStatus() == null) {
+            try {
+                this.instanceSenderProvider.get().updateCurrentInstance();
+            } catch (Exception e) {
+                this.logger.error("Failed to send update message for current instance", e);
+            }
+        }
+    }
+
+    private ReplicationInstance getInstance(XWikiDocument document, EntityReference objectReference)
+    {
+        ReplicationInstanceStore store = this.storeProvider.get();
+
+        BaseObject xobjectOld = document.getXObject(objectReference);
+
+        return xobjectOld != null ? store.toReplicationInstance(xobjectOld) : null;
     }
 
     private void initialize()

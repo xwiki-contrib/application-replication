@@ -24,6 +24,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +53,10 @@ import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiDocument;
 import com.xpn.xwiki.objects.BaseObject;
 import com.xpn.xwiki.objects.BaseProperty;
+import com.xpn.xwiki.objects.ListProperty;
 import com.xpn.xwiki.objects.PropertyInterface;
+import com.xpn.xwiki.objects.classes.BaseClass;
+import com.xpn.xwiki.objects.classes.PropertyClass;
 
 /**
  * @version $Id$
@@ -67,10 +71,10 @@ public class ReplicationInstanceStore
     public static final LocalDocumentReference REPLICATION_INSTANCES =
         new LocalDocumentReference("Instances", ReplicationConstants.REPLICATION_HOME);
 
-    private static final Set<String> STANDARD_PROPERTIES =
-        Set.of(StandardReplicationInstanceClassInitializer.FIELD_NAME,
-            StandardReplicationInstanceClassInitializer.FIELD_STATUS,
-            StandardReplicationInstanceClassInitializer.FIELD_URI);
+    private static final Set<String> STANDARD_PROPERTIES = Set.of(
+        StandardReplicationInstanceClassInitializer.FIELD_NAME,
+        StandardReplicationInstanceClassInitializer.FIELD_STATUS, StandardReplicationInstanceClassInitializer.FIELD_URI,
+        StandardReplicationInstanceClassInitializer.FIELD_RECEIVEKEY);
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;
@@ -233,6 +237,85 @@ public class ReplicationInstanceStore
             this.signatureManager.serializeKey(publicKey));
     }
 
+    private void setProperties(BaseObject instanceObject, Map<String, Object> properties, XWikiContext xcontext)
+    {
+        if (properties != null) {
+            // Make sure all the xobject fields are initialized
+            BaseClass instanceClass = instanceObject.getXClass(xcontext);
+
+            for (Map.Entry<String, Object> entry : properties.entrySet()) {
+                BaseProperty property = getProperty(instanceObject, entry.getKey());
+                if (property == null && instanceClass != null) {
+                    // If the property does not already exist try to initialize it from the class
+                    PropertyClass classProperty = getClassProperty(instanceClass, entry.getKey());
+                    if (classProperty != null) {
+                        property = classProperty.newProperty();
+                        instanceObject.safeput(classProperty.getName(), property);
+                    }
+                }
+
+                if (property != null) {
+                    if (property instanceof ListProperty) {
+                        if (entry.getValue() instanceof List) {
+                            property.setValue(entry.getValue());
+                        } else if (entry.getValue() instanceof Collection) {
+                            property.setValue(new ArrayList<>((Collection) entry.getValue()));
+                        } else if (entry.getValue() == null) {
+                            property.setValue(List.of());
+                        } else {
+                            property.setValue(List.of(entry.getValue().toString()));
+                        }
+                    } else {
+                        Object value = entry.getValue();
+                        if (entry.getValue() instanceof Iterable) {
+                            value = ((Iterable) entry.getValue()).iterator().next();
+                        }
+
+                        // TODO: add proper support for Number and Date
+
+                        property.setValue(value);
+                    }
+                }
+            }
+        }
+    }
+
+    private BaseProperty getProperty(BaseObject xobject, String name)
+    {
+        BaseProperty property = (BaseProperty) xobject.getField(name);
+
+        if (property != null) {
+            return property;
+        }
+
+        // Try to find the field in any other case
+        for (BaseProperty xobjectProperty : (Collection<BaseProperty>) xobject.getFieldList()) {
+            if (xobjectProperty.getName().equalsIgnoreCase(name)) {
+                return xobjectProperty;
+            }
+        }
+
+        return null;
+    }
+
+    private PropertyClass getClassProperty(BaseClass instanceClass, String name)
+    {
+        PropertyClass property = (PropertyClass) instanceClass.getField(name);
+
+        if (property != null) {
+            return property;
+        }
+
+        // Try to find the field in any other case
+        for (PropertyClass xclassProperty : (Collection<PropertyClass>) instanceClass.getFieldList()) {
+            if (xclassProperty.getName().equalsIgnoreCase(name)) {
+                return xclassProperty;
+            }
+        }
+
+        return null;
+    }
+
     private Map<String, Object> getProperties(BaseObject instanceObject)
     {
         Map<String, Object> properties = new HashMap<>();
@@ -240,7 +323,7 @@ public class ReplicationInstanceStore
             if (!STANDARD_PROPERTIES.contains(propertyKey)) {
                 PropertyInterface property = instanceObject.safeget(propertyKey);
                 if (property instanceof BaseProperty) {
-                    properties.put(propertyKey, ((BaseProperty) property).getValue());
+                    properties.put(propertyKey.toLowerCase(), ((BaseProperty) property).getValue());
                 }
             }
         }
@@ -258,14 +341,15 @@ public class ReplicationInstanceStore
             getStatus(instanceObject), getPublicKey(instanceObject), getProperties(instanceObject));
     }
 
-    private void setReplicationInstance(ReplicationInstance instance, BaseObject instanceObject) throws IOException
+    private void setReplicationInstance(ReplicationInstance instance, BaseObject instanceObject, XWikiContext xcontext)
+        throws IOException
     {
         setReplicationInstance(instance.getName(), instance.getURI(), instance.getStatus(), instance.getReceiveKey(),
-            instanceObject);
+            instance.getProperties(), instanceObject, xcontext);
     }
 
     private void setReplicationInstance(String name, String uri, Status status, CertifiedPublicKey publicKey,
-        BaseObject instanceObject) throws IOException
+        Map<String, Object> properties, BaseObject instanceObject, XWikiContext xcontext) throws IOException
     {
         instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_NAME, name);
         instanceObject.setStringValue(StandardReplicationInstanceClassInitializer.FIELD_URI, uri);
@@ -273,6 +357,8 @@ public class ReplicationInstanceStore
         setStatus(instanceObject, status);
 
         setPublicKey(instanceObject, publicKey);
+
+        setProperties(instanceObject, properties, xcontext);
     }
 
     /**
@@ -330,7 +416,7 @@ public class ReplicationInstanceStore
                 instancesDocument.newXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE, xcontext);
 
             try {
-                setReplicationInstance(instance, instanceObject);
+                setReplicationInstance(instance, instanceObject, xcontext);
             } catch (IOException e) {
                 throw new ReplicationException("Failed to serialize the replication instance [" + instance + "]", e);
             }
@@ -378,7 +464,7 @@ public class ReplicationInstanceStore
             }
 
             try {
-                setReplicationInstance(instance, instanceObject);
+                setReplicationInstance(instance, instanceObject, xcontext);
             } catch (IOException e) {
                 throw new ReplicationException("Failed to update the replication instance [" + instance + "]", e);
             }
@@ -418,7 +504,7 @@ public class ReplicationInstanceStore
             }
 
             try {
-                setReplicationInstance(name, uri, null, null, instanceObject);
+                setReplicationInstance(name, uri, null, null, null, instanceObject, xcontext);
             } catch (IOException e) {
                 throw new ReplicationException("Failed to current replication instance", e);
             }
