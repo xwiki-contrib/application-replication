@@ -61,6 +61,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -618,7 +619,8 @@ public class ReplicationIT extends AbstractTest
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
-        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")", gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")",
+            gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
 
         ////////////////////////////////////
         // Minor edit on XWiki 0
@@ -692,6 +694,7 @@ public class ReplicationIT extends AbstractTest
 
         // Delete a page history version on XWiki 0
         getUtil().switchExecutor(INSTANCE_0);
+        assertEqualsHistorySizeWithTimeout(documentReference, 4);
         History history = getHistory(documentReference);
         HistorySummary historySummary = history.getHistorySummaries().get(0);
         assertEquals("3.1", historySummary.getVersion());
@@ -1161,24 +1164,47 @@ public class ReplicationIT extends AbstractTest
         // Clean any pre-existing
         getUtil().switchExecutor(INSTANCE_0);
         getUtil().rest().delete(documentReference);
+        getUtil().switchExecutor(INSTANCE_1);
+        getUtil().rest().delete(documentReference);
+        getUtil().switchExecutor(INSTANCE_2);
+        getUtil().rest().delete(documentReference);
 
         // Configure replication
+        getUtil().switchExecutor(INSTANCE_0);
         setConfiguration(documentReference, DocumentReplicationLevel.ALL);
         // Make sure to wait until the configuration is replicated
         getUtil().switchExecutor(INSTANCE_1);
         assertReplicationModeWithTimeout(documentReference, "all");
 
+        // Check creation replication with delay
+        replicateWithDelay(documentReference, "content", true);
+
+        // Check update replication with delay
+        replicateWithDelay(documentReference, "modified content", false);
+    }
+
+    private void replicateWithDelay(LocalDocumentReference documentReference, String content, boolean create)
+        throws Exception
+    {
         // Block the proxy
         this.proxy1.stubFor(this.proxyFailingBuilder);
 
         // Create a new page on XWIKI 0
         getUtil().switchExecutor(INSTANCE_0);
-        getUtil().rest().savePage(documentReference, "content", "");
+        getUtil().rest().savePage(documentReference, content, "");
         Page page0 = getUtil().rest().<Page>get(documentReference);
+
+        // We have to wait for a given time since we don't really have any criteria to test that something was not done,
+        // let's hope 5s is enough for nothing to happen...
+        Thread.sleep(5000);
 
         // Make sure the page is not replicated on XWIKI 1
         getUtil().switchExecutor(INSTANCE_1);
-        assertDoesNotExistWithTimeout(documentReference);
+        if (create) {
+            assertDoesNotExistWithTimeout(documentReference);
+        } else {
+            assertNotEquals(getUtil().rest().<Page>get(documentReference).getContent(), content);
+        }
 
         // Make sure the UI indicate this waiting message
         getUtil().switchExecutor(INSTANCE_0);
@@ -1199,7 +1225,7 @@ public class ReplicationIT extends AbstractTest
 
         // Make sure the document is finally replicated on XWIKI 1
         getUtil().switchExecutor(INSTANCE_1);
-        assertEqualsContentWithTimeout(documentReference, "content");
+        assertEqualsContentWithTimeout(documentReference, content);
         Page page1 = getUtil().rest().<Page>get(documentReference);
 
         // Make sure the initial date is kept
@@ -1262,9 +1288,9 @@ public class ReplicationIT extends AbstractTest
 
         // Wait for the conflict resolution
         getUtil().switchExecutor(INSTANCE_0);
-        assertEqualsHistorySizeWithTimeout(documentReference, 3);
+        assertEqualsHistorySizeWithTimeout(documentReference, 4);
         getUtil().switchExecutor(INSTANCE_1);
-        assertEqualsHistorySizeWithTimeout(documentReference, 3);
+        assertEqualsHistorySizeWithTimeout(documentReference, 4);
 
         // Check the result of the conflict resolution is the same on both instances
         getUtil().switchExecutor(INSTANCE_0);

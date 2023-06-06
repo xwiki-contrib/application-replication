@@ -84,42 +84,41 @@ public class DocumentUpdateConflictResolver
 
     /**
      * @param anscestors the previous version expected by the received update
-     * @param currentDocument the current version
-     * @param newDocument the received version
+     * @param previousDocument the current version
+     * @param replicationDocument the received version
      * @param xcontext the XWiki context
      * @throws ReplicationException when failing to merge documents
      */
-    public void merge(List<DocumentAncestor> anscestors, XWikiDocument currentDocument, XWikiDocument newDocument,
-        XWikiContext xcontext) throws ReplicationException
+    public void merge(List<DocumentAncestor> anscestors, XWikiDocument previousDocument,
+        XWikiDocument replicationDocument, XWikiContext xcontext) throws ReplicationException
     {
         // Get expected previous version from the history
         XWikiDocument ancestorDocument;
         try {
-            ancestorDocument = getAncestorDocument(currentDocument, anscestors, xcontext);
+            ancestorDocument = getAncestorDocument(previousDocument, anscestors, xcontext);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to load ancestor document", e);
         }
 
-        // The the ancestor document cannot be found merge from an empty document
+        // The ancestor document cannot be found, merge from an empty document
         if (ancestorDocument == null) {
-            ancestorDocument = new XWikiDocument(currentDocument.getDocumentReference(), currentDocument.getLocale());
+            ancestorDocument = new XWikiDocument(previousDocument.getDocumentReference(), previousDocument.getLocale());
         }
 
         // Remember last version
-        String newVersion = newDocument.getVersion();
+        String replicationVersion = replicationDocument.getVersion();
 
         // Execute the merge
-        MergeDocumentResult mergeResult =
-            this.mergeManager.mergeDocument(ancestorDocument, currentDocument, newDocument, new MergeConfiguration());
+        MergeDocumentResult mergeResult = this.mergeManager.mergeDocument(ancestorDocument, previousDocument,
+            replicationDocument, new MergeConfiguration());
 
-        // Save the merged version if anything changed
-        if (mergeResult.isModified()) {
-            try {
-                xcontext.getWiki().saveDocument(newDocument,
-                    "Merge [" + currentDocument.getVersion() + "] and [" + newVersion + "] versions", true, xcontext);
-            } catch (XWikiException e) {
-                this.logger.error("Failed to save merged document", e);
-            }
+        // Save the merged version, even if nothing changed (to make clear in the history that something happen)
+        try {
+            xcontext.getWiki().saveDocument(replicationDocument,
+                "Merge [" + previousDocument.getVersion() + "] and [" + replicationVersion + "] versions", true,
+                xcontext);
+        } catch (XWikiException e) {
+            this.logger.error("Failed to save merged document", e);
         }
 
         Set<String> authors;
@@ -127,21 +126,21 @@ public class DocumentUpdateConflictResolver
         // Notify involved authors about the conflict resolution but only if the merge had a real conflict
         if (mergeResult.getLog().hasLogLevel(LogLevel.ERROR)) {
             // Find all authors involved
-            authors = findAuthors(ancestorDocument, currentDocument, newDocument, xcontext);
+            authors = findAuthors(ancestorDocument, previousDocument, replicationDocument, xcontext);
 
             // Notify about the conflict
-            notifyConflict(newDocument, authors);
+            notifyConflict(replicationDocument, authors);
         } else {
-            // Not a real conflict so no need to send the authors
+            // Not a real conflict so no need to notify the authors
             authors = null;
         }
 
         // Send the complete document with updated history to other instances so that they synchronize
         try {
-            this.controller.sendDocumentRepair(newDocument, authors);
+            this.controller.sendDocumentRepair(replicationDocument, authors);
         } catch (ReplicationException e) {
             this.logger.error("Failed to send back a conflict repair for document[{}]",
-                newDocument.getDocumentReferenceWithLocale(), e);
+                replicationDocument.getDocumentReferenceWithLocale(), e);
         }
     }
 

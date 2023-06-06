@@ -46,7 +46,9 @@ import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
+import com.xpn.xwiki.doc.XWikiAttachment;
 import com.xpn.xwiki.doc.XWikiDocument;
+import com.xpn.xwiki.objects.BaseObject;
 
 /**
  * @version $Id$
@@ -78,48 +80,63 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         boolean complete = this.documentMessageReader.isComplete(message);
 
         // Load the document
-        XWikiDocument document = new XWikiDocument(documentReference, documentReference.getLocale());
+        XWikiDocument replicationDocument = new XWikiDocument(documentReference, documentReference.getLocale());
         try (InputStream stream = message.open()) {
-            this.loader.importDocument(document, stream);
+            this.loader.importDocument(replicationDocument, stream);
         } catch (Exception e) {
             throw new ReplicationException("Failed to parse document message to update", e);
         }
 
         if (complete) {
-            completeUpdate(document, xcontext);
+            completeUpdate(replicationDocument, xcontext);
         } else {
-            update(message, documentReference, document, xcontext);
+            update(message, documentReference, replicationDocument, xcontext);
         }
     }
 
-    private void update(ReplicationReceiverMessage message, DocumentReference documentReference, XWikiDocument document,
-        XWikiContext xcontext) throws ReplicationException
+    private void update(ReplicationReceiverMessage message, DocumentReference documentReference,
+        XWikiDocument replicationDocument, XWikiContext xcontext) throws ReplicationException
     {
         // Load the current document
-        XWikiDocument currentDocument;
+        XWikiDocument databaseDocument;
         try {
             // Clone the document to not be disturbed by modifications made by other threads
-            currentDocument = xcontext.getWiki().getDocument(documentReference, xcontext).clone();
+            databaseDocument = xcontext.getWiki().getDocument(documentReference, xcontext).clone();
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to load document to update", e);
         }
 
-        // Keep a copy of the current document for later
-        XWikiDocument newDocument = currentDocument.clone();
+        // Indicate the current document as original version of the new one
+        replicationDocument.setOriginalDocument(databaseDocument);
+        // Indicate if it's an update of an already existing document
+        replicationDocument.setNew(databaseDocument.isNew());
 
-        // Update the document
-        newDocument.apply(document, true);
-        // Also copy some revision related properties
-        newDocument.getAuthors().setCreator(document.getAuthors().getCreator());
-        newDocument.getAuthors().setContentAuthor(document.getAuthors().getContentAuthor());
-        newDocument.getAuthors().setEffectiveMetadataAuthor(document.getAuthors().getEffectiveMetadataAuthor());
-        newDocument.getAuthors().setOriginalMetadataAuthor(document.getAuthors().getOriginalMetadataAuthor());
-        newDocument.setDate(document.getDate());
-        newDocument.setContentUpdateDate(document.getContentUpdateDate());
+        // Clone the current document to have a modifiable version
+        XWikiDocument previousDocument = databaseDocument.clone();
+
+        // Indicate in the new document the xobjects which don't exist anymore
+        cleanXObjects(previousDocument, replicationDocument);
+
+        // Indicate in the new document the attachments which don't exist anymore
+        cleanAttachments(previousDocument, replicationDocument);
+
+        if (replicationDocument.getRCSVersion().isLessOrEqualThan(databaseDocument.getRCSVersion())) {
+            // The replicated document version conflicts with an existing one (generally because several instances sent
+            // concurrent modifications of the same document), we save it with a natural incrementation of the local
+            // version
+            replicationDocument.setRCSVersion(
+                XWikiDocument.getNextVersion(databaseDocument.getRCSVersion(), replicationDocument.isMinorEdit()));
+        }
+
+        // We want to save the document as is (among other things we want to make sure to keep the same date as in
+        // the message)
+        replicationDocument.setMetaDataDirty(false);
+        replicationDocument.setContentDirty(false);
 
         // Save the updated document
         try {
-            xcontext.getWiki().saveDocument(newDocument, document.getComment(), document.isMinorEdit(), xcontext);
+            xcontext.getWiki().saveDocument(replicationDocument, replicationDocument.getComment(),
+                replicationDocument.isMinorEdit(), xcontext);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to save document update", e);
         }
@@ -131,8 +148,8 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         // If no ancestor is provided we cannot really know if there is a conflict
         if (values != null) {
             // Get previous database version
-            String currentVersion = currentDocument.isNew() ? null : currentDocument.getVersion();
-            Date currentVersionDate = currentDocument.isNew() ? null : currentDocument.getDate();
+            String currentVersion = databaseDocument.isNew() ? null : databaseDocument.getVersion();
+            Date currentVersionDate = databaseDocument.isNew() ? null : databaseDocument.getDate();
 
             List<DocumentAncestor> ancestors = DocumentAncestorConverter.toDocumentAncestors(values);
 
@@ -145,11 +162,37 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
                 if (this.controllerUtils.isOwner(documentReference)) {
                     // Actually handle the conflict only if the current instance is the owner
                     // Create and save a merged version of the document
-                    this.conflictResolver.merge(ancestors, currentDocument, newDocument, xcontext);
+                    this.conflictResolver.merge(ancestors, databaseDocument, replicationDocument, xcontext);
                 } else {
                     // Otherwise just ask the owner for a repair (it case the owner did not notice)
                     requestRepair(documentReference);
                 }
+            }
+        }
+    }
+
+    private void cleanXObjects(XWikiDocument previousDocument, XWikiDocument replicationDocument)
+    {
+        for (List<BaseObject> previousObjects : previousDocument.getXObjects().values()) {
+            // Duplicate the list since we are potentially going to modify it
+            for (BaseObject previousObject : previousObjects) {
+                if (previousObject != null && replicationDocument.getXObject(previousObject.getXClassReference(),
+                    previousObject.getNumber()) == null) {
+                    // The xobject does not exist anymore, add it and then properly remove it
+                    replicationDocument.setXObject(previousObject.getNumber(), previousObject);
+                    replicationDocument.removeXObject(previousObject);
+                }
+            }
+        }
+    }
+
+    private void cleanAttachments(XWikiDocument previousDocument, XWikiDocument replicationDocument)
+    {
+        for (XWikiAttachment previousAttachment : previousDocument.getAttachmentList()) {
+            if (replicationDocument.getAttachment(previousAttachment.getFilename()) == null) {
+                // The attachment does not exist anymore, add it and then properly remove it
+                replicationDocument.setAttachment(previousAttachment);
+                replicationDocument.removeAttachment(previousAttachment);
             }
         }
     }
@@ -171,17 +214,18 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         }
     }
 
-    private void completeUpdate(XWikiDocument document, XWikiContext xcontext) throws ReplicationException
+    private void completeUpdate(XWikiDocument replicationDocument, XWikiContext xcontext) throws ReplicationException
     {
         // We want to save the document as is
-        document.setMetaDataDirty(false);
-        document.setContentDirty(false);
+        replicationDocument.setMetaDataDirty(false);
+        replicationDocument.setContentDirty(false);
 
         // Save the new complete document
         // The fact that isNew() return true makes saveDocument automatically delete the current document in
         // database and replace it with the received one
         try {
-            xcontext.getWiki().saveDocument(document, document.getComment(), document.isMinorEdit(), xcontext);
+            xcontext.getWiki().saveDocument(replicationDocument, replicationDocument.getComment(),
+                replicationDocument.isMinorEdit(), xcontext);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to save complete document", e);
         }
