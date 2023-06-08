@@ -59,9 +59,14 @@ public abstract class AbstractReplicationEndpoint implements ReplicationEndpoint
         String uri = reference.getParameterValue(PARAMETER_URI);
         ReplicationInstance instance = this.instances.getInstanceByURI(uri);
 
-        if (instance == null || instance.getStatus() != Status.REGISTERED) {
+        if (instance == null) {
             throw new UnauthorizedReplicationInstanceException(
-                "The instance with id [" + uri + "] is not authorized to send replication messages");
+                String.format("The instance [%s] is unknown", uri));
+        }
+
+        if (instance.getStatus() != Status.REGISTERED) {
+            throw new UnauthorizedReplicationInstanceException(
+                String.format("The instance [%s] is not registered (status=[%s])", uri, instance.getStatus()));
         }
 
         validateInstance(instance, reference);
@@ -84,7 +89,7 @@ public abstract class AbstractReplicationEndpoint implements ReplicationEndpoint
 
         if (!this.signatureManager.verify(instance, key, signedKey)) {
             throw new UnauthorizedReplicationInstanceException(
-                "Failed to validate the signature of instance with id [" + instance.getURI() + "]");
+                "Failed to validate the signature from instance [" + instance.getURI() + "]");
         }
     }
 }
