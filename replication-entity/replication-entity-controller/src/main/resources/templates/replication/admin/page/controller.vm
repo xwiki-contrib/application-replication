@@ -23,9 +23,10 @@
     #if ($replicationType == 'default')
       #set ($configuration = $NULL)
     #elseif ($replicationType == 'all')
+      ## TODO: add support for the direction in the UI
       #set ($configuration = [{
               "level" : $request.get("${namePrefix}_replication_instance_level"),
-              "readonly" : false
+              "direction" : 'BOTH'
             }])
     #elseif ($replicationType == 'single')
       #set ($configuration = [])
@@ -36,11 +37,11 @@
           #set ($instanceIndex = $parameterName.substring($parameterPrefix.length()))
           #set ($instanceLevel = $request.getParameter("${namePrefix}_replication_instance_level_$instanceIndex"))
           #if ($!instanceLevel != '')
-            ## TODO: add support for readonly in the UI
+            ## TODO: add support for the direction in the UI
             #set ($void = $configuration.add({
               "instance" : $instanceURI,
               "level" : $instanceLevel,
-              "readonly" : false
+              "direction" : 'BOTH'
             }))
           #end
         #end

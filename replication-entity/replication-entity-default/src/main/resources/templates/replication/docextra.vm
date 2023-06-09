@@ -56,8 +56,16 @@
       #foreach($resolvedInstance in $resolvedInstances)
           <dt><label>$escapetool.xml($resolvedInstance.instance.name) (<a href="$resolvedInstance.instance.uRI">$resolvedInstance.instance.uRI</a>)</label></dt>
           <dd>
+          #set ($direction = $resolvedInstance.direction.name())
+          #if ($direction == 'BOTH')
+            $services.icon.renderHTML('refresh')
+          #elseif ($direction == 'SEND_ONLY')
+            $services.icon.renderHTML('up')
+          #elseif ($direction == 'RECEIVE_ONLY')
+            $services.icon.renderHTML('down')
+          #end
           #if ($resolvedInstance.level)
-            $escapetool.xml($services.localization.render("replication.entity.level.${resolvedInstance.level}.description"))
+            $escapetool.xml($services.localization.render("replication.entity.level.${resolvedInstance.level}.${direction}.description"))
           #else
             $escapetool.xml($services.localization.render('replication.entity.docextra.notreplicated'))
           #end
