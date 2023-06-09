@@ -22,7 +22,6 @@ package org.xwiki.contrib.replication.entity.internal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -33,6 +32,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.model.reference.EntityReference;
 
@@ -59,14 +59,13 @@ public class EntityReplicationStore
     @Inject
     private EntityReplicationInitializer initializer;
 
-
     /**
      * @param reference the reference of the entity
      * @param instances the instance to send the entity to
      * @throws XWikiException when failing to store entity replication configuration
      */
     public void storeHibernateEntityReplication(EntityReference reference,
-        List<DocumentReplicationControllerInstance> instances) throws XWikiException
+        Collection<DocumentReplicationControllerInstance> instances) throws XWikiException
     {
         long entityId = this.cache.toEntityId(reference);
 
@@ -77,39 +76,48 @@ public class EntityReplicationStore
     }
 
     /**
-     * @param instances the stored configuration
+     * @param configurations the stored configuration
+     * @param relay true if the relay configuration should be returned, false for the replication configuration
      * @return the resolved configuration
      * @throws ReplicationException when failing to resolve the configuration
      */
     public Map<String, DocumentReplicationControllerInstance> resolveControllerInstancesMap(
-        Collection<DocumentReplicationControllerInstance> instances) throws ReplicationException
+        Collection<DocumentReplicationControllerInstance> configurations, boolean relay) throws ReplicationException
     {
-        if (instances != null) {
-            Map<String, DocumentReplicationControllerInstance> resolvedInstances =
+        if (configurations != null) {
+            Map<String, DocumentReplicationControllerInstance> resolvedConfigurations =
                 new HashMap<>(this.instanceManager.getRegisteredInstances().size() + 1);
 
             DocumentReplicationControllerInstance allConfiguration = null;
 
-            // Add direct configuration
-            for (DocumentReplicationControllerInstance instance : instances) {
-                if (instance.getInstance() != null) {
-                    resolvedInstances.put(instance.getInstance().getURI(), instance);
+            // Add direct configurations and extract the wildcard configuration
+            for (DocumentReplicationControllerInstance configuration : configurations) {
+                if (configuration.getInstance() != null) {
+                    resolvedConfigurations.put(configuration.getInstance().getURI(), configuration);
                 } else {
-                    allConfiguration = instance;
+                    allConfiguration = configuration;
                 }
             }
 
-            // Add whildcard configuration
+            // Resolve the whildcard configuration
             if (allConfiguration != null) {
-                for (ReplicationInstance replicationInstance : this.instanceManager.getInstances()) {
-                    if (!resolvedInstances.containsKey(replicationInstance.getURI())) {
-                        resolvedInstances.put(replicationInstance.getURI(), new DocumentReplicationControllerInstance(
-                            replicationInstance, allConfiguration.getLevel(), allConfiguration.isReadonly()));
+                DocumentReplicationDirection defaultDirection = allConfiguration.getDirection();
+
+                // Relaying messages is always allowed in case of wildcard configuration
+                if (relay && defaultDirection == DocumentReplicationDirection.RECEIVE_ONLY) {
+                    defaultDirection = DocumentReplicationDirection.BOTH;
+                }
+
+                for (ReplicationInstance instance : this.instanceManager.getInstances()) {
+                    // Filter out explicitly configured instances
+                    if (!resolvedConfigurations.containsKey(instance.getURI())) {
+                        resolvedConfigurations.put(instance.getURI(), new DocumentReplicationControllerInstance(
+                            instance, allConfiguration.getLevel(), defaultDirection));
                     }
                 }
             }
 
-            return resolvedInstances;
+            return resolvedConfigurations;
         }
 
         // Not configured at this level
@@ -118,25 +126,28 @@ public class EntityReplicationStore
 
     /**
      * @param instances the stored configuration
+     * @param relay true if the relay configuration should be returned, false for the replication configuration
      * @return the resolved configuration
      * @throws ReplicationException when failing to resolve the configuration
      */
     public Collection<DocumentReplicationControllerInstance> resolveControllerInstances(
-        Collection<DocumentReplicationControllerInstance> instances) throws ReplicationException
+        Collection<DocumentReplicationControllerInstance> instances, boolean relay) throws ReplicationException
     {
-        Map<String, DocumentReplicationControllerInstance> resolvedInstances = resolveControllerInstancesMap(instances);
+        Map<String, DocumentReplicationControllerInstance> resolvedConfigurations =
+            resolveControllerInstancesMap(instances, relay);
 
-        return resolvedInstances != null ? resolvedInstances.values() : null;
+        return resolvedConfigurations != null ? resolvedConfigurations.values() : null;
     }
 
     /**
      * @param reference the reference of the entity
+     * @param relay true if the relay configuration should be returned, false for the replication configuration
      * @return the instances to send the entity to
      * @throws XWikiException when failing to get the instances
      * @throws ReplicationException when failing to access instances
      */
     public Collection<DocumentReplicationControllerInstance> resolveHibernateEntityReplication(
-        EntityReference reference) throws XWikiException, ReplicationException
+        EntityReference reference, boolean relay) throws XWikiException, ReplicationException
     {
         if (reference == null) {
             // Don't replicate by default
@@ -144,7 +155,7 @@ public class EntityReplicationStore
         }
 
         long entityId = this.cache.toEntityId(reference);
-        String cacheKey = this.cache.toCacheKey(entityId);
+        String cacheKey = this.cache.toResolveCacheKey(entityId, relay);
 
         // Try the cache
         EntityReplicationCacheEntry cacheEntry = this.cache.getResolveCache().get(cacheKey);
@@ -154,40 +165,41 @@ public class EntityReplicationStore
         }
 
         // Load from the database
-        Collection<DocumentReplicationControllerInstance> instances = resolveControllerInstances(
-            getHibernateEntityReplication(reference.getRoot().getName(), entityId, cacheKey));
+        Collection<DocumentReplicationControllerInstance> configurations =
+            resolveControllerInstances(getHibernateEntityReplication(reference.getRoot().getName(), entityId), relay);
 
         // Fallback on parent if nothing is explicitly set for this reference
-        if (instances == null) {
-            instances = resolveHibernateEntityReplication(reference.getParent());
+        if (configurations == null) {
+            configurations = resolveHibernateEntityReplication(reference.getParent(), relay);
         }
 
         // Update the cache
-        this.cache.getResolveCache().set(cacheKey, new EntityReplicationCacheEntry(instances));
+        this.cache.getResolveCache().set(cacheKey, new EntityReplicationCacheEntry(configurations));
 
-        return instances;
+        return configurations;
     }
 
     /**
      * @param reference the reference of the entity
      * @param instance the configured instance
+     * @param relay true if the relay configuration should be returned, false for the replication configuration
      * @return the configuration of the instance
      * @throws XWikiException when failing to get the instances
      * @throws ReplicationException when failing to access instances
      */
     public DocumentReplicationControllerInstance resolveHibernateEntityReplication(EntityReference reference,
-        ReplicationInstance instance) throws XWikiException, ReplicationException
+        ReplicationInstance instance, boolean relay) throws XWikiException, ReplicationException
     {
-        Collection<DocumentReplicationControllerInstance> configuredInstances =
-            resolveHibernateEntityReplication(reference);
+        Collection<DocumentReplicationControllerInstance> resolvedConfigurations =
+            resolveHibernateEntityReplication(reference, relay);
 
-        for (DocumentReplicationControllerInstance configuredInstance : configuredInstances) {
-            if (configuredInstance.getInstance() == instance) {
-                return configuredInstance;
+        for (DocumentReplicationControllerInstance resolvedConfiguration : resolvedConfigurations) {
+            if (resolvedConfiguration.getInstance() == instance) {
+                return resolvedConfiguration;
             }
         }
 
-        return new DocumentReplicationControllerInstance(instance, DocumentReplicationLevel.ALL, false);
+        return new DocumentReplicationControllerInstance(instance, DocumentReplicationLevel.ALL, null);
     }
 
     /**
@@ -203,18 +215,19 @@ public class EntityReplicationStore
         }
 
         long entityId = this.cache.toEntityId(reference);
-        String cacheKey = this.cache.toCacheKey(entityId);
 
-        return getHibernateEntityReplication(reference.getRoot().getName(), entityId, cacheKey);
+        return getHibernateEntityReplication(reference.getRoot().getName(), entityId);
     }
 
-    private Collection<DocumentReplicationControllerInstance> getHibernateEntityReplication(String wiki, long entityId,
-        String cacheKey) throws XWikiException
+    private Collection<DocumentReplicationControllerInstance> getHibernateEntityReplication(String wiki, long entityId)
+        throws XWikiException
     {
         if (!this.initializer.isInitialized()) {
             // The configuration mapping is not registered yet
             return Collections.emptyList();
         }
+
+        String cacheKey = this.cache.toDataCacheKey(entityId);
 
         EntityReplicationCacheEntry cacheEntry = this.cache.getDataCache().get(cacheKey);
 

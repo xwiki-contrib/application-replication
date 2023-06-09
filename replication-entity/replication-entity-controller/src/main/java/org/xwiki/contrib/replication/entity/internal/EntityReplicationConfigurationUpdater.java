@@ -109,11 +109,11 @@ public class EntityReplicationConfigurationUpdater
     {
         // Resolve pre-save configuration
         Map<String, DocumentReplicationControllerInstance> preConfigurations =
-            this.store.resolveControllerInstancesMap(this.store.getHibernateEntityReplication(reference));
+            this.store.resolveControllerInstancesMap(this.store.getHibernateEntityReplication(reference), false);
 
         // Resolve post-save configuration
         Map<String, DocumentReplicationControllerInstance> postConfigurations =
-            this.store.resolveControllerInstancesMap(configurations);
+            this.store.resolveControllerInstancesMap(configurations, false);
 
         // Calculate the configuration diff
         List<DocumentReplicationControllerInstance> newInstances = new ArrayList<>();

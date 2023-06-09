@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationStore;
 import org.xwiki.security.SecurityReference;
@@ -60,10 +61,11 @@ public class DocumentReplicationSecurityEntryReaderExtra implements SecurityEntr
     public Collection<SecurityRule> read(SecurityReference entityReference) throws AuthorizationException
     {
         try {
-            DocumentReplicationControllerInstance configuration =
-                this.store.resolveHibernateEntityReplication(entityReference, this.instances.getCurrentInstance());
+            DocumentReplicationControllerInstance configuration = this.store
+                .resolveHibernateEntityReplication(entityReference, this.instances.getCurrentInstance(), false);
 
-            if (configuration.isReadonly() || configuration.getLevel() == DocumentReplicationLevel.REFERENCE) {
+            if (configuration.getDirection() == DocumentReplicationDirection.RECEIVE_ONLY
+                || configuration.getLevel() == DocumentReplicationLevel.REFERENCE) {
                 return Collections.singleton(DocumentReplicationSecurityRule.INSTANCE);
             }
         } catch (Exception e) {

@@ -29,6 +29,7 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
@@ -61,10 +62,10 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
     protected void checkMessageInstance(ReplicationReceiverMessage message, DocumentReference documentReference)
         throws ReplicationException
     {
-        for (DocumentReplicationControllerInstance instance : this.controller
+        for (DocumentReplicationControllerInstance configuration : this.controller
             .getReplicationConfiguration(documentReference)) {
-            if (instance.getInstance() == message.getInstance()
-                && (instance.isReadonly() || instance.getLevel() == DocumentReplicationLevel.REFERENCE)) {
+            if (configuration.getInstance() == message.getInstance()
+                && configuration.getDirection() == DocumentReplicationDirection.SEND_ONLY) {
                 throw new InvalidReplicationMessageException("The instance [" + message.getInstance()
                     + "] is not allowed to send messages for document [" + documentReference + "]");
             }

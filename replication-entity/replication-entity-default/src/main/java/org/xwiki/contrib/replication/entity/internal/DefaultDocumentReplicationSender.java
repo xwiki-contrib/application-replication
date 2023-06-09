@@ -39,6 +39,7 @@ import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
 import org.xwiki.contrib.replication.entity.EntityReplication;
@@ -357,7 +358,8 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
     private List<ReplicationInstance> getInstances(DocumentReplicationLevel level,
         Collection<DocumentReplicationControllerInstance> configurations)
     {
-        return configurations.stream().filter(c -> c.getLevel() == level)
+        return configurations.stream()
+            .filter(c -> c.getLevel() == level && c.getDirection() != DocumentReplicationDirection.RECEIVE_ONLY)
             .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
     }
 

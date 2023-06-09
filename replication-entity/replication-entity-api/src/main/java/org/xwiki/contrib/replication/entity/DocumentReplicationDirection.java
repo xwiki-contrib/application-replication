@@ -17,39 +17,28 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal;
-
-import java.util.Collection;
-
-import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+package org.xwiki.contrib.replication.entity;
 
 /**
- * An entry of the cache.
+ * Indicate in which direction the replication is allowed.
  * 
  * @version $Id$
+ * @since 1.12.0
  */
-public class EntityReplicationCacheEntry
+public enum DocumentReplicationDirection
 {
     /**
-     * An unset configuration.
+     * The replication is enabled in both directly.
      */
-    public static final EntityReplicationCacheEntry UNSET = new EntityReplicationCacheEntry(null);
-
-    private final Collection<DocumentReplicationControllerInstance> configurations;
+    BOTH,
 
     /**
-     * @param configuration the replication configuration
+     * Only send updates about that document and refuse messages.
      */
-    public EntityReplicationCacheEntry(Collection<DocumentReplicationControllerInstance> configuration)
-    {
-        this.configurations = configuration;
-    }
+    SEND_ONLY,
 
     /**
-     * @return the configuration the replication configuration
+     * Never send updates about that document but accept messages.
      */
-    public Collection<DocumentReplicationControllerInstance> getConfiguration()
-    {
-        return this.configurations;
-    }
+    RECEIVE_ONLY
 }

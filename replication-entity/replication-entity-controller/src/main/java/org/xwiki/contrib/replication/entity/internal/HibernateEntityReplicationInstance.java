@@ -24,6 +24,7 @@ import java.io.Serializable;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 
 /**
@@ -39,7 +40,7 @@ public class HibernateEntityReplicationInstance implements Serializable
 
     private DocumentReplicationLevel level;
 
-    private boolean readonly;
+    private DocumentReplicationDirection direction;
 
     /**
      * Default constructor.
@@ -53,15 +54,15 @@ public class HibernateEntityReplicationInstance implements Serializable
      * @param entity the reference hash of the entity associated with this configuration
      * @param instance the instance to replicate the document with
      * @param level how much of the document should be replicated
-     * @param readonly if the target instance is not allowed to send back modifications
+     * @param direction the direction in which the document is allowed to travel
      */
     public HibernateEntityReplicationInstance(long entity, String instance, DocumentReplicationLevel level,
-        boolean readonly)
+        DocumentReplicationDirection direction)
     {
         this.entity = entity;
         this.instance = instance;
         this.level = level;
-        this.readonly = readonly;
+        this.direction = direction;
     }
 
     /**
@@ -75,7 +76,7 @@ public class HibernateEntityReplicationInstance implements Serializable
         this.instance = instance.getInstance() != null ? instance.getInstance().getURI() : "";
 
         this.level = instance.getLevel();
-        this.readonly = instance.isReadonly();
+        this.direction = instance.getDirection();
     }
 
     @Override
@@ -92,7 +93,7 @@ public class HibernateEntityReplicationInstance implements Serializable
             builder.append(getEntity(), otherInstance.getEntity());
             builder.append(getInstance(), otherInstance.getInstance());
             builder.append(getLevel(), otherInstance.getLevel());
-            builder.append(isReadonly(), otherInstance.isReadonly());
+            builder.append(getDirection(), otherInstance.getDirection());
 
             return builder.isEquals();
         }
@@ -107,7 +108,7 @@ public class HibernateEntityReplicationInstance implements Serializable
         builder.append(getEntity());
         builder.append(getInstance());
         builder.append(getLevel());
-        builder.append(isReadonly());
+        builder.append(getDirection());
 
         return builder.toHashCode();
     }
@@ -161,18 +162,20 @@ public class HibernateEntityReplicationInstance implements Serializable
     }
 
     /**
-     * @return true if the target instance is not allowed to send back modifications
+     * @return the direction in which the document is allowed to travel
+     * @since 1.12.0
      */
-    public boolean isReadonly()
+    public DocumentReplicationDirection getDirection()
     {
-        return this.readonly;
+        return this.direction != null ? this.direction : DocumentReplicationDirection.BOTH;
     }
 
     /**
-     * @param readonly true if the target instance is not allowed to send back modifications
+     * @param direction the direction in which the document is allowed to travel
+     * @since 1.12.0
      */
-    public void setReadonly(boolean readonly)
+    public void setDirection(DocumentReplicationDirection direction)
     {
-        this.readonly = readonly;
+        this.direction = direction;
     }
 }

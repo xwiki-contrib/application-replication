@@ -107,18 +107,28 @@ public class EntityReplicationCache implements Initializable, Disposable
      * @param entityId the id of the entity
      * @return the value used as cache key
      */
-    public String toCacheKey(long entityId)
+    public String toDataCacheKey(long entityId)
     {
         return String.valueOf(entityId);
     }
 
     /**
-     * @param entityId th id of the entity to remove from the cache
+     * @param entityId the id of the entity
+     * @param relay true if the entry store relay configuration
+     * @return the value used as cache key
+     */
+    public String toResolveCacheKey(long entityId, boolean relay)
+    {
+        return toDataCacheKey(entityId) + "-" + relay;
+    }
+
+    /**
+     * @param entityId the id of the entity to remove from the cache
      */
     public void remove(long entityId)
     {
         // Clear the data cache for this entity
-        this.dataCache.remove(toCacheKey(entityId));
+        this.dataCache.remove(toDataCacheKey(entityId));
 
         // Clear the whole resolve cache since the change might impact children
         this.resolveCache.removeAll();
@@ -129,9 +139,7 @@ public class EntityReplicationCache implements Initializable, Disposable
      */
     public void onDelete(DocumentReference reference)
     {
-        this.dataCache.remove(toCacheKey(toEntityId(reference)));
-
-        this.resolveCache.removeAll();
+        remove(toEntityId(reference));
     }
 
     /**

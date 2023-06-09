@@ -20,8 +20,8 @@
 package org.xwiki.contrib.replication.entity.internal;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,6 +35,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.properties.converter.AbstractConverter;
 import org.xwiki.properties.converter.ConversionException;
@@ -76,6 +77,38 @@ public class DocumentReplicationControllerInstanceConverter
     }
 
     /**
+     * @param value the serialized level
+     * @return the actual level
+     */
+    public static DocumentReplicationDirection toDirection(Object value)
+    {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof DocumentReplicationDirection) {
+            return (DocumentReplicationDirection) value;
+        }
+
+        String valueString = value.toString();
+
+        if (StringUtils.isEmpty(valueString)) {
+            return null;
+        }
+
+        // Retro compatibility
+        if (valueString.equals("true")) {
+            return DocumentReplicationDirection.SEND_ONLY;
+        }
+
+        try {
+            return DocumentReplicationDirection.valueOf(((String) value).toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return DocumentReplicationDirection.BOTH;
+        }
+    }
+
+    /**
      * @param value the value to convert
      * @param instances the {@link ReplicationInstanceManager} component to find registered instances
      * @return the {@link DocumentReplicationControllerInstance} created from the passed value
@@ -109,16 +142,8 @@ public class DocumentReplicationControllerInstanceConverter
         // Level
         DocumentReplicationLevel level = toLevel(value.get("level"));
 
-        // Read only
-        boolean readonly = false;
-        Object valueReadOnly = value.get("readonly");
-        if (valueReadOnly != null) {
-            if (valueReadOnly instanceof Boolean) {
-                readonly = ((Boolean) valueReadOnly).booleanValue();
-            } else {
-                readonly = Boolean.parseBoolean(valueReadOnly.toString());
-            }
-        }
+        // Direction
+        DocumentReplicationDirection direction = toDirection(value.get("direction"));
 
         // Instance
         ReplicationInstance instance = null;
@@ -138,7 +163,7 @@ public class DocumentReplicationControllerInstanceConverter
             }
         }
 
-        return new DocumentReplicationControllerInstance(instance, level, readonly);
+        return new DocumentReplicationControllerInstance(instance, level, direction);
     }
 
     /**
@@ -160,14 +185,14 @@ public class DocumentReplicationControllerInstanceConverter
             level = null;
         }
 
-        // Read only
-        boolean readonly = false;
+        // Direction
+        DocumentReplicationDirection direction = DocumentReplicationDirection.BOTH;
         if (index > 0) {
-            int readonlyIndex = value.indexOf(':', index + 1);
+            int directionIndex = value.indexOf(':', index + 1);
 
-            if (readonlyIndex > 0) {
-                readonly = Boolean.parseBoolean(value.substring(index + 1, readonlyIndex));
-                index = readonlyIndex;
+            if (directionIndex > 0) {
+                direction = toDirection(value.substring(index + 1, directionIndex));
+                index = directionIndex;
             }
         }
 
@@ -181,7 +206,7 @@ public class DocumentReplicationControllerInstanceConverter
             }
         }
 
-        return new DocumentReplicationControllerInstance(instance, level, readonly);
+        return new DocumentReplicationControllerInstance(instance, level, direction);
     }
 
     /**
@@ -190,19 +215,19 @@ public class DocumentReplicationControllerInstanceConverter
      * @return the list of {@link DocumentReplicationControllerInstance}s created from the passed value
      * @throws ReplicationException when failing to access instances
      */
-    public static List<DocumentReplicationControllerInstance> toControllerInstances(Collection<?> values,
+    public static Map<String, DocumentReplicationControllerInstance> toControllerInstanceMap(Collection<?> values,
         ReplicationInstanceManager instances) throws ReplicationException
     {
         if (values == null) {
             return null;
         }
 
-        List<DocumentReplicationControllerInstance> result = new ArrayList<>(values.size());
+        Map<String, DocumentReplicationControllerInstance> result = new LinkedHashMap<>(values.size());
         for (Object value : values) {
             DocumentReplicationControllerInstance instance = toControllerInstance(value, instances);
 
             if (instance != null) {
-                result.add(instance);
+                result.put(instance.getInstance() != null ? instance.getInstance().getURI() : null, instance);
             }
         }
 
@@ -221,7 +246,7 @@ public class DocumentReplicationControllerInstanceConverter
             builder.append(value.getLevel());
         }
         builder.append(':');
-        builder.append(value.isReadonly());
+        builder.append(value.getDirection());
         builder.append(':');
         if (value.getInstance() != null) {
             builder.append(value.getInstance().getURI());

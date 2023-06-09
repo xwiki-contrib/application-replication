@@ -21,7 +21,6 @@ package org.xwiki.contrib.replication.entity.internal.message;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -116,7 +115,7 @@ public class EntityReplicationControllerSender
      * @throws ReplicationException when failing to send replication configuration to other instances
      */
     public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
-        List<DocumentReplicationControllerInstance> configurations) throws ReplicationException
+        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
     {
         // Send the configuration to everyone, each instance will decide what to do with it (including when they are not
         // or not anymore supposed to be part of the replication)

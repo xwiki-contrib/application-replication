@@ -34,6 +34,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerInstanceConverter;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationConfigurationUpdater;
@@ -91,7 +92,7 @@ public class ControllerReplicationScriptService implements ScriptService
     public Collection<DocumentReplicationControllerInstance> resolveHibernateEntityReplication(
         EntityReference reference) throws XWikiException, AccessDeniedException, ReplicationException
     {
-        return this.store.resolveHibernateEntityReplication(reference);
+        return this.store.resolveHibernateEntityReplication(reference, false);
     }
 
     /**
@@ -105,7 +106,7 @@ public class ControllerReplicationScriptService implements ScriptService
     public DocumentReplicationControllerInstance resolveHibernateEntityReplication(EntityReference reference,
         ReplicationInstance instance) throws XWikiException, AccessDeniedException, ReplicationException
     {
-        return this.store.resolveHibernateEntityReplication(reference, instance);
+        return this.store.resolveHibernateEntityReplication(reference, instance, false);
     }
 
     /**
@@ -121,21 +122,28 @@ public class ControllerReplicationScriptService implements ScriptService
     {
         this.authorization.checkAccess(Right.PROGRAM);
 
-        List<DocumentReplicationControllerInstance> configuration;
+        List<DocumentReplicationControllerInstance> configurations;
         if (instances == null) {
-            configuration = null;
+            configurations = null;
         } else {
-            configuration = new ArrayList<>(instances.size());
+            configurations = new ArrayList<>(instances.size());
             ReplicationInstance currentInstance = this.instanceManager.getCurrentInstance();
             boolean currentInstanceFound = false;
             for (Map<String, Object> entry : instances) {
-                DocumentReplicationControllerInstance instance =
+                DocumentReplicationControllerInstance configuration =
                     DocumentReplicationControllerInstanceConverter.toControllerInstance(entry, this.instanceManager);
-                if (instance != null
-                    && (instance.getInstance() == null || instance.getInstance().getStatus() == Status.REGISTERED)) {
-                    configuration.add(instance);
+                if (configuration != null && (configuration.getInstance() == null
+                    || configuration.getInstance().getStatus() == Status.REGISTERED)) {
+                    if (configuration.getLevel() == DocumentReplicationLevel.REFERENCE
+                        && configuration.getDirection() != DocumentReplicationDirection.SEND_ONLY) {
+                        // A REFERENCE replication also imply that it's a send only
+                        configuration = new DocumentReplicationControllerInstance(configuration.getInstance(),
+                            DocumentReplicationLevel.REFERENCE, DocumentReplicationDirection.SEND_ONLY);
+                    }
 
-                    if (instance.getInstance() == this.instanceManager.getCurrentInstance()) {
+                    configurations.add(configuration);
+
+                    if (configuration.getInstance() == this.instanceManager.getCurrentInstance()) {
                         currentInstanceFound = true;
                     }
                 }
@@ -143,12 +151,12 @@ public class ControllerReplicationScriptService implements ScriptService
 
             // Add current instance if not already there
             if (!currentInstanceFound) {
-                configuration.add(
-                    new DocumentReplicationControllerInstance(currentInstance, DocumentReplicationLevel.ALL, false));
+                configurations.add(
+                    new DocumentReplicationControllerInstance(currentInstance, DocumentReplicationLevel.ALL, null));
             }
         }
 
         // Save new configuration
-        this.updater.save(reference, configuration);
+        this.updater.save(reference, configurations);
     }
 }

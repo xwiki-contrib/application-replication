@@ -41,8 +41,11 @@
       </type>
     </property>
 
-    <property name="readonly" type="boolean">
-      <column name="XWR_READONLY" not-null="true" default="0"/>
+    <property name="direction" column="XWR_DIRECTION">
+      <type name="org.hibernate.type.EnumType">
+        <param name="enumClass">org.xwiki.contrib.replication.entity.DocumentReplicationDirection</param>
+        <param name="useNamed">true</param>
+      </type>
     </property>
   </class>
 </hibernate-mapping>

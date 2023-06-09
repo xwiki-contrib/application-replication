@@ -35,19 +35,35 @@ public class DocumentReplicationControllerInstance
 
     private final DocumentReplicationLevel level;
 
-    private final boolean readonly;
+    private final DocumentReplicationDirection direction;
 
     /**
      * @param instance the instance to replicate the document to
      * @param level indicate how much of the document should be replicated
      * @param readonly true if the target instance is not allowed to send back modifications
+     * @deprecated use
+     *             {@link DocumentReplicationControllerInstance#DocumentReplicationControllerInstance(ReplicationInstance, DocumentReplicationLevel, DocumentReplicationDirection)}
+     *             instead
      */
+    @Deprecated(since = "1.12.0")
     public DocumentReplicationControllerInstance(ReplicationInstance instance, DocumentReplicationLevel level,
         boolean readonly)
     {
+        this(instance, level, readonly ? DocumentReplicationDirection.SEND_ONLY : DocumentReplicationDirection.BOTH);
+    }
+
+    /**
+     * @param instance the instance to replicate the document to
+     * @param level indicate how much of the document should be replicated
+     * @param direction the direction in which the document is allowed to travel
+     * @since 1.12.0
+     */
+    public DocumentReplicationControllerInstance(ReplicationInstance instance, DocumentReplicationLevel level,
+        DocumentReplicationDirection direction)
+    {
         this.instance = instance;
         this.level = level;
-        this.readonly = readonly;
+        this.direction = direction;
     }
 
     /**
@@ -68,10 +84,21 @@ public class DocumentReplicationControllerInstance
 
     /**
      * @return true if the target instance is not allowed to send back modifications
+     * @deprecated use {@link #getDirection()} instead
      */
+    @Deprecated(since = "1.12.0")
     public boolean isReadonly()
     {
-        return this.readonly;
+        return getDirection() == DocumentReplicationDirection.SEND_ONLY;
+    }
+
+    /**
+     * @return the direction in which the document is allowed to travel
+     * @since 1.12.0
+     */
+    public DocumentReplicationDirection getDirection()
+    {
+        return this.direction != null ? this.direction : DocumentReplicationDirection.BOTH;
     }
 
     @Override
@@ -87,7 +114,7 @@ public class DocumentReplicationControllerInstance
             EqualsBuilder builder = new EqualsBuilder();
 
             builder.append(getInstance(), other.getInstance());
-            builder.append(isReadonly(), other.isReadonly());
+            builder.append(getDirection(), other.getDirection());
             builder.append(getLevel(), other.getLevel());
 
             return builder.build();
@@ -102,7 +129,7 @@ public class DocumentReplicationControllerInstance
         HashCodeBuilder builder = new HashCodeBuilder();
 
         builder.append(getInstance());
-        builder.append(isReadonly());
+        builder.append(getDirection());
         builder.append(getLevel());
 
         return builder.build();

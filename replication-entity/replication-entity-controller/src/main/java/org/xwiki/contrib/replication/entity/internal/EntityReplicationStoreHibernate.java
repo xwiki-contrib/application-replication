@@ -38,6 +38,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.wiki.descriptor.WikiDescriptorManager;
 import org.xwiki.wiki.manager.WikiManagerException;
@@ -83,13 +84,13 @@ public class EntityReplicationStoreHibernate
      * @throws XWikiException when failing to store entity replication configuration
      */
     public void storeHibernateEntityReplication(String wiki, long entityId,
-        List<DocumentReplicationControllerInstance> instances) throws XWikiException
+        Collection<DocumentReplicationControllerInstance> instances) throws XWikiException
     {
         executeWrite(wiki, session -> storeHibernateEntityReplication(entityId, instances, session));
     }
 
-    private Object storeHibernateEntityReplication(long entityId, List<DocumentReplicationControllerInstance> instances,
-        Session session)
+    private Object storeHibernateEntityReplication(long entityId,
+        Collection<DocumentReplicationControllerInstance> instances, Session session)
     {
         // Delete existing instances
         deleteEntity(entityId, session);
@@ -98,7 +99,7 @@ public class EntityReplicationStoreHibernate
         if (instances != null) {
             if (instances.isEmpty()) {
                 session.save(new HibernateEntityReplicationInstance(entityId,
-                    new DocumentReplicationControllerInstance(null, null, true)));
+                    new DocumentReplicationControllerInstance(null, null, null)));
             } else {
                 for (DocumentReplicationControllerInstance instance : instances) {
                     session.save(new HibernateEntityReplicationInstance(entityId, instance));
@@ -168,11 +169,26 @@ public class EntityReplicationStoreHibernate
         return null;
     }
 
+    private DocumentReplicationDirection toDocumentReplicationDirection(Object value)
+    {
+        if (value != null) {
+            if (value instanceof DocumentReplicationDirection) {
+                return (DocumentReplicationDirection) value;
+            } else if (value.getClass().isEnum()) {
+                // Supports DocumentReplicationLevel coming from a different classloader
+                Enum<?> enumConstant = (Enum<?>) value;
+                return DocumentReplicationDirection.valueOf(enumConstant.name());
+            }
+        }
+
+        return null;
+    }
+
     private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(long entityId, Session session)
         throws XWikiException
     {
         Query<Object[]> query = session.createQuery(
-            "SELECT instance.entity, instance.instance, instance.level, instance.readonly"
+            "SELECT instance.entity, instance.instance, instance.level, instance.direction"
                 + " FROM HibernateEntityReplicationInstance AS instance WHERE instance.entity = :entity",
             Object[].class);
         query.setParameter(ENTITY, entityId);
@@ -183,9 +199,9 @@ public class EntityReplicationStoreHibernate
             long entity = ((Number) i[0]).longValue();
             String instance = (String) i[1];
             DocumentReplicationLevel level = toDocumentReplicationLevel(i[2]);
-            boolean readonly = ((Boolean) i[3]).booleanValue();
+            DocumentReplicationDirection direction = toDocumentReplicationDirection(i[3]);
 
-            return new HibernateEntityReplicationInstance(entity, instance, level, readonly);
+            return new HibernateEntityReplicationInstance(entity, instance, level, direction);
         }).collect(Collectors.toList());
 
         // There is no entry
@@ -199,7 +215,7 @@ public class EntityReplicationStoreHibernate
             if (hibernateInstance.getInstance().isEmpty()) {
                 // Replication use the same level for all instances
                 instances.add(new DocumentReplicationControllerInstance(null, hibernateInstance.getLevel(),
-                    hibernateInstance.isReadonly()));
+                    hibernateInstance.getDirection()));
             } else {
                 ReplicationInstance instance;
                 try {
@@ -210,7 +226,7 @@ public class EntityReplicationStoreHibernate
 
                 if (instance != null && (instance.getStatus() == Status.REGISTERED || instance.getStatus() == null)) {
                     instances.add(new DocumentReplicationControllerInstance(instance, hibernateInstance.getLevel(),
-                        hibernateInstance.isReadonly()));
+                        hibernateInstance.getDirection()));
                 }
             }
         }

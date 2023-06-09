@@ -19,10 +19,10 @@
  */
 package org.xwiki.contrib.replication.entity.internal.message;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
@@ -31,10 +31,13 @@ import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractEntityReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationControllerInstanceConverter;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationStore;
@@ -64,101 +67,108 @@ public class EntityReplicationControllerReceiver extends AbstractEntityReplicati
     protected void receiveEntity(ReplicationReceiverMessage message, EntityReference entityReference,
         XWikiContext xcontext) throws ReplicationException
     {
-        List<DocumentReplicationControllerInstance> configurations = optimizeConfiguration(message);
+        Map<String, DocumentReplicationControllerInstance> configurations = optimizeConfiguration(message);
 
         try {
-            this.store.storeHibernateEntityReplication(entityReference, configurations);
+            this.store.storeHibernateEntityReplication(entityReference,
+                configurations != null ? configurations.values() : null);
         } catch (XWikiException e) {
             throw new ReplicationException(
                 "Failed to store replication configuration for entity [" + entityReference + "]", e);
         }
     }
 
-    private List<DocumentReplicationControllerInstance> optimizeConfiguration(ReplicationReceiverMessage message)
+    private Map<String, DocumentReplicationControllerInstance> optimizeConfiguration(ReplicationReceiverMessage message)
         throws ReplicationException
     {
         Collection<String> values =
             message.getCustomMetadata().get(EntityReplicationControllerMessage.METADATA_CONFIGURATION);
-        List<DocumentReplicationControllerInstance> configurations =
-            DocumentReplicationControllerInstanceConverter.toControllerInstances(values, this.instances);
+        Map<String, DocumentReplicationControllerInstance> configurations =
+            DocumentReplicationControllerInstanceConverter.toControllerInstanceMap(values, this.instances);
 
         // Convert the configuration to current instance point of view
         if (configurations != null) {
-            configurations = optimizeConfiguration(configurations);
+            configurations = optimizeConfiguration(message, configurations);
         }
 
         return configurations;
     }
 
-    private List<DocumentReplicationControllerInstance> optimizeConfiguration(
-        List<DocumentReplicationControllerInstance> configurations) throws ReplicationException
+    private Map<String, DocumentReplicationControllerInstance> optimizeConfiguration(ReplicationReceiverMessage message,
+        Map<String, DocumentReplicationControllerInstance> configurations) throws ReplicationException
     {
-        List<DocumentReplicationControllerInstance> optimizedConfigurations = new ArrayList<>(configurations.size());
+        Map<String, DocumentReplicationControllerInstance> optimizedConfigurations =
+            new LinkedHashMap<>(configurations.size());
 
+        // Add wildcard configuration
         DocumentReplicationControllerInstance allConfiguration = getAllConfiguration(configurations);
-        DocumentReplicationControllerInstance currentConfiguration = getCurrentConfiguration(configurations);
-
-        // Add current instance if not already there
-        if (currentConfiguration == null) {
-            if (allConfiguration == null) {
-                return Collections.emptyList();
-            }
-
-            optimizedConfigurations.add(new DocumentReplicationControllerInstance(this.instances.getCurrentInstance(),
-                allConfiguration.getLevel(), allConfiguration.isReadonly()));
+        if (allConfiguration != null) {
+            optimizedConfigurations.put(null, allConfiguration);
         }
 
-        // Optimize the list
-        optimizeConfiguration(configurations, allConfiguration, optimizedConfigurations);
+        // Add current instance if not already there
+        DocumentReplicationControllerInstance currentConfiguration =
+            configurations.get(this.instances.getCurrentInstance().getURI());
+        if (currentConfiguration == null) {
+            if (allConfiguration == null) {
+                // The entity is not replicated at all with the current instance
+                return Collections.emptyMap();
+            }
+
+            ReplicationInstance currentInstance = this.instances.getCurrentInstance();
+
+            currentConfiguration = new DocumentReplicationControllerInstance(currentInstance,
+                allConfiguration.getLevel(), allConfiguration.getDirection());
+
+            optimizedConfigurations.put(currentInstance.getURI(), currentConfiguration);
+        }
+
+        // Invert sending on the source if needed and if the source is known
+        ReplicationInstance sourceInstance = this.instances.getInstanceByURI(message.getSource());
+        if (sourceInstance != null) {
+            // If current instance is receive_only then the source is too (from current instance point of view)
+            if (currentConfiguration.getDirection() == DocumentReplicationDirection.RECEIVE_ONLY) {
+                // Keep a dedicated configuration for the source since it won't behave the same as wildcard in case of
+                // relay
+                optimizedConfigurations.put(sourceInstance.getURI(), new DocumentReplicationControllerInstance(
+                    sourceInstance, DocumentReplicationLevel.ALL, DocumentReplicationDirection.RECEIVE_ONLY));
+            }
+        }
+
+        for (DocumentReplicationControllerInstance configuration : configurations.values()) {
+            // Skip configurations already handled above
+            if (configuration.getInstance() != null
+                && !optimizedConfigurations.containsKey(configuration.getInstance().getURI())
+                && !isPartOfWildcard(currentConfiguration, allConfiguration)) {
+                // Skip not registered instances
+                optimizedConfigurations.put(configuration.getInstance().getURI(), configuration);
+            }
+        }
 
         return optimizedConfigurations;
     }
 
-    private void optimizeConfiguration(List<DocumentReplicationControllerInstance> configurations,
-        DocumentReplicationControllerInstance allConfiguration,
-        List<DocumentReplicationControllerInstance> optimizedConfigurations)
+    private boolean isPartOfWildcard(DocumentReplicationControllerInstance configuration,
+        DocumentReplicationControllerInstance allConfiguration)
     {
-        for (DocumentReplicationControllerInstance configuration : configurations) {
-            // Keep wildcard configuration
-            // Keep current instance configuration
-            if (configuration.getInstance() != null && configuration.getInstance().getStatus() != null) {
-                // Don't add not replicated instances
-                // No need to keep a specific configuration for an instance having exactly the same as all
-                if (configuration.getLevel() == null
-                    || (allConfiguration != null && configuration.getLevel() == allConfiguration.getLevel()
-                        && configuration.isReadonly() == allConfiguration.isReadonly())) {
-                    // Don't add not replicated instances
-                    continue;
-                }
-            }
-
-            optimizedConfigurations.add(configuration);
-        }
+        // Check if the configurations is identical to the wildcard configuration
+        return allConfiguration != null && configuration.getLevel() == allConfiguration.getLevel()
+            && configuration.getDirection() == allConfiguration.getDirection();
     }
 
     private DocumentReplicationControllerInstance getAllConfiguration(
-        List<DocumentReplicationControllerInstance> resolvedConfiguration)
+        Map<String, DocumentReplicationControllerInstance> resolvedConfiguration)
     {
-        for (DocumentReplicationControllerInstance configuredInstance : resolvedConfiguration) {
-            if (configuredInstance.getInstance() == null) {
-                return configuredInstance;
-            }
+        DocumentReplicationControllerInstance allConfiguration = resolvedConfiguration.get(null);
+
+        if (allConfiguration != null && allConfiguration.getDirection() == DocumentReplicationDirection.SEND_ONLY) {
+            // Since it's a send only replication from the point of view of the source instance it means that every
+            // other instances is in receive only mode
+            return new DocumentReplicationControllerInstance(null, allConfiguration.getLevel(),
+                DocumentReplicationDirection.RECEIVE_ONLY);
         }
 
-        return null;
-    }
-
-    private DocumentReplicationControllerInstance getCurrentConfiguration(
-        List<DocumentReplicationControllerInstance> resolvedConfiguration)
-    {
-        // Try to find the current instance
-        for (DocumentReplicationControllerInstance configuredInstance : resolvedConfiguration) {
-            if (configuredInstance.getInstance() != null && configuredInstance.getInstance().getStatus() == null) {
-                return configuredInstance;
-            }
-        }
-
-        return null;
+        return allConfiguration;
     }
 
     @Override
@@ -166,9 +176,9 @@ public class EntityReplicationControllerReceiver extends AbstractEntityReplicati
         throws ReplicationException
     {
         // We relay the optimized configuration instead of the source configuration
-        List<DocumentReplicationControllerInstance> configurations = optimizeConfiguration(message);
+        Map<String, DocumentReplicationControllerInstance> configurations = optimizeConfiguration(message);
 
         // Relay the configuration
-        return this.controlSender.relay(message, configurations);
+        return this.controlSender.relay(message, configurations != null ? configurations.values() : null);
     }
 }
