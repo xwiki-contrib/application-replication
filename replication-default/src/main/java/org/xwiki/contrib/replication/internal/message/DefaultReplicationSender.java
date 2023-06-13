@@ -263,16 +263,10 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
                 // Put the stored message in the sending queue
                 addSend(fileMessage, fileMessage.getTargets());
             } catch (Exception e) {
-                this.logger.error(
-                    "Failed to store the message with id [{}] on disk."
-                        + " Might be lost if it cannot be sent to the target instance before next restart.",
-                    entry.message.getId(), e);
+                this.logger.error("Failed to store the message [{}] on disk. It will be lost.", entry.message, e);
 
                 // Unlock those waiting for the future even if the message is not really stored
-                entry.future.complete(entry.message);
-
-                // Put the initial message in the sending queue and hope it's reusable
-                addSend(entry.message, targets);
+                entry.future.completeExceptionally(e);
             } finally {
                 this.executionContextManager.popContext();
             }

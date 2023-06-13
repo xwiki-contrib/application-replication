@@ -29,11 +29,13 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.xwiki.component.annotation.InstantiationStrategy;
 import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.internal.ReplicationUtils;
 import org.xwiki.contrib.replication.internal.UpperCaseMap;
 import org.xwiki.properties.ConverterManager;
+import org.xwiki.text.XWikiToStringBuilder;
 
 /**
  * Base class to help implement a {@link ReplicationMessage} and especially custom metadata support.
@@ -95,5 +97,20 @@ public abstract class AbstractReplicationMessage implements ReplicationMessage
         }
 
         return stringValue;
+    }
+
+    @Override
+    public String toString()
+    {
+        ToStringBuilder builder = new XWikiToStringBuilder(this);
+
+        builder.append("id", getId());
+        builder.append("type", getType());
+        builder.append("source", getSource());
+        builder.append("date", getDate());
+        builder.append("receivers", getReceivers());
+        builder.append("metadata", getCustomMetadata());
+
+        return builder.build();
     }
 }
