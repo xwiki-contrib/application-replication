@@ -193,7 +193,7 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
         try {
             document = xcontext.getWiki().getDocument(this.entityReference, xcontext);
         } catch (XWikiException e) {
-            throw new IOException("Failed to get document to write with reference [" + this.entityReference + "]", e);
+            throw new IOException(String.format("Failed to get document with reference [%s]", this.entityReference), e);
         }
 
         if (document.isNew()) {
@@ -203,13 +203,15 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
             try {
                 document = this.revisionProvider.getRevision(document, this.version);
             } catch (XWikiException e) {
-                throw new IOException("Failed to get document with reference [" + this.entityReference
-                    + "] and version [" + this.version + "]", e);
+                throw new IOException(String.format("Failed to get document with reference [%s] and version [%s]",
+                    this.entityReference, this.version), e);
+            }
+
+            if (document == null) {
+                throw new IOException(String.format("No document with reference [%s] and version [%s] could found",
+                    this.entityReference, this.version));
             }
         }
-
-        // TODO: find out which attachments should be sent (which attachments versions are new compared to the previous
-        // version)
 
         try {
             toXML(document, stream, this.complete);
