@@ -83,6 +83,9 @@ public class DocumentUnreplicateReplicationReceiver extends AbstractDocumentRepl
                 throw new ReplicationException("Failed to delete the document", e);
             }
         }
+
+        // Reset the owner since that document is not replicated anymore
+        this.entityReplication.remove(documentReference);
     }
 
     @Override

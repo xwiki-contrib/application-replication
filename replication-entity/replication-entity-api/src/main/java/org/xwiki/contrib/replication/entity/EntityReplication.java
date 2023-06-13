@@ -58,4 +58,14 @@ public interface EntityReplication
      * @throws ReplicationException when failing to update the conflict marker
      */
     void setConflict(DocumentReference documentReference, boolean conflict) throws ReplicationException;
+
+    /**
+     * @param documentReference the identifier of the document
+     * @throws ReplicationException when failing to remove the document from the index
+     * @since 1.12.0
+     */
+    default void remove(DocumentReference documentReference) throws ReplicationException
+    {
+        
+    }
 }

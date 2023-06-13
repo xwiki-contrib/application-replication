@@ -76,7 +76,7 @@ public class ReplicationDocumentStore
      * @param document the reference of the document
      * @throws ReplicationException when failing to delete the document entry
      */
-    public void deleteDocument(DocumentReference document) throws ReplicationException
+    public void remove(DocumentReference document) throws ReplicationException
     {
         long id = toDocumentId(document);
 

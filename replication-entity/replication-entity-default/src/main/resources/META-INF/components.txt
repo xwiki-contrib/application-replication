@@ -25,7 +25,6 @@ org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryReplication
 org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentInitializer
 org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore
 org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStoreCache
-org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStoreCleanerListener
 org.xwiki.contrib.replication.entity.internal.like.LikeMessage
 org.xwiki.contrib.replication.entity.internal.like.LikeMessageSender
 org.xwiki.contrib.replication.entity.internal.like.LikeReceiver

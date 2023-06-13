@@ -87,4 +87,10 @@ public class DefaultEntityReplication implements EntityReplication
             this.replicationUtils.sendDocumentConflict(documentReference, conflict);
         }
     }
+
+    @Override
+    public void remove(DocumentReference documentReference) throws ReplicationException
+    {
+        this.documentStore.remove(documentReference);
+    }
 }

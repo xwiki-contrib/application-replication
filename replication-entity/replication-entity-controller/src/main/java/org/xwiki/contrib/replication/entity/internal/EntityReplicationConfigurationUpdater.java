@@ -132,6 +132,13 @@ public class EntityReplicationConfigurationUpdater
         // Save new configuration
         this.store.storeHibernateEntityReplication(reference, configurations);
 
+        // If the document is not replicated at all anymore, remove the document from the replication index
+        if (!documentsToUpdate.isEmpty() && configurations.isEmpty()) {
+            for (DocumentReference documentToUpdate : documentsToUpdate) {
+                this.entityReplication.remove(documentToUpdate);
+            }
+        }
+
         // Send unreplicate messages according to configuration diff
         sendUnreplicateMessages(documentsToUpdate, removedInstances, xcontext);
 
