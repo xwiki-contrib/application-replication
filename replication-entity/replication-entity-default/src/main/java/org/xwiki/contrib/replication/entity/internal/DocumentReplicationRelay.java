@@ -79,6 +79,16 @@ public class DocumentReplicationRelay
             .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
     }
 
+    private List<ReplicationInstance> getRelayInstances(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel, DocumentReplicationLevel maximumLevel) throws ReplicationException
+    {
+        List<DocumentReplicationControllerInstance> instances = this.controller.getRelayConfiguration(message);
+
+        return instances.stream().filter(
+            i -> i.getLevel().ordinal() >= minimumLevel.ordinal() && i.getLevel().ordinal() <= maximumLevel.ordinal())
+            .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
+    }
+
     /**
      * @param message the message to relay
      * @param minimumLevel the minimum level required to relay the message
@@ -90,6 +100,23 @@ public class DocumentReplicationRelay
     {
         // Find the instances allowed to receive the message
         List<ReplicationInstance> targets = getRelayInstances(message, minimumLevel);
+
+        // Relay the message
+        return this.relay.relay(message, targets);
+    }
+
+    /**
+     * @param message the message to relay
+     * @param minimumLevel the minimum level required to relay the message
+     * @param maximumLevel the maximum level required to relay the message
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
+     * @throws ReplicationException when failing to queue the replication message
+     */
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel, DocumentReplicationLevel maximumLevel) throws ReplicationException
+    {
+        // Find the instances allowed to receive the message
+        List<ReplicationInstance> targets = getRelayInstances(message, minimumLevel, maximumLevel);
 
         // Relay the message
         return this.relay.relay(message, targets);

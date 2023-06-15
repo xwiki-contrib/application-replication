@@ -46,6 +46,14 @@ public class DocumentRepairReplicationReceiver extends DocumentUpdateReplication
     @Inject
     private DocumentUpdateConflictResolver conflict;
 
+    /**
+     * Only the owner is allowed to send this type of messages.
+     */
+    public DocumentRepairReplicationReceiver()
+    {
+        this.ownerOnly = true;
+    }
+
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException

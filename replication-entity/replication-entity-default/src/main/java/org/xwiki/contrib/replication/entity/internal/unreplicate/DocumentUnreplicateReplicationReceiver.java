@@ -21,17 +21,14 @@ package org.xwiki.contrib.replication.entity.internal.unreplicate;
 
 import java.util.concurrent.CompletableFuture;
 
-import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
-import org.xwiki.contrib.replication.entity.EntityReplication;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
 
@@ -47,24 +44,18 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Named(DocumentUnreplicateReplicationMessage.TYPE)
 public class DocumentUnreplicateReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
-    @Inject
-    private EntityReplication entityReplication;
+    /**
+     * Only the owner is allowed to send this type of messages.
+     */
+    public DocumentUnreplicateReplicationReceiver()
+    {
+        this.ownerOnly = true;
+    }
 
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
     {
-        String ownerInstance = this.entityReplication.getOwner(documentReference);
-        if (ownerInstance != null) {
-            String sourceInstance = message.getSource();
-
-            if (!ownerInstance.equals(sourceInstance)) {
-                throw new InvalidReplicationMessageException(
-                    "Instance [" + sourceInstance + "] is not allowed to unreplicate document [" + documentReference
-                        + "] as it's owned by instance [" + ownerInstance + "]");
-            }
-        }
-
         // Load the document
         XWikiDocument document;
         try {

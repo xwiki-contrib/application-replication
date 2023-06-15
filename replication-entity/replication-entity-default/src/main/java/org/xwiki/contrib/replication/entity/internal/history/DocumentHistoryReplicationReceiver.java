@@ -50,8 +50,8 @@ public class DocumentHistoryReplicationReceiver extends AbstractDocumentReplicat
     {
         String fromVersion = this.messageReader.getMetadata(message,
             DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_FROM, true);
-        String toVersion = this.messageReader.getMetadata(message,
-            DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_TO, true);
+        String toVersion =
+            this.messageReader.getMetadata(message, DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_TO, true);
 
         XWikiDocument document;
         try {
@@ -71,6 +71,6 @@ public class DocumentHistoryReplicationReceiver extends AbstractDocumentReplicat
     public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
         throws ReplicationException
     {
-        return relay(message, DocumentReplicationLevel.ALL);
+        return this.documentRelay.relay(message, DocumentReplicationLevel.ALL);
     }
 }

@@ -29,10 +29,12 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.conflict.DocumentReplicationConflictMessage;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.model.reference.EntityReference;
 
 /**
  * Various helpers around {@link DocumentReplicationController}.
@@ -59,13 +61,32 @@ public class DocumentReplicationUtils
     private Logger logger;
 
     /**
-     * @param reference the reference of the document
+     * @param reference the reference of the entity
      * @return true if the current instance is configured to directly replicate changes made to the passed document
      * @throws ReplicationException when failing to get the configuration
      */
-    public boolean isReplicated(DocumentReference reference) throws ReplicationException
+    public boolean isReplicated(EntityReference reference) throws ReplicationException
     {
         return !this.controller.getReplicationConfiguration(reference).isEmpty();
+    }
+
+    /**
+     * @param reference the reference of the entity
+     * @param instance the instance for which we want the configuration
+     * @return the configuration of the instance
+     * @throws ReplicationException when failing to get replication configuration for the passed entity
+     */
+    public DocumentReplicationControllerInstance getReplicationConfiguration(EntityReference reference,
+        ReplicationInstance instance) throws ReplicationException
+    {
+        for (DocumentReplicationControllerInstance configuration : this.controller
+            .getReplicationConfiguration(reference)) {
+            if (configuration.getInstance() == instance) {
+                return configuration;
+            }
+        }
+
+        return null;
     }
 
     /**
