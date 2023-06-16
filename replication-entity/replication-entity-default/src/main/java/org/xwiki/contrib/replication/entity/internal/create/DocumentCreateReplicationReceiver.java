@@ -53,6 +53,9 @@ public class DocumentCreateReplicationReceiver extends DocumentUpdateReplication
 
         // Set the document owner
         this.documentStore.setOwner(documentReference, message.getSource());
+
+        // Update the readonly status of the document
+        // TOTO 1.13.0: this.entityReplication.updateDocumentReadonly(documentReference);
     }
 
     @Override

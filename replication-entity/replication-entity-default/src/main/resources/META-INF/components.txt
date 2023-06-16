@@ -22,6 +22,7 @@ org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMe
 org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryDeleteReplicationMessage
 org.xwiki.contrib.replication.entity.internal.history.DocumentHistoryReplicationReceiver
+org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentIndexListener
 org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentInitializer
 org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore
 org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStoreCache
@@ -32,6 +33,10 @@ org.xwiki.contrib.replication.entity.internal.like.LikeRecoverHandler
 org.xwiki.contrib.replication.entity.internal.like.LikeReplicationListener
 org.xwiki.contrib.replication.entity.internal.notification.ReplicationDocumentConflictDescriptor
 org.xwiki.contrib.replication.entity.internal.notification.ReplicationDocumentConflictEventConverter
+org.xwiki.contrib.replication.entity.internal.probe.DocumentUpdateProbeRequestReplicationMessage
+org.xwiki.contrib.replication.entity.internal.probe.DocumentUpdateProbeRequestReplicationReceiver
+org.xwiki.contrib.replication.entity.internal.probe.DocumentUpdateProbeResponseReplicationMessage
+org.xwiki.contrib.replication.entity.internal.probe.DocumentUpdateProbeResponseReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage
 org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.repair.DocumentRepairReplicationMessage

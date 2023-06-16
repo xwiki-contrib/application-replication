@@ -30,6 +30,8 @@ public class HibernateReplicationDocument
 
     private boolean conflict;
 
+    private boolean readonly;
+
     HibernateReplicationDocument()
     {
 
@@ -97,5 +99,23 @@ public class HibernateReplicationDocument
     public void setConflict(boolean conflict)
     {
         this.conflict = conflict;
+    }
+
+    /**
+     * @return true if the document is readonly
+     * @since 1.12.0
+     */
+    public boolean isReadonly()
+    {
+        return this.readonly;
+    }
+
+    /**
+     * @param readonly if the document is readonly
+     * @since 1.12.0
+     */
+    public void setReadonly(boolean readonly)
+    {
+        this.readonly = readonly;
     }
 }

@@ -34,6 +34,7 @@ import org.xwiki.component.phase.InitializationException;
 
 /**
  * @version $Id$
+ * @since 1.8.0
  */
 @Component(roles = ReplicationDocumentStoreCache.class)
 @Singleton
@@ -55,20 +56,14 @@ public class ReplicationDocumentStoreCache implements Initializable, Disposable
 
         private Boolean conflict;
 
+        private Boolean readonly;
+
         /**
          * @return the owner
          */
         public String getOwner()
         {
             return this.owner;
-        }
-
-        /**
-         * @return the conflict
-         */
-        public Boolean getConflict()
-        {
-            return this.conflict;
         }
 
         /**
@@ -80,11 +75,37 @@ public class ReplicationDocumentStoreCache implements Initializable, Disposable
         }
 
         /**
+         * @return the conflict
+         */
+        public Boolean getConflict()
+        {
+            return this.conflict;
+        }
+
+        /**
          * @param conflict the conflict
          */
         public void setConflict(boolean conflict)
         {
             this.conflict = conflict;
+        }
+
+        /**
+         * @return the readonly
+         * @since 1.12.0
+         */
+        public Boolean getReadonly()
+        {
+            return this.readonly;
+        }
+
+        /**
+         * @param readonly the readonly
+         * @since 1.12.0
+         */
+        public void setReadonly(boolean readonly)
+        {
+            this.readonly = readonly;
         }
     }
 
@@ -142,6 +163,17 @@ public class ReplicationDocumentStoreCache implements Initializable, Disposable
         ReplicationDocumentStoreCacheEntry entry = getEntry(docId, true);
 
         entry.conflict = conflict;
+    }
+
+    /**
+     * @param docId the document identifier
+     * @param readonly true if the document is readonly
+     */
+    public void setReadonly(String docId, boolean readonly)
+    {
+        ReplicationDocumentStoreCacheEntry entry = getEntry(docId, true);
+
+        entry.readonly = readonly;
     }
 
     /**

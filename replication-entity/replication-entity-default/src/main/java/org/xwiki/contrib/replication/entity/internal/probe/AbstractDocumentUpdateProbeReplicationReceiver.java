@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!--
+/*
  * See the NOTICE file distributed with this work for additional
  * information regarding copyright ownership.
  *
@@ -18,20 +16,27 @@
  * License along with this software; if not, write to the Free
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
--->
+ */
+package org.xwiki.contrib.replication.entity.internal.probe;
 
-<!DOCTYPE hibernate-mapping PUBLIC
-"-//Hibernate/Hibernate Mapping DTD//EN"
-"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
-<hibernate-mapping>
-  <class name="org.xwiki.contrib.replication.entity.internal.index.HibernateReplicationDocument"
-    table="replication_document">
-    <id name="docId" type="long" unsaved-value="undefined">
-      <column name="docid" not-null="true" />
-      <generator class="assigned" />
-    </id>
-    <property name="owner" type="string" length="768" not-null="true" />
-    <property name="conflict" type="boolean" not-null="true" />
-    <property name="readonly" type="boolean" not-null="true" />
-  </class>
-</hibernate-mapping>
+import java.util.concurrent.CompletableFuture;
+
+import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
+
+/**
+ * @version $Id$
+ * @since 1.12.0
+ */
+public abstract class AbstractDocumentUpdateProbeReplicationReceiver extends AbstractDocumentReplicationReceiver
+{
+    @Override
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        return this.documentRelay.relay(message, DocumentReplicationLevel.ALL);
+    }
+}

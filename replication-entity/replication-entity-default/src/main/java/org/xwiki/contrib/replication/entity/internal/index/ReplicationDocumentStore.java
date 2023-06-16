@@ -36,6 +36,7 @@ import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentSt
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReferenceSerializer;
 import org.xwiki.model.reference.WikiReference;
+import org.xwiki.observation.ObservationManager;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
@@ -52,11 +53,13 @@ import com.xpn.xwiki.util.Util;
 @Singleton
 public class ReplicationDocumentStore
 {
+    private static final String PROP_DOCID = "docId";
+
     private static final String PROP_OWNER = "owner";
 
     private static final String PROP_CONFLICT = "conflict";
 
-    private static final String PROP_DOCID = "docId";
+    private static final String PROP_READONLY = "readonly";
 
     @Inject
     @Named(XWikiHibernateBaseStore.HINT)
@@ -68,6 +71,9 @@ public class ReplicationDocumentStore
 
     @Inject
     private ReplicationDocumentStoreCache cache;
+
+    @Inject
+    private ObservationManager observation;
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;
@@ -82,7 +88,7 @@ public class ReplicationDocumentStore
 
         executeWrite(session -> deleteHibernateReplicationDocument(id, session), document.getWikiReference());
 
-        this.cache.remove(String.valueOf(id));
+        this.observation.notify(new DocumentIndexDeletedEvent(document), null);
     }
 
     /**
@@ -96,7 +102,7 @@ public class ReplicationDocumentStore
 
         executeWrite(session -> saveHibernateReplicationDocument(id, owner, session), document.getWikiReference());
 
-        this.cache.setOwner(String.valueOf(id), owner);
+        this.observation.notify(new DocumentOwnerUpdatedEvent(document, owner), null);
     }
 
     /**
@@ -110,7 +116,22 @@ public class ReplicationDocumentStore
 
         executeWrite(session -> update(id, PROP_CONFLICT, conflict, session), document.getWikiReference());
 
-        this.cache.setConflict(String.valueOf(id), conflict);
+        this.observation.notify(new DocumentConflictUpdatedEvent(document, conflict), null);
+    }
+
+    /**
+     * @param document the identifier of the document
+     * @param readonly true if the document should be made readonly
+     * @throws ReplicationException when failing to update the conflict marker
+     * @since 1.12.0
+     */
+    public void setReadonly(DocumentReference document, boolean readonly) throws ReplicationException
+    {
+        long id = toDocumentId(document);
+
+        executeWrite(session -> update(id, PROP_READONLY, readonly, session), document.getWikiReference());
+
+        this.observation.notify(new DocumentReadonlyUpdatedEvent(document, readonly), null);
     }
 
     private Void saveHibernateReplicationDocument(long docId, String owner, Session session) throws XWikiException
@@ -120,7 +141,7 @@ public class ReplicationDocumentStore
         if (get(docId, PROP_DOCID, Long.class, xcontext) != null) {
             update(docId, PROP_OWNER, owner, session);
         } else {
-            insert(docId, owner, false, session);
+            insert(docId, owner, false, false, session);
         }
 
         return null;
@@ -149,15 +170,17 @@ public class ReplicationDocumentStore
         return query.uniqueResult();
     }
 
-    private Void insert(long docId, String owner, boolean conflict, Session session)
+    private Void insert(long docId, String owner, boolean conflict, boolean readonly, Session session)
     {
         // Not using the Hibernate session entity API to avoid classloader problems
         // Using native query since it's impossible to insert values with HQL
-        NativeQuery<?> query = session.createNativeQuery(
-            "INSERT INTO replication_document (docId, owner, conflict) VALUES (:docId, :owner, :conflict)");
+        NativeQuery<?> query =
+            session.createNativeQuery("INSERT INTO replication_document (docId, owner, conflict, readonly) "
+                + "VALUES (:docId, :owner, :conflict, :readonly)");
         query.setParameter(PROP_DOCID, docId);
         query.setParameter(PROP_OWNER, owner);
         query.setParameter(PROP_CONFLICT, conflict);
+        query.setParameter(PROP_READONLY, readonly);
 
         query.executeUpdate();
 
@@ -181,6 +204,15 @@ public class ReplicationDocumentStore
     private long toDocumentId(DocumentReference document)
     {
         return Util.getHash(document.getType().name() + ':' + this.idSerializer.serialize(document.withoutLocale()));
+    }
+
+    /**
+     * @param document the reference of the document
+     * @return the cache key used to store replication metadata about the document
+     */
+    public String getCacheKey(DocumentReference document)
+    {
+        return String.valueOf(toDocumentId(document));
     }
 
     /**
@@ -243,6 +275,28 @@ public class ReplicationDocumentStore
         boolean conflict = Boolean.TRUE.equals(get(documentReference, docId, PROP_CONFLICT, Boolean.class));
 
         cacheEntry.setConflict(conflict);
+
+        return conflict;
+    }
+
+    /**
+     * @param documentReference the reference of the document
+     * @return true if the document is readonly
+     * @throws ReplicationException when failing to access the owner
+     */
+    public boolean isReadonly(DocumentReference documentReference) throws ReplicationException
+    {
+        long docId = toDocumentId(documentReference);
+
+        ReplicationDocumentStoreCacheEntry cacheEntry = this.cache.getEntry(String.valueOf(docId), true);
+
+        if (cacheEntry.getConflict() != null) {
+            return cacheEntry.getConflict();
+        }
+
+        boolean conflict = Boolean.TRUE.equals(get(documentReference, docId, PROP_READONLY, Boolean.class));
+
+        cacheEntry.setReadonly(conflict);
 
         return conflict;
     }

@@ -49,7 +49,7 @@ public class DocumentReplicationUtils
     private DocumentReplicationController controller;
 
     @Inject
-    private ReplicationDocumentStore documentStore;
+    private ReplicationDocumentStore store;
 
     @Inject
     private ReplicationInstanceManager instances;
@@ -96,9 +96,20 @@ public class DocumentReplicationUtils
      */
     public boolean isOwner(DocumentReference reference) throws ReplicationException
     {
-        String owner = this.documentStore.getOwner(reference);
+        String owner = this.store.getOwner(reference);
 
-        ReplicationInstance ownerInstance = this.instances.getInstanceByURI(owner);
+        return isInstance(reference, owner);
+    }
+
+    /**
+     * @param reference the reference of the document
+     * @param uri the URI of the instance
+     * @return true if the current instance is the owner of the passed document
+     * @throws ReplicationException when failing to get the configuration
+     */
+    public boolean isInstance(DocumentReference reference, String uri) throws ReplicationException
+    {
+        ReplicationInstance ownerInstance = this.instances.getInstanceByURI(uri);
 
         return ownerInstance != null && ownerInstance.getStatus() == null;
     }

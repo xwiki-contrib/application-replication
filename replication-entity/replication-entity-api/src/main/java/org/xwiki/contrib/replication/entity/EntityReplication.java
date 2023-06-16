@@ -53,19 +53,53 @@ public interface EntityReplication
     boolean getConflict(DocumentReference documentReference) throws ReplicationException;
 
     /**
-     * @param documentReference the identifier of the document
+     * @param documentReference the reference of the document
      * @param conflict true if the document has a replication conflict
      * @throws ReplicationException when failing to update the conflict marker
      */
     void setConflict(DocumentReference documentReference, boolean conflict) throws ReplicationException;
 
     /**
-     * @param documentReference the identifier of the document
+     * @param documentReference the reference of the document
+     * @return true if the document is readonly
+     * @throws ReplicationException when failing to get the readonly status
+     * @since 1.12.0
+     */
+    default boolean isReadonly(DocumentReference documentReference) throws ReplicationException
+    {
+        return false;
+    }
+
+    /**
+     * @param documentReference the reference of the document
+     * @param readonly true if the document is readonly
+     * @throws ReplicationException when failing to update the conflict marker
+     * @since 1.12.0
+     */
+    default void setReadonly(DocumentReference documentReference, boolean readonly) throws ReplicationException
+    {
+        
+    }
+
+    /**
+     * @param documentReference the reference of the document
      * @throws ReplicationException when failing to remove the document from the index
      * @since 1.12.0
      */
     default void remove(DocumentReference documentReference) throws ReplicationException
     {
-        
+
+    }
+
+    /**
+     * Check and update the readonly status of the document.
+     * 
+     * @param documentReference the reference of the document
+     * @throws ReplicationException when failing to check or update the document readonly status
+     * @since 1.12.0
+     */
+    default void updateDocumentReadonly(DocumentReference documentReference) throws ReplicationException
+    {
+
     }
 }

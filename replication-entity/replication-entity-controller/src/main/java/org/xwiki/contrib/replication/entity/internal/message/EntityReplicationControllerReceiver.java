@@ -76,6 +76,9 @@ public class EntityReplicationControllerReceiver extends AbstractEntityReplicati
             throw new ReplicationException(
                 "Failed to store replication configuration for entity [" + entityReference + "]", e);
         }
+
+        // TOTO 1.13.0: Update the readonly status of the document if the configuration changed
+        //this.entityReplication.updateDocumentReadonly(documentReference);
     }
 
     private Map<String, DocumentReplicationControllerInstance> optimizeConfiguration(ReplicationReceiverMessage message)
