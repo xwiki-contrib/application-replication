@@ -27,11 +27,15 @@
   <class name="org.xwiki.contrib.replication.entity.internal.index.HibernateReplicationDocument"
     table="replication_document">
     <id name="docId" type="long" unsaved-value="undefined">
-      <column name="docid" not-null="true" />
+      <column name="XWD_ID" not-null="true" />
       <generator class="assigned" />
     </id>
-    <property name="owner" type="string" length="768" not-null="true" />
-    <property name="conflict" type="boolean" not-null="true" />
-    <property name="readonly" type="boolean" not-null="true" />
+    <property name="owner" column="XWRD_OWNER" type="string" length="768" not-null="true" />
+    <property name="conflict" type="boolean">
+      <column name="XWRD_CONFLICT" not-null="true" default="false" />
+    </property>
+    <property name="readonly" type="boolean">
+      <column name="XWRD_READONLY" not-null="true" default="false" />
+    </property>
   </class>
 </hibernate-mapping>
