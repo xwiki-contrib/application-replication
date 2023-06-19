@@ -61,6 +61,14 @@ public class ReplicationDocumentStore
 
     private static final String PROP_READONLY = "readonly";
 
+    private static final String PROP_NATIVE_DOCID = "XWD_ID";
+
+    private static final String PROP_NATIVE_OWNER = "XWRD_OWNER";
+
+    private static final String PROP_NATIVE_CONFLICT = "XWRD_CONFLICT";
+
+    private static final String PROP_NATIVE_READONLY = "XWRD_READONLY";
+
     @Inject
     @Named(XWikiHibernateBaseStore.HINT)
     private XWikiStoreInterface hibernateStore;
@@ -174,9 +182,10 @@ public class ReplicationDocumentStore
     {
         // Not using the Hibernate session entity API to avoid classloader problems
         // Using native query since it's impossible to insert values with HQL
-        NativeQuery<?> query =
-            session.createNativeQuery("INSERT INTO replication_document (docId, owner, conflict, readonly) "
-                + "VALUES (:docId, :owner, :conflict, :readonly)");
+        NativeQuery<?> query = session.createNativeQuery(
+            String.format("INSERT INTO replication_document (%s, %s, %s, %s) VALUES (:%s, :%s, :%s, :%s)",
+                PROP_NATIVE_DOCID, PROP_NATIVE_OWNER, PROP_NATIVE_CONFLICT, PROP_NATIVE_READONLY, PROP_DOCID,
+                PROP_OWNER, PROP_CONFLICT, PROP_READONLY));
         query.setParameter(PROP_DOCID, docId);
         query.setParameter(PROP_OWNER, owner);
         query.setParameter(PROP_CONFLICT, conflict);
