@@ -102,7 +102,8 @@
   (((
     {{html}}
       &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-        &lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt; &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;
+        &lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;
+        &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;
         &lt;button class="btn btn-danger" name="requested_cancel"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.cancel'))&lt;/button&gt;
         &lt;dl&gt;
           #sendkey($instance)
@@ -115,8 +116,11 @@
 #macro(displayRelayedInstance $instance)
   (((
     {{html}}
+      &lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
         &lt;span class="instanceName"&gt;$instance.name&lt;/span&gt; (&lt;a href="$instance.uRI"&gt;$instance.uRI&lt;/a&gt;)
         &lt;input type="hidden" name="uri" value="$escapetool.xml($instance.uRI)"&gt;
+        &lt;button class="btn btn-danger" name="relayed_remove"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.remove'))&lt;/button&gt;
+      &lt;/form&gt;
     {{/html}}
   )))
 #end
@@ -125,11 +129,13 @@
 #set ($currentInstance = $instanceManager.currentInstance)
 {{/velocity}}
 
-{{velocity output="false"}}
+{{velocity output="true"}}
 #if ($request.reload)
   #set($void = $instanceManager.reload())
 #elseif ($request.remove)
   #set($void = $instanceManager.removeRegisteredInstance($request.uri))
+#elseif ($request.relayed_remove)
+  #set($void = $instanceManager.removeInstance($request.uri))
 #elseif ($request.key_reset)
   #set($void = $instanceManager.resetSendKey($request.uri))
 #elseif ($request.requesting_accept)
@@ -172,7 +178,7 @@
     &lt;dd&gt;
       &lt;input id="current_uri" type="text" name="uri" value="$escapetool.xml($currentInstance.uRI)" size="60"##
         #if ($instances.size() &gt; 0)
-          disabled title="$escapetool.xml($services.localization.render('replication.admin.instance.form.uri.disabled'))"##
+          readonly title="$escapetool.xml($services.localization.render('replication.admin.instance.form.uri.disabled'))"##
         #end
       /&gt;
     &lt;/dd&gt;
