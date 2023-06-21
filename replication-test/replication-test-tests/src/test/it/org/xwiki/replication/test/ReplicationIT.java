@@ -599,7 +599,7 @@ public class ReplicationIT extends AbstractTest
         // Page creation on XWiki 0
         ////////////////////////////////////
 
-        // Edit a page on XWiki 0
+        // Create a page on XWiki 0
         getUtil().switchExecutor(INSTANCE_0);
         page.setContent("content");
         getUtil().rest().save(page);
@@ -796,6 +796,33 @@ public class ReplicationIT extends AbstractTest
         getUtil().switchExecutor(INSTANCE_2);
         // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
         assertDoesNotExistWithTimeout(documentReference);
+
+        ////////////////////////////////////
+        // Re-create the document in XWiki 2
+        ////////////////////////////////////
+
+        // Create a page on XWiki 2
+        getUtil().switchExecutor(INSTANCE_2);
+        page.setContent("content");
+        getUtil().rest().save(page);
+        assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")",
+            gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
+
+        // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_1);
+        assertEqualsContentWithTimeout(documentReference, "content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")",
+            gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
+
+        // ASSERT) The content in XWiki 0 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_0);
+        assertEqualsContentWithTimeout(documentReference, "content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        assertEquals("Current instance", gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
     }
 
     private void replicateEmpty() throws Exception

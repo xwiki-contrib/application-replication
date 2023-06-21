@@ -191,8 +191,11 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
 
         if (create && document.getLocale().equals(Locale.ROOT)) {
             // Register as owner of the document the instance which created that document
-            this.documentStore.setOwner(document.getDocumentReference(),
-                this.instanceManager.getCurrentInstance().getURI());
+            // But only if there is not already a owner (might be a create after a delete)
+            if (this.documentStore.getOwner(document.getDocumentReference()) == null) {
+                this.documentStore.setOwner(document.getDocumentReference(),
+                    this.instanceManager.getCurrentInstance().getURI());
+            }
         }
 
         if (level == DocumentReplicationLevel.REFERENCE) {
