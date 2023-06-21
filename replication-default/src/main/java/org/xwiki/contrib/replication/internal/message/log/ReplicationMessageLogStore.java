@@ -141,7 +141,7 @@ public class ReplicationMessageLogStore
                     Thread.currentThread().interrupt();
                 }
 
-                logger.error("Failed to log the message with id {}", message.getId(), e);
+                this.logger.error("Failed to log the message with id [{}]", message.getId(), e);
             } finally {
                 this.execution.removeContext();
             }

@@ -63,7 +63,8 @@ public class EntityReplicationMessageEventInitializer implements ReplicationMess
             event.setUser(this.documentMessageTool.getContextUser(message));
         } catch (InvalidReplicationMessageException e) {
             // Should never happen since it's not mandatory
-            this.logger.error("Failed to extract the context user from the message with id [{}]", message.getId(), e);
+            this.logger.error("Failed to extract the context user from the message with id [{}] and type [{}]",
+                message.getId(), message.getType(), e);
         }
     }
 
@@ -79,7 +80,8 @@ public class EntityReplicationMessageEventInitializer implements ReplicationMess
             }
         } catch (InvalidReplicationMessageException e) {
             // Should never happen since it's not mandatory
-            this.logger.error("Failed to extract the entity from the message with id [{}]", message.getId(), e);
+            this.logger.error("Failed to extract the entity from the message with id [{}] and type [{}]",
+                message.getId(), message.getType(), e);
         }
     }
 

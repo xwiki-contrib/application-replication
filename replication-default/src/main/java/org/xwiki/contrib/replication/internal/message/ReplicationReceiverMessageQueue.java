@@ -121,8 +121,8 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
         ReplicationMessageHandlingEvent event = new ReplicationMessageHandlingEvent();
         this.observation.notify(event, message);
         if (event.isCanceled()) {
-            this.logger.warn("The message with id [{}] and coming from [{}] was ignored: {}", message.getId(),
-                message.getSource(), event.getReason());
+            this.logger.warn("The message with id [{}] and type [{}] coming from instance [{}] was rejected: {}",
+                message.getId(), message.getType(), message.getSource(), event.getReason());
 
             return;
         }
@@ -163,7 +163,8 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
                 });
             }
         } catch (InvalidReplicationMessageException e) {
-            this.logger.error("Message with id [{}] is invalid and is not going to be tried again", message.getId(), e);
+            this.logger.error("Message with id [{}] and type [{}] is invalid and is not going to be tried again",
+                message.getId(), message.getType(), e);
         } finally {
             this.executionContextManager.popContext();
         }

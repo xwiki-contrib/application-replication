@@ -138,16 +138,7 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
                 // Stop the loop
                 break;
             } catch (Throwable t) {
-                if (this.currentMessage == null) {
-                    this.logger.error("An unexpected throwable was thrown while handling a replication message", t);
-                } else {
-                    this.logger.error(
-                        "An unexpected throwable was thrown while handling a replication message with id [{}]",
-                        this.currentMessage.getId(), t);
-
-                    // Put back the message in the queue
-                    this.errorQueue.add(this.currentMessage);
-                }
+                onFailed(t);
             }
         }
     }
@@ -195,19 +186,23 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
             } catch (InterruptedException e) {
                 throw e;
             } catch (Throwable t) {
-                if (this.currentMessage == null) {
-                    this.logger.error(
-                        "An unexpected throwable was thrown while handling a previously failed replication message", t);
-                } else {
-                    this.logger.error(
-                        "An unexpected throwable was thrown while handling a previously failed replication message with"
-                            + " id [{}]",
-                        this.currentMessage.getId(), t);
-
-                    // Put back the message in the queue
-                    this.errorQueue.add(this.currentMessage);
-                }
+                onFailed(t);
             }
+        }
+    }
+
+    private void onFailed(Throwable t)
+    {
+        if (this.currentMessage == null) {
+            this.logger
+                .error("An unexpected throwable was thrown while handling a previously failed replication message", t);
+        } else {
+            this.logger
+                .error("An unexpected throwable was thrown while handling a previously failed replication message with"
+                    + " id [{}] and type [{}]", this.currentMessage.getId(), this.currentMessage.getType(), t);
+
+            // Put back the message in the queue
+            this.errorQueue.add(this.currentMessage);
         }
     }
 

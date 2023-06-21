@@ -102,7 +102,7 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
     @Override
     protected String getThreadName()
     {
-        return "Replication message sending to [" + instance.getURI() + "]";
+        return "Replication message sending to [" + this.instance.getURI() + "]";
     }
 
     @Override
@@ -112,8 +112,8 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
         ReplicationMessageSendingEvent event = new ReplicationMessageSendingEvent();
         this.observation.notify(event, message, this.instance);
         if (event.isCanceled()) {
-            this.logger.warn("The sending of the message with id [{}] was cancelled: {}", message.getId(),
-                event.getReason());
+            this.logger.warn("The sending of the message with id [{}] and type [{}] was cancelled: {}", message.getId(),
+                message.getType(), event.getReason());
 
             return;
         }
@@ -162,8 +162,11 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
                 calendar.add(Calendar.MINUTE, this.wait);
                 this.nextTry = calendar.getTime();
 
-                this.logger.warn("Failed to send replication message to instance [{}], retrying in [{}] minutes: {}",
-                    this.instance.getURI(), this.wait, ExceptionUtils.getRootCauseMessage(e));
+                this.logger.warn(
+                    "Failed to send replication message with id [{}] and instance [{}] to instance [{}],"
+                        + " retrying in [{}] minutes: {}",
+                    message.getId(), message.getType(), this.instance.getURI(), this.wait,
+                    ExceptionUtils.getRootCauseMessage(e));
 
                 // Wait
                 this.pingLock.lockInterruptibly();

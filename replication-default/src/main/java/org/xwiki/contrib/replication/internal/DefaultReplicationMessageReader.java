@@ -72,8 +72,9 @@ public class DefaultReplicationMessageReader implements ReplicationMessageReader
 
         if (CollectionUtils.isEmpty(values)) {
             if (mandatory) {
-                throw new InvalidReplicationMessageException("Received an invalid document message with id ["
-                    + message.getId() + "]: missing mandatory metadata [" + key + "]");
+                throw new InvalidReplicationMessageException(
+                    "Received an invalid document message with id [" + message.getId() + "] and type ["
+                        + message.getType() + "]: missing mandatory metadata [" + key + "]");
             } else {
                 return def;
             }

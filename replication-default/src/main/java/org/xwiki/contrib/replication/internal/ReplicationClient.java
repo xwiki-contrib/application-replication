@@ -196,8 +196,9 @@ public class ReplicationClient implements Initializable
                 } else {
                     String error = HTTPUtils.getContent(response, UNKNWON_ERROR);
 
-                    throw new ReplicationException(String.format("Failed to send message [%s] to instance [%s]: %s",
-                        message.getId(), target.getURI(), error));
+                    throw new ReplicationException(
+                        String.format("Failed to send message with id [%s] and type [%s] to instance [%s]: %s",
+                            message.getId(), message.getType(), target.getURI(), error));
                 }
             }
         } finally {
