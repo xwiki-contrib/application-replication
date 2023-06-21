@@ -24,10 +24,8 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
@@ -51,24 +49,11 @@ public class DocumentCreateReplicationReceiver extends DocumentUpdateReplication
     {
         super.receiveDocument(message, documentReference, xcontext);
 
-        // Set the document owner
-        this.documentStore.setOwner(documentReference, message.getSource());
-
-        // Update the readonly status of the document
-        // TOTO 1.13.0: this.entityReplication.updateDocumentReadonly(documentReference);
-    }
-
-    @Override
-    protected void checkMessageInstance(ReplicationReceiverMessage message, DocumentReference documentReference,
-        DocumentReplicationControllerInstance currentConfiguration) throws ReplicationException
-    {
-        super.checkMessageInstance(message, documentReference, currentConfiguration);
-
-        // If the current instance is already replicating this document as owner with other instances, it does not make
-        // sense to accept the creation of a new document from another instance
-        if (this.replicationUtils.isOwner(documentReference)) {
-            throw new InvalidReplicationMessageException("The current instance is already the owner of document ["
-                + documentReference + "] so it cannot receive new create messages for it");
+        // If there is no owner, it means it's the first time this document is actually replicated since the replication
+        // configuration was set
+        if (this.entityReplication.getOwner(documentReference) == null) {
+            // Set the document owner
+            this.documentStore.setOwner(documentReference, message.getSource());
         }
     }
 }
