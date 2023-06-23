@@ -59,6 +59,8 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
 
     protected boolean ownerOnly;
 
+    protected boolean writeMessage = true;
+
     @Override
     protected void receiveEntity(ReplicationReceiverMessage message, EntityReference entityReference,
         XWikiContext xcontext) throws ReplicationException
@@ -88,8 +90,8 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
     protected void checkMessageInstance(ReplicationReceiverMessage message, DocumentReference documentReference,
         DocumentReplicationControllerInstance currentConfiguration) throws ReplicationException
     {
-        // Refuse any message if the instance is supposed to be SEND ONLY
-        if (currentConfiguration.getDirection() == DocumentReplicationDirection.SEND_ONLY) {
+        // Refuse any modification message if the instance is supposed to be SEND ONLY
+        if (this.writeMessage && currentConfiguration.getDirection() == DocumentReplicationDirection.SEND_ONLY) {
             throw new InvalidReplicationMessageException("The instance [" + message.getInstance()
                 + "] is not allowed to send messages for document [" + documentReference + "]");
         }
