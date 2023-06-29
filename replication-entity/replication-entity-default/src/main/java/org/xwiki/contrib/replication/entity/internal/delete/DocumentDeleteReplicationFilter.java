@@ -17,20 +17,22 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.create;
+package org.xwiki.contrib.replication.entity.internal.delete;
+
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiverMessageFilter;
 
 /**
  * @version $Id$
+ * @since 1.13.0
  */
-@Component(roles = DocumentCreateReplicationMessage.class)
-public class DocumentCreateReplicationMessage extends DocumentUpdateReplicationMessage
+@Component
+@Singleton
+@Named(DocumentDeleteReplicationMessage.TYPE_DOCUMENT_DELETE)
+public class DocumentDeleteReplicationFilter extends AbstractDocumentReplicationReceiverMessageFilter
 {
-    @Override
-    public String getType()
-    {
-        return TYPE_DOCUMENT_CREATE;
-    }
+
 }

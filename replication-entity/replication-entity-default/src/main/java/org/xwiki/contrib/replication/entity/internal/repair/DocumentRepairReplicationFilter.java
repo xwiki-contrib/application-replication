@@ -17,25 +17,28 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.probe;
+package org.xwiki.contrib.replication.entity.internal.repair;
+
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiverMessageFilter;
 
 /**
  * @version $Id$
- * @since 1.12.0
+ * @since 1.13.0
  */
-@Component(roles = DocumentUpdateProbeResponseReplicationMessage.class)
-public class DocumentUpdateProbeResponseReplicationMessage extends AbstractDocumentProbeReplicationMessage
+@Component
+@Singleton
+@Named(DocumentRepairReplicationMessage.TYPE_DOCUMENT_REPAIR)
+public class DocumentRepairReplicationFilter extends AbstractDocumentReplicationReceiverMessageFilter
 {
     /**
-     * The message type for these messages.
+     * Only the owner is allowed to send this type of messages.
      */
-    public static final String TYPE = TYPE_PREFIX + "response";
-
-    @Override
-    public String getType()
+    public DocumentRepairReplicationFilter()
     {
-        return TYPE;
+        this.ownerOnly = true;
     }
 }

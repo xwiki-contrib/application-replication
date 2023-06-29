@@ -40,19 +40,11 @@ import com.xpn.xwiki.XWikiException;
  */
 @Component
 @Singleton
-@Named(DocumentRepairReplicationMessage.TYPE)
+@Named(DocumentRepairReplicationMessage.TYPE_DOCUMENT_REPAIR)
 public class DocumentRepairReplicationReceiver extends DocumentUpdateReplicationReceiver
 {
     @Inject
     private DocumentUpdateConflictResolver conflict;
-
-    /**
-     * Only the owner is allowed to send this type of messages.
-     */
-    public DocumentRepairReplicationReceiver()
-    {
-        this.ownerOnly = true;
-    }
 
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
@@ -62,7 +54,7 @@ public class DocumentRepairReplicationReceiver extends DocumentUpdateReplication
 
         // Get the author involved in the conflict
         Collection<String> authors =
-            message.getCustomMetadata().get(DocumentRepairReplicationMessage.METADATA_CONFLICT_AUTHORS);
+            message.getCustomMetadata().get(DocumentRepairReplicationMessage.METADATA_DOCUMENT_REPAIR_AUTHORS);
 
         if (authors != null) {
             try {

@@ -41,7 +41,7 @@ import com.xpn.xwiki.doc.XWikiDocument;
  */
 @Component
 @Singleton
-@Named(DocumentHistoryDeleteReplicationMessage.TYPE)
+@Named(DocumentHistoryDeleteReplicationMessage.TYPE_DOCUMENT_HISTORYDELETE)
 public class DocumentHistoryReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
     @Override
@@ -49,9 +49,9 @@ public class DocumentHistoryReplicationReceiver extends AbstractDocumentReplicat
         XWikiContext xcontext) throws ReplicationException
     {
         String fromVersion = this.messageReader.getMetadata(message,
-            DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_FROM, true);
-        String toVersion =
-            this.messageReader.getMetadata(message, DocumentHistoryDeleteReplicationMessage.METADATA_VERSION_TO, true);
+            DocumentHistoryDeleteReplicationMessage.METADATA_DOCUMENT_HISTORYDELETE_VERSION_FROM, true);
+        String toVersion = this.messageReader.getMetadata(message,
+            DocumentHistoryDeleteReplicationMessage.METADATA_DOCUMENT_HISTORYDELETE_VERSION_TO, true);
 
         XWikiDocument document;
         try {

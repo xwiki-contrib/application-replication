@@ -33,26 +33,6 @@ import org.xwiki.model.reference.DocumentReference;
 public class DocumentHistoryDeleteReplicationMessage extends AbstractNoContentDocumentReplicationMessage
 {
     /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "_history";
-
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
-
-    /**
-     * The name of the metadata containing the lowest version to delete from the document history.
-     */
-    public static final String METADATA_VERSION_FROM = METADATA_PREFIX + "VERSION_FROM";
-
-    /**
-     * The name of the metadata containing the highest version to delete from the document history.
-     */
-    public static final String METADATA_VERSION_TO = METADATA_PREFIX + "VERSION_TO";
-
-    /**
      * @param documentReference the reference of the document affected by this message
      * @param from the lowest version to delete
      * @param to the highest version to delete
@@ -63,13 +43,13 @@ public class DocumentHistoryDeleteReplicationMessage extends AbstractNoContentDo
     {
         initialize(documentReference, receivers, extraMetadata);
 
-        putCustomMetadata(METADATA_VERSION_FROM, from);
-        putCustomMetadata(METADATA_VERSION_TO, to);
+        putCustomMetadata(METADATA_DOCUMENT_HISTORYDELETE_VERSION_FROM, from);
+        putCustomMetadata(METADATA_DOCUMENT_HISTORYDELETE_VERSION_TO, to);
     }
 
     @Override
     public String getType()
     {
-        return TYPE;
+        return TYPE_DOCUMENT_HISTORYDELETE;
     }
 }

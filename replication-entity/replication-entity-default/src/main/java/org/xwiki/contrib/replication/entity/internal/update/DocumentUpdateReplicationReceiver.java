@@ -55,7 +55,7 @@ import com.xpn.xwiki.objects.BaseObject;
  */
 @Component
 @Singleton
-@Named(DocumentUpdateReplicationMessage.TYPE)
+@Named(DocumentUpdateReplicationMessage.TYPE_DOCUMENT_UPDATE)
 public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
     @Inject
@@ -143,7 +143,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
 
         // Identify a conflict
         Collection<String> values =
-            message.getCustomMetadata().get(DocumentUpdateReplicationMessage.METADATA_ANCESTORS);
+            message.getCustomMetadata().get(DocumentUpdateReplicationMessage.METADATA_DOCUMENT_UPDATE_ANCESTORS);
 
         // If no ancestor is provided we cannot really know if there is a conflict
         if (values != null) {

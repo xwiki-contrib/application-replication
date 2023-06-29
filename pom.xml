@@ -117,6 +117,17 @@
               </differences>
             </revapi.differences>
             -->
+              <revapi.differences>
+                <justification>Yound API which does not make sense anymore</justification>
+                <criticality>highlight</criticality>
+                <differences>
+                  <item>
+                    <ignore>true</ignore>
+                    <code>java.method.removed</code>
+                    <old>method void org.xwiki.contrib.replication.entity.EntityReplication::updateDocumentReadonly(org.xwiki.model.reference.DocumentReference) throws org.xwiki.contrib.replication.ReplicationException</old>
+                  </item>
+                </differences>
+              </revapi.differences>
             </analysisConfiguration>
         </configuration>
       </plugin>

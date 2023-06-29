@@ -33,10 +33,10 @@ import org.xwiki.eventstream.Event;
 public abstract class AbstractEntityReplicationInstanceRecoverHandler implements ReplicationInstanceRecoverHandler
 {
     protected static final String EVENT_FIELD_METADATA_REFERENCE =
-        ReplicationMessageEventQuery.customMetadataName(AbstractEntityReplicationMessage.METADATA_REFERENCE);
+        ReplicationMessageEventQuery.customMetadataName(AbstractEntityReplicationMessage.METADATA_ENTITY_REFERENCE);
 
     protected static final String EVENT_FIELD_METADATA_RECOVER_TYPE =
-        ReplicationMessageEventQuery.customMetadataName(AbstractEntityReplicationMessage.METADATA_RECOVER_TYPE);
+        ReplicationMessageEventQuery.customMetadataName(AbstractEntityReplicationMessage.METADATA_ENTITY_RECOVER_TYPE);
 
     protected String getCustomMetadata(Event event, String field)
     {

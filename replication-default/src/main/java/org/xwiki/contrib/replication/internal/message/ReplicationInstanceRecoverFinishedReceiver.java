@@ -17,20 +17,31 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.create;
+package org.xwiki.contrib.replication.internal.message;
+
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
+import org.xwiki.contrib.replication.AbstractReplicationReceiver;
+import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationMessage;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 
 /**
+ * Receive the {@link ReplicationInstanceRecoverFinisheddMessage} message.
+ * 
  * @version $Id$
+ * @since 1.2.0
  */
-@Component(roles = DocumentCreateReplicationMessage.class)
-public class DocumentCreateReplicationMessage extends DocumentUpdateReplicationMessage
+@Component
+@Singleton
+@Named(ReplicationMessage.TYPE_INSTANCE_RECOVER_FINISHED)
+public class ReplicationInstanceRecoverFinishedReceiver extends AbstractReplicationReceiver
 {
     @Override
-    public String getType()
+    public void receive(ReplicationReceiverMessage message) throws ReplicationException
     {
-        return TYPE_DOCUMENT_CREATE;
+        // Nothing to do, this message is just logged right now
     }
 }

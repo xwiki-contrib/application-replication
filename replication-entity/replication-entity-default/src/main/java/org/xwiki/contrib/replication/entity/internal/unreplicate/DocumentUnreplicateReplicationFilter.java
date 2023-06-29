@@ -17,26 +17,28 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.probe;
+package org.xwiki.contrib.replication.entity.internal.unreplicate;
 
-import java.util.concurrent.CompletableFuture;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
-import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
-import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
+import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiverMessageFilter;
 
 /**
  * @version $Id$
- * @since 1.12.0
+ * @since 1.13.0
  */
-public abstract class AbstractDocumentUpdateProbeReplicationReceiver extends AbstractDocumentReplicationReceiver
+@Component
+@Singleton
+@Named(DocumentUnreplicateReplicationMessage.TYPE_DOCUMENT_UNREPLICATE)
+public class DocumentUnreplicateReplicationFilter extends AbstractDocumentReplicationReceiverMessageFilter
 {
-    @Override
-    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
-        throws ReplicationException
+    /**
+     * Only the owner is allowed to send this type of messages.
+     */
+    public DocumentUnreplicateReplicationFilter()
     {
-        return this.documentRelay.relay(message, DocumentReplicationLevel.ALL);
+        this.ownerOnly = true;
     }
 }

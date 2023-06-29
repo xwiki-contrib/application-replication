@@ -17,25 +17,22 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.probe;
+package org.xwiki.contrib.replication.entity.internal.conflict;
+
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiverMessageFilter;
 
 /**
  * @version $Id$
- * @since 1.12.0
+ * @since 1.13.0
  */
-@Component(roles = DocumentUpdateProbeRequestReplicationMessage.class)
-public class DocumentUpdateProbeRequestReplicationMessage extends AbstractDocumentProbeReplicationMessage
+@Component
+@Singleton
+@Named(DocumentReplicationConflictMessage.TYPE_DOCUMENT_CONFLICT)
+public class DocumentReplicationConflictFilter extends AbstractDocumentReplicationReceiverMessageFilter
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "request";
 
-    @Override
-    public String getType()
-    {
-        return TYPE;
-    }
 }

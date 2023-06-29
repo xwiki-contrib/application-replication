@@ -203,7 +203,7 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
             message = this.documentReferenceMessageProvider.get();
 
             ((DocumentReferenceReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
-                document.getAuthors().getCreator(), create, receivers, metadata);
+                document.getAuthors().getCreator(), receivers, metadata);
         } else if (create) {
             // Sending the creation of a new fulldocument
             message = this.documentCreateMessageProvider.get();

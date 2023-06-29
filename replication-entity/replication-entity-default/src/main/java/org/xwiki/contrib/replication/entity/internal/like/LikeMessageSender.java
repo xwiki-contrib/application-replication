@@ -41,7 +41,7 @@ import org.xwiki.user.UserReference;
 public class LikeMessageSender
 {
     @Inject
-    private Provider<LikeMessage> likeMessageProvider;
+    private Provider<LikeReplicationMessage> likeMessageProvider;
 
     @Inject
     private DocumentReplicationController replicationController;
@@ -57,7 +57,7 @@ public class LikeMessageSender
         throws ReplicationException
     {
         this.replicationController.send(m -> {
-            LikeMessage likeMessage = this.likeMessageProvider.get();
+            LikeReplicationMessage likeMessage = this.likeMessageProvider.get();
 
             likeMessage.initialize(user, entity, like, receivers, m);
 

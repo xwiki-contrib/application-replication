@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.xwiki.component.annotation.Role;
+import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.model.reference.DocumentReference;
@@ -90,6 +91,20 @@ public interface DocumentReplicationController
         throws ReplicationException
     {
         return Collections.emptyList();
+    }
+
+    /**
+     * Indicate the replication configuration associated with this received message.
+     * 
+     * @param message the message to relay
+     * @return the registered instances on which to replicate the document
+     * @throws ReplicationException when failing to get the configuration
+     * @since 1.13.0
+     */
+    default DocumentReplicationControllerInstance getReceiveConfiguration(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        return null;
     }
 
     /**
@@ -183,4 +198,16 @@ public interface DocumentReplicationController
      */
     boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message)
         throws ReplicationException;
+
+    /**
+     * @param message the received message
+     * @return the message to handle/relay
+     * @throws InvalidReplicationMessageException when the message format is wrong
+     * @throws ReplicationException when failing to filter the message
+     * @since 1.13.0
+     */
+    default ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        return message;
+    }
 }

@@ -34,6 +34,7 @@ import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.replication.AbstractReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceRecoverHandler;
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSender;
 
@@ -45,14 +46,14 @@ import org.xwiki.contrib.replication.ReplicationSender;
  */
 @Component
 @Singleton
-@Named(ReplicationInstanceRecoverMessage.TYPE)
-public class ReplicationInstanceRecoverReceiver extends AbstractReplicationReceiver
+@Named(ReplicationMessage.TYPE_INSTANCE_RECOVER_REQUEST)
+public class ReplicationInstanceRecoverRequestReceiver extends AbstractReplicationReceiver
 {
     @Inject
     private ComponentManager componentManager;
 
     @Inject
-    private Provider<ReplicationInstanceRecoveredMessage> recoveredMessageProvider;
+    private Provider<ReplicationInstanceRecoverFinisheddMessage> recoveredMessageProvider;
 
     @Inject
     private ReplicationSender sender;
@@ -70,17 +71,17 @@ public class ReplicationInstanceRecoverReceiver extends AbstractReplicationRecei
         // Sort handlers according to priority
         Collections.sort(handlers, (h1, h2) -> h1.getPriority() - h2.getPriority());
 
-        Date dateMin = this.messageReader.getMetadata(message, ReplicationInstanceRecoverMessage.METADATA_DATE_MIN,
-            true, Date.class);
-        Date dateMax = this.messageReader.getMetadata(message, ReplicationInstanceRecoverMessage.METADATA_DATE_MAX,
-            true, Date.class);
+        Date dateMin = this.messageReader.getMetadata(message,
+            ReplicationInstanceRecoverRequestMessage.METADATA_INSTANCE_RECOVER_REQUEST_DATE_MIN, true, Date.class);
+        Date dateMax = this.messageReader.getMetadata(message,
+            ReplicationInstanceRecoverRequestMessage.METADATA_INSTANCE_RECOVER_REQUEST_DATE_MAX, true, Date.class);
 
         for (ReplicationInstanceRecoverHandler handler : handlers) {
             handler.receive(dateMin, dateMax, message);
         }
 
         // Notify we are done with the recovery process
-        ReplicationInstanceRecoveredMessage recoveredMessage = this.recoveredMessageProvider.get();
+        ReplicationInstanceRecoverFinisheddMessage recoveredMessage = this.recoveredMessageProvider.get();
         recoveredMessage.initialize(dateMin, dateMax, message);
         this.sender.send(recoveredMessage);
     }

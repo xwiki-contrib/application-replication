@@ -65,8 +65,8 @@ public class DefaultDocumentReplicationMessageReader implements DocumentReplicat
     public DocumentReference getDocumentReference(ReplicationMessage message, EntityReference reference)
         throws InvalidReplicationMessageException
     {
-        Locale locale =
-            this.reader.getMetadata(message, AbstractEntityReplicationMessage.METADATA_LOCALE, true, Locale.class);
+        Locale locale = this.reader.getMetadata(message, AbstractEntityReplicationMessage.METADATA_ENTITY_LOCALE, true,
+            Locale.class);
 
         return new DocumentReference(reference, locale);
     }
@@ -82,7 +82,7 @@ public class DefaultDocumentReplicationMessageReader implements DocumentReplicat
         throws InvalidReplicationMessageException
     {
         EntityReference reference = this.reader.getMetadata(message,
-            AbstractEntityReplicationMessage.METADATA_REFERENCE, mandatory, EntityReference.class);
+            AbstractEntityReplicationMessage.METADATA_ENTITY_REFERENCE, mandatory, EntityReference.class);
 
         return reference != null ? this.currentEntityResolver.resolve(reference, reference.getType()) : null;
     }
@@ -90,20 +90,21 @@ public class DefaultDocumentReplicationMessageReader implements DocumentReplicat
     @Override
     public DocumentReference getContextUser(ReplicationMessage message) throws InvalidReplicationMessageException
     {
-        return this.reader.getMetadata(message, AbstractEntityReplicationMessage.METADATA_CONTEXT_USER, false,
+        return this.reader.getMetadata(message, AbstractEntityReplicationMessage.METADATA_ENTITY_CONTEXT_USER, false,
             DocumentReference.class);
     }
 
     @Override
     public String getDocumentVersion(ReplicationMessage message) throws InvalidReplicationMessageException
     {
-        return this.reader.getMetadata(message, DocumentUpdateReplicationMessage.METADATA_VERSION, false);
+        return this.reader.getMetadata(message, DocumentUpdateReplicationMessage.METADATA_DOCUMENT_UPDATE_VERSION,
+            false);
     }
 
     @Override
     public boolean isComplete(ReplicationMessage message) throws InvalidReplicationMessageException
     {
-        return BooleanUtils
-            .toBoolean(this.reader.getMetadata(message, DocumentUpdateReplicationMessage.METADATA_COMPLETE, false));
+        return BooleanUtils.toBoolean(this.reader.getMetadata(message,
+            DocumentUpdateReplicationMessage.METADATA_DOCUMENT_UPDATE_COMPLETE, false));
     }
 }

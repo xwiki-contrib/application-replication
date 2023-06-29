@@ -45,20 +45,11 @@ import com.xpn.xwiki.doc.XWikiDocument;
  */
 @Component
 @Singleton
-@Named(DocumentRepairRequestReplicationMessage.TYPE)
+@Named(DocumentRepairRequestReplicationMessage.TYPE_DOCUMENT_REPAIRREQUEST)
 public class DocumentRepairRequestReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
     @Inject
     private DocumentReplicationUtils controllerUtils;
-
-    /**
-     * Customize {@link AbstractDocumentReplicationReceiver} behavior.
-     */
-    public DocumentRepairRequestReplicationReceiver()
-    {
-        // It's a request, it does not have any impact so it should not be blocked by SEND_ONLY checkpoint
-        this.writeMessage = false;
-    }
 
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,

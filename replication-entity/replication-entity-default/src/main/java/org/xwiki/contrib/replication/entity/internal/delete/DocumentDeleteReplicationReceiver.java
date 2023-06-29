@@ -43,7 +43,7 @@ import com.xpn.xwiki.doc.XWikiDocument;
  */
 @Component
 @Singleton
-@Named(DocumentDeleteReplicationMessage.TYPE)
+@Named(DocumentDeleteReplicationMessage.TYPE_DOCUMENT_DELETE)
 public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
     @Inject
@@ -67,7 +67,7 @@ public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicati
             try {
                 // Set the batch id if any is provided
                 String batchId = this.messageReader.getMetadata(message,
-                    DocumentDeleteReplicationMessage.METADATA_BATCH, false);
+                    DocumentDeleteReplicationMessage.METADATA_DOCUMENT_DELETE_BATCH, false);
                 if (batchId != null) {
                     this.batchOperation.execute(() -> xcontext.getWiki().deleteDocument(document, xcontext), batchId);
                 } else {

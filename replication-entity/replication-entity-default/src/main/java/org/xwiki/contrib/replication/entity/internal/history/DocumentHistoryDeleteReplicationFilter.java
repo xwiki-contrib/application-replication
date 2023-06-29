@@ -17,30 +17,22 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal.message;
+package org.xwiki.contrib.replication.entity.internal.history;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.AbstractReplicationReceiver;
-import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiverMessageFilter;
 
 /**
- * Receive the {@link ReplicationInstanceRecoveredMessage} message.
- * 
  * @version $Id$
- * @since 1.2.0
+ * @since 1.13.0
  */
 @Component
 @Singleton
-@Named(ReplicationInstanceRecoveredMessage.TYPE)
-public class ReplicationInstanceRecoveredReceiver extends AbstractReplicationReceiver
+@Named(DocumentHistoryDeleteReplicationMessage.TYPE_DOCUMENT_HISTORYDELETE)
+public class DocumentHistoryDeleteReplicationFilter extends AbstractDocumentReplicationReceiverMessageFilter
 {
-    @Override
-    public void receive(ReplicationReceiverMessage message) throws ReplicationException
-    {
-        // Nothing to do, this message is just logged right now
-    }
+
 }

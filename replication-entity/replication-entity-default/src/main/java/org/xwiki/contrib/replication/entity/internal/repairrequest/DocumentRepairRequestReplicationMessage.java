@@ -33,15 +33,10 @@ import org.xwiki.model.reference.DocumentReference;
 @Component(roles = DocumentRepairRequestReplicationMessage.class)
 public class DocumentRepairRequestReplicationMessage extends AbstractNoContentDocumentReplicationMessage
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "repairrequest";
-
     @Override
     public String getType()
     {
-        return TYPE;
+        return TYPE_DOCUMENT_REPAIRREQUEST;
     }
 
     @Override

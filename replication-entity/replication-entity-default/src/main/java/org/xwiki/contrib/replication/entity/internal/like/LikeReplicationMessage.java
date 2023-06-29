@@ -30,28 +30,13 @@ import org.xwiki.user.UserReference;
 /**
  * @version $Id$
  */
-@Component(roles = LikeMessage.class)
-public class LikeMessage extends AbstractNoContentEntityReplicationMessage<EntityReference>
+@Component(roles = LikeReplicationMessage.class)
+public class LikeReplicationMessage extends AbstractNoContentEntityReplicationMessage<EntityReference>
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "like";
-
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
-
-    /**
-     * The name of the metadata indicating if it's a like or an unlike.
-     */
-    public static final String METADATA_LIKE = METADATA_PREFIX + "LIKE";
-
     @Override
     public String getType()
     {
-        return TYPE;
+        return TYPE_LIKE;
     }
 
     /**
@@ -66,7 +51,7 @@ public class LikeMessage extends AbstractNoContentEntityReplicationMessage<Entit
     {
         super.initialize(entity, receivers, metadata);
 
-        putCustomMetadata(METADATA_CREATOR, user);
+        putCustomMetadata(METADATA_ENTITY_CREATOR, user);
         putCustomMetadata(METADATA_LIKE, like);
     }
 }

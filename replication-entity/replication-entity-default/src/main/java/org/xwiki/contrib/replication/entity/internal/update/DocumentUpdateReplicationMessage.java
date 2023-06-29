@@ -53,31 +53,6 @@ import com.xpn.xwiki.doc.rcs.XWikiRCSNodeInfo;
 @Component(roles = DocumentUpdateReplicationMessage.class)
 public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicationMessage
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "update";
-
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
-
-    /**
-     * The name of the metadata containing the previous version of the entity in the message.
-     */
-    public static final String METADATA_ANCESTORS = METADATA_PREFIX + "ANCESTORS";
-
-    /**
-     * The name of the metadata containing the previous version of the entity in the message.
-     */
-    public static final String METADATA_COMPLETE = METADATA_PREFIX + "COMPLETE";
-
-    /**
-     * The name of the metadata containing the version of the entity in the message.
-     */
-    public static final String METADATA_VERSION = METADATA_PREFIX + "VERSION";
-
     @Inject
     private Provider<XWikiContext> xcontextProvider;
 
@@ -128,7 +103,8 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
                     break;
                 }
             }
-            this.modifiableMetadata.put(METADATA_ANCESTORS, DocumentAncestorConverter.toStrings(ancestors));
+            this.modifiableMetadata.put(METADATA_DOCUMENT_UPDATE_ANCESTORS,
+                DocumentAncestorConverter.toStrings(ancestors));
         } catch (XWikiException e) {
             this.logger.error("Failed to get document ancestors", e);
         }
@@ -169,19 +145,19 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
         this.complete = complete;
 
         this.version = version;
-        putCustomMetadata(METADATA_VERSION, this.version);
+        putCustomMetadata(METADATA_DOCUMENT_UPDATE_VERSION, this.version);
 
-        putCustomMetadata(METADATA_COMPLETE, this.complete);
+        putCustomMetadata(METADATA_DOCUMENT_UPDATE_COMPLETE, this.complete);
 
         if (creator != null) {
-            putCustomMetadata(METADATA_CREATOR, creator);
+            putCustomMetadata(METADATA_ENTITY_CREATOR, creator);
         }
     }
 
     @Override
     public String getType()
     {
-        return TYPE;
+        return TYPE_DOCUMENT_UPDATE;
     }
 
     @Override

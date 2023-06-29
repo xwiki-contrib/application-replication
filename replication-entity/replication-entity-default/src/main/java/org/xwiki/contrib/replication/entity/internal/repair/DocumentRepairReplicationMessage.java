@@ -33,25 +33,10 @@ import org.xwiki.user.UserReference;
 @Component(roles = DocumentRepairReplicationMessage.class)
 public class DocumentRepairReplicationMessage extends DocumentUpdateReplicationMessage
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "repair";
-
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
-
-    /**
-     * The name of the metadata containing the authors involved in the conflict.
-     */
-    public static final String METADATA_CONFLICT_AUTHORS = METADATA_PREFIX + "AUTHORS";
-
     @Override
     public String getType()
     {
-        return TYPE;
+        return TYPE_DOCUMENT_REPAIR;
     }
 
     /**
@@ -70,6 +55,6 @@ public class DocumentRepairReplicationMessage extends DocumentUpdateReplicationM
     {
         initialize(documentReference, version, true, creator, receivers, metadata);
 
-        putCustomMetadata(METADATA_CONFLICT_AUTHORS, authors);
+        putCustomMetadata(METADATA_DOCUMENT_REPAIR_AUTHORS, authors);
     }
 }

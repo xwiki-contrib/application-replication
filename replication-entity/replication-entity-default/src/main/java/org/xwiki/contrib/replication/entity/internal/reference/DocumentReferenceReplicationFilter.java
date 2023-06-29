@@ -17,35 +17,38 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.probe;
+package org.xwiki.contrib.replication.entity.internal.reference;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
+import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiverMessageFilter;
 import org.xwiki.model.reference.DocumentReference;
-
-import com.xpn.xwiki.XWikiContext;
 
 /**
  * @version $Id$
- * @since 1.12.0
+ * @since 1.13.0
  */
 @Component
 @Singleton
-@Named(DocumentUpdateProbeResponseReplicationMessage.TYPE)
-public class DocumentUpdateProbeResponseReplicationReceiver extends AbstractDocumentUpdateProbeReplicationReceiver
+@Named(DocumentReferenceReplicationMessage.TYPE_DOCUMENT_REFERENCE)
+public class DocumentReferenceReplicationFilter extends AbstractDocumentReplicationReceiverMessageFilter
 {
-    private ReplicationDocumentStore store;
-
     @Override
-    protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
-        XWikiContext xcontext) throws ReplicationException
+    protected ReplicationReceiverMessage filter(ReplicationReceiverMessage message, DocumentReference documentReference,
+        DocumentReplicationControllerInstance currentConfiguration) throws ReplicationException
     {
-        // Change document readonly status
-        this.store.setReadonly(documentReference, false);
+        // It's forbidden to send REFERENCE messages to the owner
+        if (this.replicationUtils.isOwner(documentReference)) {
+            throw new InvalidReplicationMessageException(
+                "It's forbidden to send REFERENCE messages to the owner instance");
+        }
+
+        return message;
     }
 }

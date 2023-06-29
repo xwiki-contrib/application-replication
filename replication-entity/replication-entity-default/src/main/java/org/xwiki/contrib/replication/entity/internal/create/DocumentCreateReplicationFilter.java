@@ -19,18 +19,20 @@
  */
 package org.xwiki.contrib.replication.entity.internal.create;
 
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.update.AbstractDocumentUpdateReplicationFilter;
 
 /**
  * @version $Id$
+ * @since 1.13.0
  */
-@Component(roles = DocumentCreateReplicationMessage.class)
-public class DocumentCreateReplicationMessage extends DocumentUpdateReplicationMessage
+@Component
+@Singleton
+@Named(DocumentCreateReplicationMessage.TYPE_DOCUMENT_CREATE)
+public class DocumentCreateReplicationFilter extends AbstractDocumentUpdateReplicationFilter
 {
-    @Override
-    public String getType()
-    {
-        return TYPE_DOCUMENT_CREATE;
-    }
+
 }

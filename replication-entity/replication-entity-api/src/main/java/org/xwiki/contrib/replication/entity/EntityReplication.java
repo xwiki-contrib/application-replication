@@ -78,7 +78,7 @@ public interface EntityReplication
      */
     default void setReadonly(DocumentReference documentReference, boolean readonly) throws ReplicationException
     {
-        
+
     }
 
     /**
@@ -87,18 +87,6 @@ public interface EntityReplication
      * @since 1.12.0
      */
     default void remove(DocumentReference documentReference) throws ReplicationException
-    {
-
-    }
-
-    /**
-     * Check and update the readonly status of the document.
-     * 
-     * @param documentReference the reference of the document
-     * @throws ReplicationException when failing to check or update the document readonly status
-     * @since 1.12.0
-     */
-    default void updateDocumentReadonly(DocumentReference documentReference) throws ReplicationException
     {
 
     }

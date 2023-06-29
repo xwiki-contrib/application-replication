@@ -37,7 +37,7 @@ import com.xpn.xwiki.XWikiContext;
  */
 @Component
 @Singleton
-@Named(DocumentReplicationConflictMessage.TYPE)
+@Named(DocumentReplicationConflictMessage.TYPE_DOCUMENT_CONFLICT)
 public class DocumentReplicationConflictReceiver extends AbstractDocumentReplicationReceiver
 {
     @Inject
@@ -48,7 +48,7 @@ public class DocumentReplicationConflictReceiver extends AbstractDocumentReplica
         XWikiContext xcontext) throws ReplicationException
     {
         boolean conflict = this.messageReader.getMetadata(message,
-            DocumentReplicationConflictMessage.METADATA_CONFLICT, true, boolean.class);
+            DocumentReplicationConflictMessage.METADATA_DOCUMENT_CONFLICT, true, boolean.class);
 
         this.store.setConflict(documentReference, conflict);
     }

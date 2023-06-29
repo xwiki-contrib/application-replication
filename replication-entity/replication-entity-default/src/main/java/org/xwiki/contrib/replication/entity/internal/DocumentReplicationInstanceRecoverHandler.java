@@ -50,11 +50,11 @@ import org.xwiki.properties.ConverterManager;
  */
 @Component
 @Singleton
-@Named(AbstractDocumentReplicationMessage.VALUE_RECOVER_TYPE)
+@Named(AbstractDocumentReplicationMessage.VALUE_DOCUMENT_RECOVER_TYPE)
 public class DocumentReplicationInstanceRecoverHandler extends AbstractEntityReplicationInstanceRecoverHandler
 {
     private static final String EVENT_FIELD_METADATA_LOCALE =
-        ReplicationMessageEventQuery.customMetadataName(AbstractEntityReplicationMessage.METADATA_LOCALE);
+        ReplicationMessageEventQuery.customMetadataName(AbstractEntityReplicationMessage.METADATA_ENTITY_LOCALE);
 
     @Inject
     private EventStore eventStore;
@@ -78,7 +78,7 @@ public class DocumentReplicationInstanceRecoverHandler extends AbstractEntityRep
 
         // Get only messages related to document updates
         query.customMetadata().eq(EVENT_FIELD_METADATA_RECOVER_TYPE,
-            AbstractDocumentReplicationMessage.VALUE_RECOVER_TYPE);
+            AbstractDocumentReplicationMessage.VALUE_DOCUMENT_RECOVER_TYPE);
 
         // And only the stored and received ones
         query.custom().in(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_STORED,

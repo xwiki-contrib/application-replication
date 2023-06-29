@@ -26,11 +26,9 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
@@ -47,22 +45,11 @@ import com.xpn.xwiki.doc.XWikiDocument;
  */
 @Component
 @Singleton
-@Named(DocumentReferenceReplicationMessage.TYPE)
+@Named(DocumentReferenceReplicationMessage.TYPE_DOCUMENT_REFERENCE)
 public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
     @Inject
     private ReplicationDocumentStore documentStore;
-
-    @Override
-    protected void checkMessageInstance(ReplicationReceiverMessage message, DocumentReference documentReference,
-        DocumentReplicationControllerInstance currentConfiguration) throws ReplicationException
-    {
-        // It's forbidden to send unreplicate messages to the owner
-        if (this.replicationUtils.isOwner(documentReference)) {
-            throw new InvalidReplicationMessageException(
-                "It's forbidden to send REFERENCE messages to the owner instance");
-        }
-    }
 
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
@@ -73,7 +60,7 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
 
         // Just indicate who created it
         UserReference creatorReference = this.messageReader.getMetadata(message,
-            DocumentReferenceReplicationMessage.METADATA_CREATOR, true, UserReference.class);
+            DocumentReferenceReplicationMessage.METADATA_ENTITY_CREATOR, true, UserReference.class);
         document.getAuthors().setCreator(creatorReference);
         document.getAuthors().setContentAuthor(creatorReference);
         document.getAuthors().setEffectiveMetadataAuthor(creatorReference);

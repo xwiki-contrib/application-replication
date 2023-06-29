@@ -26,7 +26,12 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
 
+import org.xwiki.component.descriptor.ComponentDescriptor;
+import org.xwiki.component.manager.ComponentLookupException;
+import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
@@ -46,6 +51,16 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
 
     @Inject
     protected ReplicationInstanceManager instanceManager;
+
+    @Inject
+    @Named("context")
+    protected Provider<ComponentManager> componentManagerProvider;
+
+    @Inject
+    protected ComponentDescriptor<DocumentReplicationController> descriptor;
+
+    @Inject
+    protected DocumentReplicationMessageReader messageReader;
 
     @Override
     public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference,
@@ -81,6 +96,22 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
         }
 
         return configurations;
+    }
+
+    @Override
+    public DocumentReplicationControllerInstance getReceiveConfiguration(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        List<DocumentReplicationControllerInstance> configurations =
+            getReplicationConfiguration(this.messageReader.getDocumentReference(message));
+
+        for (DocumentReplicationControllerInstance configuration : configurations) {
+            if (configuration.getInstance() == message.getInstance()) {
+                return configuration;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -175,5 +206,42 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
     public boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message)
     {
         return false;
+    }
+
+    @Override
+    public ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        ComponentManager componentManager = this.componentManagerProvider.get();
+
+        String filterHint = getFilterHint(message, componentManager);
+        if (filterHint != null) {
+            try {
+                DocumentReplicationReceiverMessageFilter filter =
+                    componentManager.getInstance(DocumentReplicationReceiverMessageFilter.class, filterHint);
+
+                return filter.filter(message);
+            } catch (ComponentLookupException e) {
+                throw new ReplicationException(
+                    "Failed to lookup the DocumentReplicationReceiverMessageFilter component", e);
+            }
+        }
+
+        return message;
+    }
+
+    private String getFilterHint(ReplicationReceiverMessage message, ComponentManager componentManager)
+    {
+        // Try a filter specific to this controller and message type
+        String hint = this.descriptor.getRoleHint() + '/' + message.getType();
+        if (componentManager.hasComponent(DocumentReplicationReceiverMessageFilter.class, hint)) {
+            return hint;
+        }
+
+        // Try a filter for any controller but specific to this message type
+        if (componentManager.hasComponent(DocumentReplicationReceiverMessageFilter.class, message.getType())) {
+            return message.getType();
+        }
+
+        return null;
     }
 }

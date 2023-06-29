@@ -30,6 +30,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationInstanceRecoverHandler;
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 
 /**
@@ -38,7 +39,7 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
  */
 @Component
 @Singleton
-@Named(ReplicationInstanceUpdateMessage.TYPE)
+@Named(ReplicationMessage.TYPE_INSTANCE_UPDATE)
 public class ReplicationInstanceUpdateRecoverHandler implements ReplicationInstanceRecoverHandler
 {
     @Inject

@@ -40,7 +40,7 @@ import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
 import org.xwiki.contrib.replication.internal.message.DefaultReplicationSender;
-import org.xwiki.contrib.replication.internal.message.ReplicationInstanceRecoverMessage;
+import org.xwiki.contrib.replication.internal.message.ReplicationInstanceRecoverRequestMessage;
 import org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageQueue;
 import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageQueue;
 import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
@@ -85,7 +85,7 @@ public class ReplicationScriptService implements ScriptService
     private ContextualAuthorizationManager authorization;
 
     @Inject
-    private Provider<ReplicationInstanceRecoverMessage> recoverMessageProvider;
+    private Provider<ReplicationInstanceRecoverRequestMessage> recoverMessageProvider;
 
     @Inject
     private ReplicationReceiverMessageQueue receiverQueue;
@@ -247,7 +247,7 @@ public class ReplicationScriptService implements ScriptService
     {
         this.authorization.checkAccess(Right.PROGRAM);
 
-        ReplicationInstanceRecoverMessage message = this.recoverMessageProvider.get();
+        ReplicationInstanceRecoverRequestMessage message = this.recoverMessageProvider.get();
         message.initialize(minDate, maxDate);
 
         this.sender.send(message);

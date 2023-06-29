@@ -39,8 +39,8 @@ import com.xpn.xwiki.XWikiContext;
  */
 @Component
 @Singleton
-@Named(LikeMessage.TYPE)
-public class LikeReceiver extends AbstractEntityReplicationReceiver
+@Named(LikeReplicationMessage.TYPE_LIKE)
+public class LikeReplicationReceiver extends AbstractEntityReplicationReceiver
 {
     @Inject
     private LikeManager likes;
@@ -49,9 +49,10 @@ public class LikeReceiver extends AbstractEntityReplicationReceiver
     protected void receiveEntity(ReplicationReceiverMessage message, EntityReference entityReference,
         XWikiContext xcontext) throws ReplicationException
     {
-        boolean like = this.messageReader.getMetadata(message, LikeMessage.METADATA_LIKE, true, Boolean.class);
-        UserReference userReference =
-            this.messageReader.getMetadata(message, LikeMessage.METADATA_CREATOR, true, UserReference.class);
+        boolean like =
+            this.messageReader.getMetadata(message, LikeReplicationMessage.METADATA_LIKE, true, Boolean.class);
+        UserReference userReference = this.messageReader.getMetadata(message,
+            LikeReplicationMessage.METADATA_ENTITY_CREATOR, true, UserReference.class);
 
         try {
             if (like) {

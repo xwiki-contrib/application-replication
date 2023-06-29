@@ -159,4 +159,10 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     {
         return getController(document.getDocumentReference()).receiveREFERENCEDocument(document, message);
     }
+
+    @Override
+    public ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        return getController(message).filter(message);
+    }
 }

@@ -132,4 +132,10 @@ public class MinimumDocumentReplicationController implements DocumentReplication
     {
         return false;
     }
+
+    @Override
+    public ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException
+    {
+        return message;
+    }
 }

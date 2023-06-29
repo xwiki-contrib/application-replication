@@ -28,14 +28,9 @@ import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentRe
 @Component(roles = DocumentUnreplicateReplicationMessage.class)
 public class DocumentUnreplicateReplicationMessage extends AbstractNoContentDocumentReplicationMessage
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "unreplicate";
-
     @Override
     public String getType()
     {
-        return TYPE;
+        return TYPE_DOCUMENT_UNREPLICATE;
     }
 }

@@ -17,48 +17,48 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.probe;
-
-import java.util.Collection;
-import java.util.List;
+package org.xwiki.contrib.replication.entity.internal;
 
 import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationMessageReader;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
-import org.xwiki.model.reference.DocumentReference;
-
-import com.xpn.xwiki.XWikiContext;
+import org.xwiki.contrib.replication.ReplicationReceiverMessageFilter;
+import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
+import org.xwiki.model.EntityType;
+import org.xwiki.model.reference.EntityReference;
 
 /**
+ * Default implementation of {@link ReplicationReceiverMessageFilter}.
+ * 
  * @version $Id$
- * @since 1.12.0
+ * @since 1.13.0
  */
 @Component
 @Singleton
-@Named(DocumentUpdateProbeRequestReplicationMessage.TYPE)
-public class DocumentUpdateProbeRequestReplicationReceiver extends AbstractDocumentUpdateProbeReplicationReceiver
+public class DefaultReplicationReceiverMessageFilter implements ReplicationReceiverMessageFilter
 {
     @Inject
-    private Provider<DocumentUpdateProbeResponseReplicationMessage> messageProvider;
+    private ReplicationMessageReader reader;
+
+    @Inject
+    private DocumentReplicationController controller;
 
     @Override
-    protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
-        XWikiContext xcontext) throws ReplicationException
+    public ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException
     {
-        // Send back a response to the source
-        Collection<String> receivers = List.of(message.getSource());
-        this.controller.send(m -> {
-            DocumentUpdateProbeResponseReplicationMessage sendMessage = this.messageProvider.get();
+        EntityReference reference = this.reader.getMetadata(message, EntityReplicationMessage.METADATA_ENTITY_REFERENCE,
+            false, EntityReference.class);
 
-            sendMessage.initialize(documentReference, receivers, m);
+        if (reference != null && reference.getType() == EntityType.DOCUMENT) {
+            // It's an document message
+            return this.controller.filter(message);
+        }
 
-            return sendMessage;
-        }, documentReference, DocumentReplicationLevel.ALL, receivers);
+        return message;
     }
 }

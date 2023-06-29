@@ -37,7 +37,7 @@ import com.xpn.xwiki.XWikiContext;
  */
 @Component
 @Singleton
-@Named(DocumentCreateReplicationMessage.TYPE)
+@Named(DocumentCreateReplicationMessage.TYPE_DOCUMENT_CREATE)
 public class DocumentCreateReplicationReceiver extends DocumentUpdateReplicationReceiver
 {
     @Inject

@@ -35,28 +35,13 @@ import org.xwiki.refactoring.batch.BatchOperationExecutor;
 @Component(roles = DocumentDeleteReplicationMessage.class)
 public class DocumentDeleteReplicationMessage extends AbstractNoContentDocumentReplicationMessage
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "delete";
-
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
-
-    /**
-     * The name of the metadata containing the identifier of the batch the delete is part of.
-     */
-    public static final String METADATA_BATCH = METADATA_PREFIX + "BATCH";
-
     @Inject
     private BatchOperationExecutor batchOperation;
 
     @Override
     public String getType()
     {
-        return TYPE;
+        return TYPE_DOCUMENT_DELETE;
     }
 
     @Override
@@ -65,6 +50,6 @@ public class DocumentDeleteReplicationMessage extends AbstractNoContentDocumentR
     {
         super.initialize(documentReference, receivers, extraMetadata);
 
-        putCustomMetadata(METADATA_BATCH, this.batchOperation.getCurrentBatchId());
+        putCustomMetadata(METADATA_DOCUMENT_DELETE_BATCH, this.batchOperation.getCurrentBatchId());
     }
 }

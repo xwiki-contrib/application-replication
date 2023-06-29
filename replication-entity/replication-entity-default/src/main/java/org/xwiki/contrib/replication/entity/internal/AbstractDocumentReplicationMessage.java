@@ -30,17 +30,12 @@ import org.xwiki.model.reference.DocumentReference;
  */
 public abstract class AbstractDocumentReplicationMessage extends AbstractEntityReplicationMessage<DocumentReference>
 {
-    /**
-     * The value used to group all document related messages.
-     */
-    public static final String VALUE_RECOVER_TYPE = TYPE_PREFIX + "document";
-
     @Override
     protected void initialize(DocumentReference documentReference, Collection<String> receivers,
         Map<String, Collection<String>> extraMetadata)
     {
         super.initialize(documentReference, receivers, extraMetadata);
 
-        putCustomMetadata(METADATA_RECOVER_TYPE, VALUE_RECOVER_TYPE);
+        putCustomMetadata(METADATA_ENTITY_RECOVER_TYPE, VALUE_DOCUMENT_RECOVER_TYPE);
     }
 }

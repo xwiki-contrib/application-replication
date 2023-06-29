@@ -132,7 +132,8 @@
         <configuration>
           <excludes>
               org/xwiki/contrib/replication/internal/instance/ReplicationInstanceStore.java,
-              org/xwiki/contrib/replication/internal/message/DefaultReplicationSender.java
+              org/xwiki/contrib/replication/internal/message/DefaultReplicationSender.java,
+              org/xwiki/contrib/replication/internal/message/ReplicationReceiverMessageQueue.java
           </excludes>
         </configuration>
       </plugin>

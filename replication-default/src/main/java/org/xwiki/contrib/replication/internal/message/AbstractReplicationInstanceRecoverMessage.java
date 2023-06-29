@@ -33,26 +33,6 @@ import org.xwiki.contrib.replication.ReplicationException;
 public abstract class AbstractReplicationInstanceRecoverMessage extends AbstractReplicationSenderMessage
 {
     /**
-     * The type of message supported by this receiver.
-     */
-    public static final String TYPE_PREFIX = "instance_recover_";
-
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    public static final String METADATA_PREFIX = TYPE_PREFIX.toUpperCase();
-
-    /**
-     * The name of the metadata containing the minimum date for which to send back changes.
-     */
-    public static final String METADATA_DATE_MIN = METADATA_PREFIX + "DATE_MIN";
-
-    /**
-     * The name of the metadata containing the maximum date for which to send changes.
-     */
-    public static final String METADATA_DATE_MAX = METADATA_PREFIX + "DATE_MAX";
-
-    /**
      * @param minDate the minimum date for which to send back changes
      * @param maxDate the maximum date for which to send changes
      * @throws ReplicationException when failing to initialize the message
@@ -61,8 +41,8 @@ public abstract class AbstractReplicationInstanceRecoverMessage extends Abstract
     {
         initialize();
 
-        putCustomMetadata(METADATA_DATE_MIN, minDate);
-        putCustomMetadata(METADATA_DATE_MAX, maxDate);
+        putCustomMetadata(METADATA_INSTANCE_RECOVER_REQUEST_DATE_MIN, minDate);
+        putCustomMetadata(METADATA_INSTANCE_RECOVER_REQUEST_DATE_MAX, maxDate);
     }
 
     @Override

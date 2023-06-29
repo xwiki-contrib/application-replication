@@ -32,25 +32,10 @@ import org.xwiki.model.reference.DocumentReference;
 @Component(roles = DocumentReplicationConflictMessage.class)
 public class DocumentReplicationConflictMessage extends AbstractNoContentDocumentReplicationMessage
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "conflict";
-
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
-
-    /**
-     * The name of the metadata indicating if the conflict marker should be set or removed.
-     */
-    public static final String METADATA_CONFLICT = METADATA_PREFIX + "CONFLICT";
-
     @Override
     public String getType()
     {
-        return TYPE;
+        return TYPE_DOCUMENT_CONFLICT;
     }
 
     /**
@@ -63,6 +48,6 @@ public class DocumentReplicationConflictMessage extends AbstractNoContentDocumen
     {
         super.initialize(documentReference, null, extraMetadata);
 
-        putCustomMetadata(METADATA_CONFLICT, conflict);
+        putCustomMetadata(METADATA_DOCUMENT_CONFLICT, conflict);
     }
 }

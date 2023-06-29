@@ -37,35 +37,13 @@ import org.xwiki.contrib.replication.ReplicationInstanceManager;
 @Component(roles = ReplicationInstanceUpdateMessage.class)
 public class ReplicationInstanceUpdateMessage extends AbstractReplicationSenderMessage
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = "instance_update";
-
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
-
-    /**
-     * The name of the metadata containing the instance name.
-     */
-    public static final String METADATA_NAME = METADATA_PREFIX + "NAME";
-
-    /**
-     * The prefix used to generate the name of the custom instance properties.
-     * 
-     * @since 1.10.0
-     */
-    public static final String PREFIX_METADATE_CUSTOM = METADATA_PREFIX + "CUSTOM_";
-
     @Inject
     private ReplicationInstanceManager instances;
 
     @Override
     public String getType()
     {
-        return TYPE;
+        return TYPE_INSTANCE_UPDATE;
     }
 
     /**
@@ -77,10 +55,10 @@ public class ReplicationInstanceUpdateMessage extends AbstractReplicationSenderM
 
         ReplicationInstance currentInstance = this.instances.getCurrentInstance();
 
-        putCustomMetadata(METADATA_NAME, currentInstance.getName());
+        putCustomMetadata(METADATA_INSTANCE_UPDATE_NAME, currentInstance.getName());
 
         for (Map.Entry<String, Object> entry : currentInstance.getProperties().entrySet()) {
-            putCustomMetadata(PREFIX_METADATE_CUSTOM + entry.getKey().toUpperCase(), entry.getValue());
+            putCustomMetadata(PREFIX_INSTANCE_UPDATE_CUSTOM + entry.getKey().toUpperCase(), entry.getValue());
         }
     }
 

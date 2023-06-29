@@ -30,28 +30,13 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
  * @version $Id$
  * @since 1.2.0
  */
-@Component(roles = ReplicationInstanceRecoveredMessage.class)
-public class ReplicationInstanceRecoveredMessage extends AbstractReplicationInstanceRecoverMessage
+@Component(roles = ReplicationInstanceRecoverFinisheddMessage.class)
+public class ReplicationInstanceRecoverFinisheddMessage extends AbstractReplicationInstanceRecoverMessage
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "finished";
-
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    public static final String METADATA_PREFIX = TYPE.toUpperCase() + '_';
-
-    /**
-     * The name of the metadata containing the identifier of the corresponding request.
-     */
-    public static final String METADATA_REQUEST_ID = METADATA_PREFIX + "REQUEST_ID";
-
     @Override
     public String getType()
     {
-        return TYPE;
+        return TYPE_INSTANCE_RECOVER_FINISHED;
     }
 
     /**
@@ -66,7 +51,7 @@ public class ReplicationInstanceRecoveredMessage extends AbstractReplicationInst
         initialize(minDate, maxDate);
 
         // Indicate the id of the corresponding request message
-        putCustomMetadata(METADATA_REQUEST_ID, recoverMessage.getId());
+        putCustomMetadata(METADATA_INSTANCE_RECOVER_FINISHED_REQUEST_ID, recoverMessage.getId());
 
         // Only send back this message to the requesting instance
         this.receivers = List.of(recoverMessage.getSource());

@@ -33,6 +33,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
 import org.xwiki.contrib.replication.internal.instance.ReplicationInstanceStore;
@@ -43,7 +44,7 @@ import org.xwiki.crypto.pkix.params.CertifiedPublicKey;
  */
 @Component
 @Singleton
-@Named(ReplicationInstanceUpdateMessage.TYPE)
+@Named(ReplicationMessage.TYPE_INSTANCE_UPDATE)
 public class ReplicationInstanceUpdateReceiver extends AbstractReplicationReceiver
 {
     @Inject
@@ -74,13 +75,13 @@ public class ReplicationInstanceUpdateReceiver extends AbstractReplicationReceiv
         }
 
         // Instance name
-        String name = this.messageReader.getMetadata(message, ReplicationInstanceUpdateMessage.METADATA_NAME, false);
+        String name = this.messageReader.getMetadata(message, ReplicationMessage.METADATA_INSTANCE_UPDATE_NAME, false);
 
         // Instance custom properties
         for (Map.Entry<String, Collection<String>> entry : message.getCustomMetadata().entrySet()) {
-            if (entry.getKey().startsWith(ReplicationInstanceUpdateMessage.PREFIX_METADATE_CUSTOM)) {
+            if (entry.getKey().startsWith(ReplicationMessage.PREFIX_INSTANCE_UPDATE_CUSTOM)) {
                 String propertyKey =
-                    entry.getKey().substring(ReplicationInstanceUpdateMessage.PREFIX_METADATE_CUSTOM.length());
+                    entry.getKey().substring(ReplicationMessage.PREFIX_INSTANCE_UPDATE_CUSTOM.length());
                 properties.put(propertyKey.toLowerCase(), entry.getValue());
             }
         }

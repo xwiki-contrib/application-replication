@@ -42,6 +42,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationReceiverMessageFilter;
 import org.xwiki.contrib.replication.event.ReplicationMessageHandlingEvent;
 import org.xwiki.contrib.replication.internal.DefaultReplicationContext;
 import org.xwiki.contrib.replication.internal.ReplicationClient;
@@ -83,6 +84,9 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
     @Inject
     private ReplicationMessageLogStore logStore;
 
+    @Inject
+    private ReplicationReceiverMessageFilter filter;
+
     @Override
     public void initialize() throws InitializationException
     {
@@ -117,37 +121,48 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
     @Override
     protected void handle(ReplicationReceiverMessage message) throws Exception
     {
+        // Filter the input message
+        ReplicationReceiverMessage filteredMessage;
+        try {
+            filteredMessage = this.filter.filter(message);
+        } catch (InvalidReplicationMessageException e) {
+            logInvalidMessage(message, e);
+
+            return;
+        }
+
         // Notify that a message is about to be handled by a receiver
         ReplicationMessageHandlingEvent event = new ReplicationMessageHandlingEvent();
-        this.observation.notify(event, message);
+        this.observation.notify(event, filteredMessage);
         if (event.isCanceled()) {
             this.logger.warn("The message with id [{}] and type [{}] coming from instance [{}] was rejected: {}",
-                message.getId(), message.getType(), message.getSource(), event.getReason());
+                filteredMessage.getId(), filteredMessage.getType(), filteredMessage.getSource(), event.getReason());
 
             return;
         }
 
         // Find the receiver corresponding to the type
         ReplicationReceiver replicationReceiver =
-            this.componentManager.getInstance(ReplicationReceiver.class, message.getType());
+            this.componentManager.getInstance(ReplicationReceiver.class, filteredMessage.getType());
 
         // Make sure an ExecutionContext is available
         this.executionContextManager.pushContext(new ExecutionContext(), false);
 
         // Indicate in the context that this is a replication change
-        ((DefaultReplicationContext) this.replicationContext).setReplicationMessage(message);
+        ((DefaultReplicationContext) this.replicationContext).setReplicationMessage(filteredMessage);
 
         try {
             // Relay the message and wait until it's stored
-            replicationReceiver.relay(message).get();
+            replicationReceiver.relay(filteredMessage).get();
 
             // Execute the receiver if the current instance is supposed to
             ReplicationInstance currentInstance = this.instances.getCurrentInstance();
-            if (message.getReceivers() == null || message.getReceivers().contains(currentInstance.getURI())) {
-                replicationReceiver.receive(message);
+            if (filteredMessage.getReceivers() == null
+                || filteredMessage.getReceivers().contains(currentInstance.getURI())) {
+                replicationReceiver.receive(filteredMessage);
 
                 // Log the successfully handled message
-                this.logStore.saveAsync(message, (m, e) -> {
+                this.logStore.saveAsync(filteredMessage, (m, e) -> {
                     Map<String, Object> custom = new HashMap<>(e.getCustom());
 
                     // Generate a new id to avoid overwriting the stored one
@@ -163,14 +178,19 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
                 });
             }
         } catch (InvalidReplicationMessageException e) {
-            this.logger.error("Message with id [{}] and type [{}] is invalid and is not going to be tried again",
-                message.getId(), message.getType(), e);
+            logInvalidMessage(filteredMessage, e);
         } finally {
             this.executionContextManager.popContext();
         }
 
         // Delete it from disk
         this.store.delete(message);
+    }
+
+    private void logInvalidMessage(ReplicationReceiverMessage message, InvalidReplicationMessageException e)
+    {
+        this.logger.error("Message with id [{}] and type [{}] is invalid and is not going to be tried again",
+            message.getId(), message.getType(), e);
     }
 
     @Override

@@ -41,17 +41,9 @@ import com.xpn.xwiki.doc.XWikiDocument;
  */
 @Component
 @Singleton
-@Named(DocumentUnreplicateReplicationMessage.TYPE)
+@Named(DocumentUnreplicateReplicationMessage.TYPE_DOCUMENT_UNREPLICATE)
 public class DocumentUnreplicateReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
-    /**
-     * Only the owner is allowed to send this type of messages.
-     */
-    public DocumentUnreplicateReplicationReceiver()
-    {
-        this.ownerOnly = true;
-    }
-
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException

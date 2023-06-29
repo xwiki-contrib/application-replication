@@ -25,17 +25,12 @@ import org.xwiki.component.annotation.Component;
  * @version $Id$
  * @since 1.1
  */
-@Component(roles = ReplicationInstanceRecoverMessage.class)
-public class ReplicationInstanceRecoverMessage extends AbstractReplicationInstanceRecoverMessage
+@Component(roles = ReplicationInstanceRecoverRequestMessage.class)
+public class ReplicationInstanceRecoverRequestMessage extends AbstractReplicationInstanceRecoverMessage
 {
-    /**
-     * The message type for these messages.
-     */
-    public static final String TYPE = TYPE_PREFIX + "requested";
-
     @Override
     public String getType()
     {
-        return TYPE;
+        return TYPE_INSTANCE_RECOVER_REQUEST;
     }
 }

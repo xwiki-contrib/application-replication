@@ -37,9 +37,9 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.context.Execution;
 import org.xwiki.context.ExecutionContext;
+import org.xwiki.contrib.replication.DefaultReplicationSenderMessage;
 import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.internal.DefaultReplicationSenderMessage;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.contrib.replication.message.log.ReplicationMessageEventInitializer;
 import org.xwiki.eventstream.Event;
@@ -254,7 +254,8 @@ public class ReplicationMessageLogStore
             }
         }
 
-        return new DefaultReplicationSenderMessage(id, event.getDate(), type, source, finalReceivers, metadata, null);
+        return new DefaultReplicationSenderMessage.Builder().id(id).date(event.getDate()).type(type).source(source)
+            .receivers(finalReceivers).customMetadata(metadata).build();
     }
 
     /**

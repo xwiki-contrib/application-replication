@@ -20,7 +20,6 @@
 package org.xwiki.contrib.replication.internal.message.log;
 
 import java.io.File;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,8 +31,8 @@ import org.xwiki.component.internal.ContextComponentManagerProvider;
 import org.xwiki.component.internal.WikiDeletedListener;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.context.concurrent.ContextStoreManager;
+import org.xwiki.contrib.replication.DefaultReplicationSenderMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.internal.DefaultReplicationSenderMessage;
 import org.xwiki.environment.Environment;
 import org.xwiki.eventstream.EventStreamException;
 import org.xwiki.eventstream.internal.DefaultEventFactory;
@@ -119,9 +118,9 @@ class ReplicationMessageLogStoreTest
     @Test
     void loadMessage() throws EventStreamException, InterruptedException
     {
-        DefaultReplicationSenderMessage message =
-            new DefaultReplicationSenderMessage("id", new Date(), "type", "source", Set.of("receiver1", "receiver2"),
-                Map.of("key1", List.of("value1"), "key2", List.of("value2")), null);
+        DefaultReplicationSenderMessage message = new DefaultReplicationSenderMessage.Builder().id("id").type("type")
+            .source("source").receivers(Set.of("receiver1", "receiver2"))
+            .customMetadata(Map.of("key1", List.of("value1"), "key2", List.of("value2"))).build();
 
         this.logStore.saveSync(message, null);
 

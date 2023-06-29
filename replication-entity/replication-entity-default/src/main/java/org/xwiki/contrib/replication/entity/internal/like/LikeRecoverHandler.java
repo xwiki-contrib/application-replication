@@ -52,11 +52,11 @@ import org.xwiki.user.UserReference;
  */
 @Component
 @Singleton
-@Named(LikeMessage.TYPE)
+@Named(LikeReplicationMessage.TYPE_LIKE)
 public class LikeRecoverHandler extends AbstractEntityReplicationInstanceRecoverHandler
 {
     private static final String EVENT_FIELD_METADATA_CREATOR =
-        ReplicationMessageEventQuery.customMetadataName(LikeMessage.METADATA_CREATOR);
+        ReplicationMessageEventQuery.customMetadataName(LikeReplicationMessage.METADATA_ENTITY_CREATOR);
 
     @Inject
     private EventStore eventStore;
@@ -86,7 +86,7 @@ public class LikeRecoverHandler extends AbstractEntityReplicationInstanceRecover
         ReplicationMessageEventQuery query = new ReplicationMessageEventQuery();
 
         // Get all message related to likes
-        query.eq(Event.FIELD_TYPE, ReplicationMessageEventQuery.messageTypeValue(LikeMessage.TYPE));
+        query.eq(Event.FIELD_TYPE, ReplicationMessageEventQuery.messageTypeValue(LikeReplicationMessage.TYPE_LIKE));
 
         // And only the stored and received ones
         query.custom().in(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_STORED,

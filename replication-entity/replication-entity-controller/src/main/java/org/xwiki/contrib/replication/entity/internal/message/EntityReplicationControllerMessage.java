@@ -37,7 +37,7 @@ public class EntityReplicationControllerMessage extends AbstractNoContentEntityR
     /**
      * The message type for these messages.
      */
-    public static final String TYPE = TYPE_PREFIX + "controller";
+    public static final String TYPE = PREFIX_TYPE_ENTITY + "controller";
 
     /**
      * The prefix in front of all entity metadata properties.

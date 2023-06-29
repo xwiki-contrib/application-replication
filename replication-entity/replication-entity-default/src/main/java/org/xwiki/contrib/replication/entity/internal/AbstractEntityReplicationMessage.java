@@ -27,6 +27,7 @@ import javax.inject.Inject;
 
 import org.xwiki.bridge.DocumentAccessBridge;
 import org.xwiki.contrib.replication.AbstractReplicationSenderMessage;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.model.reference.AbstractLocalizedEntityReference;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.user.UserReferenceSerializer;
@@ -36,45 +37,8 @@ import org.xwiki.user.UserReferenceSerializer;
  * @version $Id$
  */
 public abstract class AbstractEntityReplicationMessage<E extends EntityReference>
-    extends AbstractReplicationSenderMessage
+    extends AbstractReplicationSenderMessage implements EntityReplicationMessage
 {
-    /**
-     * The type of message supported by this receiver.
-     */
-    public static final String TYPE_PREFIX = "entity_";
-
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    public static final String METADATA_PREFIX = TYPE_PREFIX.toUpperCase();
-
-    /**
-     * The name of the metadata containing the reference of the entity in the message.
-     */
-    public static final String METADATA_REFERENCE = METADATA_PREFIX + "REFERENCE";
-
-    /**
-     * The name of the metadata containing the locale of the entity in the message.
-     */
-    public static final String METADATA_LOCALE = METADATA_PREFIX + "LOCALE";
-
-    /**
-     * The name of the metadata containing the reference of the user in the context.
-     */
-    public static final String METADATA_CONTEXT_USER = METADATA_PREFIX + "CONTEXT_USER";
-
-    /**
-     * The name of the metadata containing the creator of the document.
-     */
-    public static final String METADATA_CREATOR = METADATA_PREFIX + "CREATOR";
-
-    /**
-     * The name of the metadata used to group various types of messages for recovering needs.
-     * 
-     * @since 1.1
-     */
-    public static final String METADATA_RECOVER_TYPE = METADATA_PREFIX + "RECOVER_TYPE";
-
     @Inject
     protected UserReferenceSerializer<String> userReferenceSerializer;
 
@@ -101,14 +65,14 @@ public abstract class AbstractEntityReplicationMessage<E extends EntityReference
         }
 
         // Make sure to use the EntityReference converter (otherwise it won't unserialize to the right type)
-        putCustomMetadata(METADATA_REFERENCE, entityReference.getClass() == EntityReference.class ? entityReference
-            : new EntityReference(entityReference));
+        putCustomMetadata(METADATA_ENTITY_REFERENCE, entityReference.getClass() == EntityReference.class
+            ? entityReference : new EntityReference(entityReference));
 
         if (entityReference instanceof AbstractLocalizedEntityReference) {
-            putCustomMetadata(METADATA_LOCALE, ((AbstractLocalizedEntityReference) entityReference).getLocale());
+            putCustomMetadata(METADATA_ENTITY_LOCALE, ((AbstractLocalizedEntityReference) entityReference).getLocale());
         }
 
-        putCustomMetadata(METADATA_CONTEXT_USER, this.documentAccessBridge.getCurrentUserReference());
+        putCustomMetadata(METADATA_ENTITY_CONTEXT_USER, this.documentAccessBridge.getCurrentUserReference());
 
         this.receivers = receivers != null ? Collections.unmodifiableCollection(receivers) : null;
     }
