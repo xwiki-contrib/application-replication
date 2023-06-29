@@ -32,10 +32,10 @@
     </id>
     <property name="owner" column="XWRD_OWNER" type="string" length="768" not-null="true" />
     <property name="conflict" type="boolean">
-      <column name="XWRD_CONFLICT" not-null="true" default="false" />
+      <column name="XWRD_CONFLICT" not-null="true" default="0" />
     </property>
     <property name="readonly" type="boolean">
-      <column name="XWRD_READONLY" not-null="true" default="false" />
+      <column name="XWRD_READONLY" not-null="true" default="0" />
     </property>
   </class>
 </hibernate-mapping>
