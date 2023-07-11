@@ -159,14 +159,23 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
         // matter the taken routes
         String id = UUID.randomUUID().toString();
 
-        // The message to send to instances allowed to receive full document and send it back
-        sendDocument(messageProducer, id, DocumentReplicationLevel.ALL, true, minimumLevel, metadata, configurations);
+        if (minimumLevel == DocumentReplicationLevel.REFERENCE) {
+            // If the minimum requirement is REFERENCE then, we don't really care about really
+            // The message to send to instances allowed to receive full document
+            sendDocument(messageProducer, id, DocumentReplicationLevel.ALL, null, minimumLevel, metadata,
+                configurations);
+        } else {
+            // The message to send to instances allowed to receive full document and send it back
+            sendDocument(messageProducer, id, DocumentReplicationLevel.ALL, true, minimumLevel, metadata,
+                configurations);
 
-        // The message to send to instances allowed to receive full document but not to send it back
-        sendDocument(messageProducer, id, DocumentReplicationLevel.ALL, false, minimumLevel, metadata, configurations);
+            // The message to send to instances allowed to receive full document but not to send it back
+            sendDocument(messageProducer, id, DocumentReplicationLevel.ALL, false, minimumLevel, metadata,
+                configurations);
+        }
 
         // The message to send to instances allowed to receive only the reference
-        sendDocument(messageProducer, id, DocumentReplicationLevel.REFERENCE, true, minimumLevel, metadata,
+        sendDocument(messageProducer, id, DocumentReplicationLevel.REFERENCE, null, minimumLevel, metadata,
             configurations);
     }
 
