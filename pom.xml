@@ -117,18 +117,29 @@
               </differences>
             </revapi.differences>
             -->
-              <revapi.differences>
-                <justification>Yound API which does not make sense anymore</justification>
-                <criticality>highlight</criticality>
-                <differences>
-                  <item>
-                    <ignore>true</ignore>
-                    <code>java.method.removed</code>
-                    <old>method void org.xwiki.contrib.replication.entity.EntityReplication::updateDocumentReadonly(org.xwiki.model.reference.DocumentReference) throws org.xwiki.contrib.replication.ReplicationException</old>
-                  </item>
-                </differences>
-              </revapi.differences>
-            </analysisConfiguration>
+            <revapi.differences>
+              <justification>Yound API which does not make sense anymore</justification>
+              <criticality>highlight</criticality>
+              <differences>
+                <item>
+                  <ignore>true</ignore>
+                  <code>java.method.removed</code>
+                  <old>method void org.xwiki.contrib.replication.entity.EntityReplication::updateDocumentReadonly(org.xwiki.model.reference.DocumentReference) throws org.xwiki.contrib.replication.ReplicationException</old>
+                </item>
+              </differences>
+            </revapi.differences>
+            <revapi.differences>
+              <justification>New API in interfaces very unlikelly to be implemented</justification>
+              <criticality>highlight</criticality>
+              <differences>
+                <item>
+                  <ignore>true</ignore>
+                  <code>java.method.addedToInterface</code>
+                  <new>method void org.xwiki.contrib.replication.entity.DocumentReplicationSender::sendDocument(org.xwiki.contrib.replication.entity.EntityReplicationSenderMessageProducer, org.xwiki.model.reference.EntityReference, org.xwiki.contrib.replication.entity.DocumentReplicationLevel, java.util.Collection&lt;java.lang.String&gt;, java.util.Map&lt;java.lang.String, java.util.Collection&lt;java.lang.String&gt;&gt;, java.util.Collection&lt;org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance&gt;) throws org.xwiki.contrib.replication.ReplicationException</new>
+                </item>
+              </differences>
+            </revapi.differences>
+          </analysisConfiguration>
         </configuration>
       </plugin>
     </plugins>

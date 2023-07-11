@@ -49,9 +49,9 @@ public interface DocumentReplicationSender
 
     /**
      * @param messageProducer called to generate the message to send
-     * @param receivers the instances which are supposed to handler the message
      * @param entityReference the reference of the document to send
      * @param minimumLevel the minimum level required from an instance configuration to receive the document
+     * @param receivers the instances which are supposed to handler the message
      * @param configurations the replication configuration to follow or null if it should be asked to the controller
      * @param metadata custom metadata to add to the message
      * @throws ReplicationException when failing to send the document
@@ -63,6 +63,20 @@ public interface DocumentReplicationSender
     {
         send(messageProducer, entityReference, minimumLevel, metadata, configurations);
     }
+
+    /**
+     * @param messageProducer called to generate the message to send
+     * @param entityReference the reference of the document to send
+     * @param minimumLevel the minimum level required from an instance configuration to receive the entity
+     * @param receivers the instances which are supposed to handler the message
+     * @param configurations the replication configuration to follow or null if it should be asked to the controller
+     * @param metadata custom metadata to add to the message
+     * @throws ReplicationException when failing to send the document
+     * @since 1.13.0
+     */
+    void sendDocument(EntityReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
+        DocumentReplicationLevel minimumLevel, Collection<String> receivers, Map<String, Collection<String>> metadata,
+        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException;
 
     /**
      * @param documentReference the reference of the document to send

@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
-import org.xwiki.model.reference.DocumentReference;
-import org.xwiki.user.UserReference;
+
+import com.xpn.xwiki.doc.XWikiDocument;
 
 /**
  * @version $Id$
@@ -42,18 +42,18 @@ public class DocumentRepairReplicationMessage extends DocumentUpdateReplicationM
     /**
      * Initialize a message for a complete replication.
      * 
-     * @param documentReference the reference of the document affected by this message
-     * @param version the version of the document
-     * @param creator the user who created the document
+     * @param id the identifier of the message
+     * @param document the document affected by this message
+     * @param readonly true if the document update is readonly
      * @param authors the users involved in the conflict
      * @param receivers the instances which are supposed to handler the message
      * @param metadata custom metadata to add to the message
-     * @since 1.1
+     * @since 1.13.0
      */
-    public void initializeRepair(DocumentReference documentReference, String version, UserReference creator,
-        Collection<String> authors, Collection<String> receivers, Map<String, Collection<String>> metadata)
+    public void initializeRepair(String id, XWikiDocument document, boolean readonly, Collection<String> authors,
+        Collection<String> receivers, Map<String, Collection<String>> metadata)
     {
-        initialize(documentReference, version, true, creator, receivers, metadata);
+        initialize(id, document, readonly, true, receivers, metadata);
 
         putCustomMetadata(METADATA_DOCUMENT_REPAIR_AUTHORS, authors);
     }

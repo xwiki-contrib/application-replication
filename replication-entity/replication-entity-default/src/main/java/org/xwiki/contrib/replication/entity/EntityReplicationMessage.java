@@ -70,12 +70,12 @@ public interface EntityReplicationMessage extends ReplicationMessage
     String VALUE_DOCUMENT_RECOVER_TYPE = PREFIX_TYPE_ENTITY + "document";
 
     /**
-     * The message type for these messages.
+     * The message type for document update messages.
      */
     String TYPE_DOCUMENT_UPDATE = PREFIX_TYPE_ENTITY + "update";
 
     /**
-     * The prefix in front of all entity metadata properties.
+     * The prefix in front of all entity metadata related to document update messages.
      */
     String PREFIX_METADATA_DOCUMENT_UPDATE = TYPE_DOCUMENT_UPDATE.toUpperCase() + '_';
 
@@ -93,6 +93,11 @@ public interface EntityReplicationMessage extends ReplicationMessage
      * The name of the metadata containing the version of the entity in the message.
      */
     String METADATA_DOCUMENT_UPDATE_VERSION = PREFIX_METADATA_DOCUMENT_UPDATE + "VERSION";
+
+    /**
+     * The name of the metadata indicating of the document update is readonly.
+     */
+    String METADATA_DOCUMENT_UPDATE_READONLY = PREFIX_METADATA_DOCUMENT_UPDATE + "READONLY";
 
     /**
      * The message type for these messages.

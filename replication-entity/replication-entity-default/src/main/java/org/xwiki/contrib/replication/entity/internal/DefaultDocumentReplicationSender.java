@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -43,6 +44,7 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
 import org.xwiki.contrib.replication.entity.EntityReplication;
+import org.xwiki.contrib.replication.entity.EntityReplicationSenderMessageProducer;
 import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
 import org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage;
@@ -128,14 +130,64 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
         Map<String, Collection<String>> metadata, Collection<DocumentReplicationControllerInstance> configurations)
         throws ReplicationException
     {
-        send(m -> {
+        sendDocument((id, level, readonly, m) -> {
             DocumentRepairReplicationMessage message = this.repairMessageProvider.get();
 
-            message.initializeRepair(document.getDocumentReferenceWithLocale(), document.getVersion(),
-                document.getAuthors().getCreator(), authors, null, m);
+            message.initializeRepair(id, document, readonly, authors, null, m);
 
             return message;
-        }, document.getDocumentReference(), DocumentReplicationLevel.ALL, metadata, configurations);
+        }, document.getDocumentReference(), DocumentReplicationLevel.ALL, null, metadata, configurations);
+    }
+
+    @Override
+    public void sendDocument(EntityReplicationSenderMessageProducer messageProducer, EntityReference documentReference,
+        DocumentReplicationLevel minimumLevel, Collection<String> receivers, Map<String, Collection<String>> metadata,
+        Collection<DocumentReplicationControllerInstance> inputConfigurations) throws ReplicationException
+    {
+        Collection<DocumentReplicationControllerInstance> configurations = inputConfigurations;
+        if (configurations == null) {
+            configurations = this.controllerProvider.get().getReplicationConfiguration(documentReference, receivers);
+        }
+
+        // No replication configuration
+        if (configurations == null || configurations.isEmpty()) {
+            // No instance to send the message to
+            return;
+        }
+
+        // Use the same ids for all the possible variations of that message so that an instance can only receive one no
+        // matter the taken routes
+        String id = UUID.randomUUID().toString();
+
+        // The message to send to instances allowed to receive full document and send it back
+        sendDocument(messageProducer, id, DocumentReplicationLevel.ALL, true, minimumLevel, metadata, configurations);
+
+        // The message to send to instances allowed to receive full document but not to send it back
+        sendDocument(messageProducer, id, DocumentReplicationLevel.ALL, false, minimumLevel, metadata, configurations);
+
+        // The message to send to instances allowed to receive only the reference
+        sendDocument(messageProducer, id, DocumentReplicationLevel.REFERENCE, true, minimumLevel, metadata,
+            configurations);
+    }
+
+    private void sendDocument(EntityReplicationSenderMessageProducer messageProducer, String id,
+        DocumentReplicationLevel level, Boolean readonly, DocumentReplicationLevel minimumLevel,
+        Map<String, Collection<String>> metadata, Collection<DocumentReplicationControllerInstance> configurations)
+        throws ReplicationException
+    {
+        if (level.ordinal() < minimumLevel.ordinal()) {
+            // We don't want to send any message for this level of replication
+            return;
+        }
+
+        List<ReplicationInstance> instances = getInstances(level, readonly, configurations);
+
+        if (instances.isEmpty()) {
+            // No instance to send the message to
+            return;
+        }
+
+        this.sender.send(messageProducer.produce(id, level, readonly, metadata), instances);
     }
 
     @Override
@@ -162,69 +214,44 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
             return;
         }
 
-        // The message to send to instances allowed to receive full document
-        sendDocument(document, complete, create, receivers, metadata, DocumentReplicationLevel.ALL, minimumLevel,
-            configurations);
+        sendDocument((id, level, readonly, m) -> {
+            ReplicationSenderMessage message;
 
-        // The message to send to instances allowed to receive only the reference
-        sendDocument(document, complete, create, receivers, metadata, DocumentReplicationLevel.REFERENCE, minimumLevel,
-            configurations);
-    }
-
-    private void sendDocument(XWikiDocument document, boolean complete, boolean create, Collection<String> receivers,
-        Map<String, Collection<String>> metadata, DocumentReplicationLevel level, DocumentReplicationLevel minimumLevel,
-        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
-    {
-        if (level.ordinal() < minimumLevel.ordinal()) {
-            // We don't want to send any message for this level of replication
-            return;
-        }
-
-        List<ReplicationInstance> instances = getInstances(level, configurations);
-
-        if (instances.isEmpty()) {
-            // No instance to send the message to
-            return;
-        }
-
-        ReplicationSenderMessage message;
-
-        if (create && document.getLocale().equals(Locale.ROOT)) {
-            // Register as owner of the document the instance which created that document
-            // But only if there is not already a owner (might be a create after a delete)
-            if (this.documentStore.getOwner(document.getDocumentReference()) == null) {
-                this.documentStore.setOwner(document.getDocumentReference(),
-                    this.instanceManager.getCurrentInstance().getURI());
+            if (create && document.getLocale().equals(Locale.ROOT)) {
+                // Register as owner of the document the instance which created that document
+                // But only if there is not already a owner (might be a create after a delete)
+                if (this.documentStore.getOwner(document.getDocumentReference()) == null) {
+                    this.documentStore.setOwner(document.getDocumentReference(),
+                        this.instanceManager.getCurrentInstance().getURI());
+                }
             }
-        }
 
-        if (level == DocumentReplicationLevel.REFERENCE) {
-            // Sending a document place holder
-            message = this.documentReferenceMessageProvider.get();
+            if (level == DocumentReplicationLevel.REFERENCE) {
+                // Sending a document place holder
+                message = this.documentReferenceMessageProvider.get();
 
-            ((DocumentReferenceReplicationMessage) message).initialize(document.getDocumentReferenceWithLocale(),
-                document.getAuthors().getCreator(), receivers, metadata);
-        } else if (create) {
-            // Sending the creation of a new fulldocument
-            message = this.documentCreateMessageProvider.get();
+                ((DocumentReferenceReplicationMessage) message).initialize(id,
+                    document.getDocumentReferenceWithLocale(), document.getAuthors().getCreator(), receivers, m);
+            } else if (create) {
+                // Sending the creation of a new fulldocument
+                message = this.documentCreateMessageProvider.get();
 
-            ((DocumentCreateReplicationMessage) message).initializeComplete(document.getDocumentReferenceWithLocale(),
-                document.getVersion(), document.getAuthors().getCreator(), receivers, metadata);
-        } else {
-            // Sending the update of a document
-            message = this.documentUpdateMessageProvider.get();
-
-            if (complete) {
-                ((DocumentUpdateReplicationMessage) message).initializeComplete(
-                    document.getDocumentReferenceWithLocale(), document.getVersion(),
-                    document.getAuthors().getCreator(), receivers, metadata);
+                ((DocumentCreateReplicationMessage) message).initializeComplete(id, document, readonly, receivers, m);
             } else {
-                ((DocumentUpdateReplicationMessage) message).initializeUpdate(document,
-                    getModifiedAttachments(document), receivers, metadata);
-            }
-        }
+                // Sending the update of a document
+                message = this.documentUpdateMessageProvider.get();
 
-        this.sender.send(message, instances);
+                if (complete) {
+                    ((DocumentUpdateReplicationMessage) message).initializeComplete(id, document, readonly, receivers,
+                        m);
+                } else {
+                    ((DocumentUpdateReplicationMessage) message).initializeUpdate(id, document, readonly,
+                        getModifiedAttachments(document), receivers, m);
+                }
+            }
+
+            return message;
+        }, document.getDocumentReference(), minimumLevel, receivers, metadata, configurations);
     }
 
     @Override
@@ -240,41 +267,8 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
         DocumentReplicationLevel minimumLevel, Collection<String> receivers, Map<String, Collection<String>> metadata,
         Collection<DocumentReplicationControllerInstance> inputConfigurations) throws ReplicationException
     {
-        Collection<DocumentReplicationControllerInstance> configurations = inputConfigurations;
-        if (configurations == null) {
-            configurations = this.controllerProvider.get().getReplicationConfiguration(entityReference, receivers);
-        }
-
-        // No replication configuration
-        if (configurations == null || configurations.isEmpty()) {
-            // No instance to send the message to
-            return;
-        }
-
-        // The message to send to instances allowed to receive full document
-        sendDocument(messageProducer, DocumentReplicationLevel.ALL, minimumLevel, metadata, configurations);
-
-        // The message to send to instances allowed to receive only the reference
-        sendDocument(messageProducer, DocumentReplicationLevel.REFERENCE, minimumLevel, metadata, configurations);
-    }
-
-    private void sendDocument(ReplicationSenderMessageProducer messageProducer, DocumentReplicationLevel level,
-        DocumentReplicationLevel minimumLevel, Map<String, Collection<String>> metadata,
-        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
-    {
-        if (level.ordinal() < minimumLevel.ordinal()) {
-            // We don't want to send any message for this level of replication
-            return;
-        }
-
-        List<ReplicationInstance> instances = getInstances(level, configurations);
-
-        if (instances.isEmpty()) {
-            // No instance to send the message to
-            return;
-        }
-
-        this.sender.send(messageProducer.produce(metadata), instances);
+        sendDocument((id, level, readonly, m) -> messageProducer.produce(m), entityReference, minimumLevel, receivers,
+            metadata, inputConfigurations);
     }
 
     private Set<String> getModifiedAttachments(XWikiDocument document)
@@ -358,11 +352,13 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
         }, documentReference, DocumentReplicationLevel.ALL, metadata, configurations);
     }
 
-    private List<ReplicationInstance> getInstances(DocumentReplicationLevel level,
+    private List<ReplicationInstance> getInstances(DocumentReplicationLevel level, Boolean readonly,
         Collection<DocumentReplicationControllerInstance> configurations)
     {
         return configurations.stream()
-            .filter(c -> c.getLevel() == level && c.getDirection() != DocumentReplicationDirection.RECEIVE_ONLY)
+            .filter(c -> c.getLevel() == level && c.getDirection() != DocumentReplicationDirection.RECEIVE_ONLY
+                && (readonly == null || (readonly ? c.getDirection() == DocumentReplicationDirection.SEND_ONLY
+                    : c.getDirection() == DocumentReplicationDirection.BOTH)))
             .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
     }
 

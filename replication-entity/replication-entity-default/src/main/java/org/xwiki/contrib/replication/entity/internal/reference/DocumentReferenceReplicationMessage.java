@@ -52,16 +52,21 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentDocume
     }
 
     /**
+     * @param id the unique identifier of the message
      * @param documentReference the reference of the document to replicate
      * @param creatorReference the reference of the creator of the document
      * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
-     * @since 1.1
+     * @since 1.13.0
      */
-    public void initialize(DocumentReference documentReference, UserReference creatorReference,
+    public void initialize(String id, DocumentReference documentReference, UserReference creatorReference,
         Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
     {
         super.initialize(documentReference, receivers, extraMetadata);
+
+        if (id != null) {
+            this.id = id;
+        }
 
         putCustomMetadata(METADATA_ENTITY_CREATOR, creatorReference);
     }
@@ -72,12 +77,11 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentDocume
      */
     public void initialize(ReplicationReceiverMessage message) throws InvalidReplicationMessageException
     {
-        initialize(this.documentMessageTool.getDocumentReference(message),
+        initialize(message.getId(), this.documentMessageTool.getDocumentReference(message),
             this.messageReader.getMetadata(message, METADATA_ENTITY_CREATOR, true, UserReference.class),
             message.getReceivers(), message.getCustomMetadata());
 
         // Relay the source information
-        this.id = message.getId();
         this.source = message.getSource();
         this.date = message.getDate();
     }

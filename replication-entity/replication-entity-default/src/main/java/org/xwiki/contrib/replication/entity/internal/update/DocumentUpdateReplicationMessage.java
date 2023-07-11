@@ -37,7 +37,6 @@ import org.xwiki.contrib.replication.entity.internal.EntityReplicationConfigurat
 import org.xwiki.filter.instance.input.DocumentInstanceInputProperties;
 import org.xwiki.filter.output.DefaultOutputStreamOutputTarget;
 import org.xwiki.filter.xar.output.XAROutputProperties;
-import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.user.UserReference;
 
 import com.xpn.xwiki.XWikiContext;
@@ -74,16 +73,18 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     /**
      * Initialize a message for a version replication.
      * 
+     * @param id the unique identifier of the message
      * @param document the the document to send
+     * @param readonly true if the document update is readonly
      * @param attachments the attachments content to send
      * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
+     * @since 1.13.0
      */
-    public void initializeUpdate(XWikiDocument document, Set<String> attachments, Collection<String> receivers,
-        Map<String, Collection<String>> extraMetadata)
+    public void initializeUpdate(String id, XWikiDocument document, boolean readonly, Set<String> attachments,
+        Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
     {
-        initialize(document.getDocumentReferenceWithLocale(), document.getVersion(), false, null, receivers,
-            extraMetadata);
+        initialize(id, document, readonly, false, receivers, extraMetadata);
 
         this.attachments = attachments;
 
@@ -113,42 +114,49 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     /**
      * Initialize a message for a complete replication.
      * 
-     * @param documentReference the reference of the document affected by this message
-     * @param version the version of the document
-     * @param creator the user who created the document
+     * @param id the unique identifier of the message
+     * @param document the document affected by this message
+     * @param readonly true if the document update is readonly
      * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
-     * @since 1.1
+     * @since 1.13.0
      */
-    public void initializeComplete(DocumentReference documentReference, String version, UserReference creator,
-        Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
+    public void initializeComplete(String id, XWikiDocument document, boolean readonly, Collection<String> receivers,
+        Map<String, Collection<String>> extraMetadata)
     {
-        initialize(documentReference, version, true, creator, receivers, extraMetadata);
+        initialize(id, document, readonly, true, receivers, extraMetadata);
     }
 
     /**
      * Initialize a message for a complete replication.
      * 
-     * @param documentReference the reference of the document affected by this message
-     * @param version the version of the document
+     * @param id the unique identifier of the message
+     * @param document the document affected by this message
+     * @param readonly true if the document update is readonly
      * @param complete true if it's a creation
-     * @param creator the user who created the document
      * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
-     * @since 1.1
+     * @since 1.13.0
      */
-    protected void initialize(DocumentReference documentReference, String version, boolean complete,
-        UserReference creator, Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
+    protected void initialize(String id, XWikiDocument document, boolean readonly, boolean complete,
+        Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
     {
-        super.initialize(documentReference, receivers, extraMetadata);
+        super.initialize(document.getDocumentReferenceWithLocale(), receivers, extraMetadata);
+
+        this.id = id;
+
+        if (readonly) {
+            putCustomMetadata(METADATA_DOCUMENT_UPDATE_READONLY, readonly);
+        }
 
         this.complete = complete;
 
-        this.version = version;
+        this.version = document.getVersion();
         putCustomMetadata(METADATA_DOCUMENT_UPDATE_VERSION, this.version);
 
         putCustomMetadata(METADATA_DOCUMENT_UPDATE_COMPLETE, this.complete);
 
+        UserReference creator = document.getAuthors().getCreator();
         if (creator != null) {
             putCustomMetadata(METADATA_ENTITY_CREATOR, creator);
         }
