@@ -183,6 +183,17 @@ public class DocumentReplicationScriptService implements ScriptService
 
     /**
      * @param documentReference the reference of the document
+     * @return true if the document is readonly
+     * @throws ReplicationException when failing to get the owner
+     * @since 1.13.0
+     */
+    public boolean isReadonly(DocumentReference documentReference) throws ReplicationException
+    {
+        return this.entityReplication.isReadonly(documentReference);
+    }
+
+    /**
+     * @param documentReference the reference of the document
      * @return true if the document has a replication conflict
      * @throws ReplicationException when failing to get the owner
      */

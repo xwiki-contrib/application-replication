@@ -81,7 +81,7 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param extraMetadata custom metadata to add to the message
      * @since 1.13.0
      */
-    public void initializeUpdate(String id, XWikiDocument document, boolean readonly, Set<String> attachments,
+    public void initializeUpdate(String id, XWikiDocument document, Boolean readonly, Set<String> attachments,
         Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
     {
         initialize(id, document, readonly, false, receivers, extraMetadata);
@@ -121,7 +121,7 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param extraMetadata custom metadata to add to the message
      * @since 1.13.0
      */
-    public void initializeComplete(String id, XWikiDocument document, boolean readonly, Collection<String> receivers,
+    public void initializeComplete(String id, XWikiDocument document, Boolean readonly, Collection<String> receivers,
         Map<String, Collection<String>> extraMetadata)
     {
         initialize(id, document, readonly, true, receivers, extraMetadata);
@@ -138,14 +138,14 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param extraMetadata custom metadata to add to the message
      * @since 1.13.0
      */
-    protected void initialize(String id, XWikiDocument document, boolean readonly, boolean complete,
+    protected void initialize(String id, XWikiDocument document, Boolean readonly, boolean complete,
         Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
     {
         super.initialize(document.getDocumentReferenceWithLocale(), receivers, extraMetadata);
 
         this.id = id;
 
-        if (readonly) {
+        if (readonly == Boolean.TRUE) {
             putCustomMetadata(METADATA_DOCUMENT_UPDATE_READONLY, readonly);
         }
 

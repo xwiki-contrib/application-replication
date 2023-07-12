@@ -51,6 +51,9 @@
         #end
       </dd>
 
+      <dt>$escapetool.xml($services.localization.render("replication.entity.docextra.readonly"))</dt>
+      <dd data-key="readonly">$services.replication.document.isReadonly($doc.documentReference)</dd>
+
       <dt>$escapetool.xml($services.localization.render("replication.entity.docextra.instances"))</dt>
       <dd><dl>
       #foreach($resolvedInstance in $resolvedInstances)

@@ -134,6 +134,18 @@ public class DefaultReplicationReceiverMessage extends AbstractReplicationMessag
         }
 
         /**
+         * @param key the name of the metadata
+         * @param value the value of the metadata
+         * @return this builder
+         */
+        public Builder customMetadata(String key, Collection<String> value)
+        {
+            this.message.modifiableMetadata.put(key, value);
+
+            return this;
+        }
+
+        /**
          * @param data custom metadata to associate with the message
          * @return this builder
          */
@@ -148,7 +160,7 @@ public class DefaultReplicationReceiverMessage extends AbstractReplicationMessag
          * @param message the message to copy
          * @return this builder
          */
-        public Builder message(ReplicationMessage message)
+        public Builder message(ReplicationReceiverMessage message)
         {
             id(message.getId());
             date(message.getDate());
@@ -156,6 +168,7 @@ public class DefaultReplicationReceiverMessage extends AbstractReplicationMessag
             source(message.getSource());
             receivers(message.getReceivers());
             customMetadata(message.getCustomMetadata());
+            data(new ReplicationReceiverMessageInputSource(message));
 
             return this;
         }
