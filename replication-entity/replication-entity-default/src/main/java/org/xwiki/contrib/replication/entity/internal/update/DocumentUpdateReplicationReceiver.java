@@ -38,6 +38,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
@@ -73,6 +74,9 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     @Inject
     private Provider<DocumentRepairRequestReplicationMessage> repairRequestMessageProvider;
 
+    @Inject
+    private DocumentReplicationUtils replicationUtils;
+
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
@@ -91,6 +95,12 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             completeUpdate(replicationDocument, xcontext);
         } else {
             update(message, documentReference, replicationDocument, xcontext);
+        }
+
+        // Indicate if the document is readonly (it never is when the current instance is the owner)
+        if (this.replicationUtils.isOwner(documentReference)) {
+            this.entityReplication.setReadonly(documentReference, this.messageReader.getMetadata(message,
+                EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY, false, false));
         }
     }
 
