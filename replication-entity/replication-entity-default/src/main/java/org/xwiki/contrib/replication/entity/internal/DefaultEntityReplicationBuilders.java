@@ -215,13 +215,12 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
         return documentCompleteUpdateMessageBuilder(document).owner(this.instanceManager.getCurrentInstance().getURI());
     }
 
-    private EntityReplicationSenderMessageBuilderProducer<DocumentReplicationSenderMessageBuilder> deleteProvider(
-        DocumentReference document)
+    private EntityReplicationSenderMessageBuilderProducer<DocumentReplicationSenderMessageBuilder> deleteProvider()
     {
         return (builder, level, readonly, extraMetadata) -> {
             DocumentDeleteReplicationMessage message = this.documentDeleteMessageProvider.get();
 
-            message.initialize(document, builder.getReceivers(), extraMetadata);
+            message.initialize(builder, extraMetadata);
 
             return message;
         };
@@ -231,15 +230,14 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
     public DocumentReplicationSenderMessageBuilder documentDeleteMessageBuilder(DocumentReference document)
         throws ReplicationException
     {
-        return documentMessageBuilder(deleteProvider(document), document).minimumLevel(DocumentReplicationLevel.REFERENCE);
+        return documentMessageBuilder(deleteProvider(), document).minimumLevel(DocumentReplicationLevel.REFERENCE);
     }
 
     @Override
     public DocumentReplicationSenderMessageBuilder documentDeleteMessageBuilder(XWikiDocument document)
         throws ReplicationException
     {
-        return documentMessageBuilder(deleteProvider(document.getDocumentReferenceWithLocale()), document)
-            .minimumLevel(DocumentReplicationLevel.REFERENCE);
+        return documentMessageBuilder(deleteProvider(), document).minimumLevel(DocumentReplicationLevel.REFERENCE);
     }
 
     @Override
@@ -256,8 +254,8 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
     }
 
     @Override
-    public DocumentReplicationSenderMessageBuilder documentHistoryMessageBuilder(XWikiDocument document, String from, String to)
-        throws ReplicationException
+    public DocumentReplicationSenderMessageBuilder documentHistoryMessageBuilder(XWikiDocument document, String from,
+        String to) throws ReplicationException
     {
         return documentMessageBuilder((builder, level, readonly, extraMetadata) -> {
             DocumentHistoryDeleteReplicationMessage message = this.historyMessageProvider.get();
@@ -269,8 +267,8 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
     }
 
     @Override
-    public DocumentReplicationSenderMessageBuilder documentConflictUpdateMessageBuilder(DocumentReference documentReference)
-        throws ReplicationException
+    public DocumentReplicationSenderMessageBuilder documentConflictUpdateMessageBuilder(
+        DocumentReference documentReference) throws ReplicationException
     {
         return this.documentMessageBuilder((builder, level, readonly, extraMetadata) -> {
             DocumentReplicationConflictMessage message = this.conflictMessageProvider.get();
@@ -282,8 +280,8 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
     }
 
     @Override
-    public DocumentReplicationSenderMessageBuilder documentRepairRequestMessageBuilder(DocumentReference documentReference,
-        boolean sourceOnly) throws ReplicationException
+    public DocumentReplicationSenderMessageBuilder documentRepairRequestMessageBuilder(
+        DocumentReference documentReference, boolean sourceOnly) throws ReplicationException
     {
         return this.documentMessageBuilder((builder, level, readonly, extraMetadata) -> {
             DocumentRepairRequestReplicationMessage message = this.repairRequestMessageProvider.get();

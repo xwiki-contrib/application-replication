@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.entity.internal.controller;
 
+import java.util.Collection;
 import java.util.List;
 
 import javax.inject.Named;
@@ -119,13 +120,20 @@ public class MinimumDocumentReplicationController implements DocumentReplication
 
     @Override
     public void send(EntityReplicationSenderMessageBuilder messageBuilder,
-        List<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
+        Collection<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
     {
         // Do nothing
     }
 
     @Override
     public void sendDocument(DocumentReference documentReference) throws ReplicationException
+    {
+        // Do nothing
+    }
+
+    @Override
+    public void sendDocument(DocumentReference documentReference,
+        Collection<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
     {
         // Do nothing
     }

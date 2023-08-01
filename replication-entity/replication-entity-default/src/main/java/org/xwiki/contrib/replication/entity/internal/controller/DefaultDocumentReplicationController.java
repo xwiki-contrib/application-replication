@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.entity.internal.controller;
 
+import java.util.Collection;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -152,7 +153,7 @@ public class DefaultDocumentReplicationController implements DocumentReplication
 
     @Override
     public void send(EntityReplicationSenderMessageBuilder messageBuilder,
-        List<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
+        Collection<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
     {
         getController(messageBuilder).send(messageBuilder, customConfigurations);
     }
@@ -161,5 +162,12 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     public void sendDocument(DocumentReference documentReference) throws ReplicationException
     {
         getController(documentReference).sendDocument(documentReference);
+    }
+
+    @Override
+    public void sendDocument(DocumentReference documentReference,
+        Collection<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
+    {
+        getController(documentReference).sendDocument(documentReference, customConfigurations);
     }
 }

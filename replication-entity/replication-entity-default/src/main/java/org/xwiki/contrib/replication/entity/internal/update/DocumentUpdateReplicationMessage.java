@@ -32,7 +32,9 @@ import javax.inject.Provider;
 
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
+import org.xwiki.contrib.replication.entity.EntityReplication;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationConfiguration;
 import org.xwiki.filter.instance.input.DocumentInstanceInputProperties;
@@ -63,6 +65,9 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     private EntityReplicationConfiguration configuration;
 
     @Inject
+    private EntityReplication entityReplication;
+
+    @Inject
     private Logger logger;
 
     private String version;
@@ -79,10 +84,12 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param readonly true if the document update is readonly
      * @param attachments the attachments content to send
      * @param extraMetadata custom metadata to add to the message
+     * @throws ReplicationException when failing to create the message
      * @since 2.0.0
      */
     public void initializePartial(DocumentReplicationSenderMessageBuilder builder, XWikiDocument document,
         Boolean readonly, Set<String> attachments, Map<String, Collection<String>> extraMetadata)
+        throws ReplicationException
     {
         initialize(builder, document, readonly, false, extraMetadata);
 
@@ -117,10 +124,11 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param document the document affected by this message
      * @param readonly true if the document update is readonly
      * @param extraMetadata custom metadata to add to the message
+     * @throws ReplicationException when failing to create the message
      * @since 2.0.0
      */
     public void initializeComplete(DocumentReplicationSenderMessageBuilder builder, XWikiDocument document,
-        Boolean readonly, Map<String, Collection<String>> extraMetadata)
+        Boolean readonly, Map<String, Collection<String>> extraMetadata) throws ReplicationException
     {
         initialize(builder, document, readonly, true, extraMetadata);
     }
@@ -133,10 +141,11 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param readonly true if the document update is readonly
      * @param complete true if it's a creation
      * @param extraMetadata custom metadata to add to the message
+     * @throws ReplicationException when failing to create the message
      * @since 2.0.0
      */
     protected void initialize(DocumentReplicationSenderMessageBuilder builder, XWikiDocument document, Boolean readonly,
-        boolean complete, Map<String, Collection<String>> extraMetadata)
+        boolean complete, Map<String, Collection<String>> extraMetadata) throws ReplicationException
     {
         super.initialize(builder, extraMetadata);
 
@@ -155,6 +164,10 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
         if (creator != null) {
             putCustomMetadata(METADATA_ENTITY_CREATOR, creator);
         }
+
+        // Owner
+        putCustomMetadata(METADATA_DOCUMENT_UPDATE_OWNER,
+            this.entityReplication.getOwner(builder.getDocumentReference()));
     }
 
     @Override

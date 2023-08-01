@@ -158,25 +158,25 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
     @Override
     public void onDocumentCreated(XWikiDocument document) throws ReplicationException
     {
-        send(this.builders.documentCreateMessageBuilder(document), null);
+        send(this.builders.documentCreateMessageBuilder(document));
     }
 
     @Override
     public void onDocumentUpdated(XWikiDocument document) throws ReplicationException
     {
-        send(this.builders.documentPartialUpdateMessageBuilder(document), null);
+        send(this.builders.documentPartialUpdateMessageBuilder(document));
     }
 
     @Override
     public void onDocumentDeleted(XWikiDocument document) throws ReplicationException
     {
-        send(this.builders.documentDeleteMessageBuilder(document), null);
+        send(this.builders.documentDeleteMessageBuilder(document));
     }
 
     @Override
     public void onDocumentHistoryDelete(XWikiDocument document, String from, String to) throws ReplicationException
     {
-        send(this.builders.documentHistoryMessageBuilder(document, from, to), null);
+        send(this.builders.documentHistoryMessageBuilder(document, from, to));
     }
 
     @Override
@@ -187,7 +187,7 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
 
     @Override
     public void send(EntityReplicationSenderMessageBuilder messageBuilder,
-        List<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
+        Collection<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
     {
         XWikiDocument document = messageBuilder instanceof DocumentReplicationSenderMessageBuilder
             ? ((DocumentReplicationSenderMessageBuilder) messageBuilder).getDocument() : null;
@@ -200,7 +200,7 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
         } else {
             // Get the replication configurations
             Collection<DocumentReplicationControllerInstance> configurations = customConfigurations;
-            if (customConfigurations == null) {
+            if (configurations == null) {
                 if (document != null) {
                     configurations = getReplicationConfiguration(document, messageBuilder.getReceivers());
                 } else {
@@ -266,6 +266,13 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
     public void sendDocument(DocumentReference documentReference) throws ReplicationException
     {
         send(this.builders.documentMessageBuilder(documentReference));
+    }
+
+    @Override
+    public void sendDocument(DocumentReference documentReference,
+        Collection<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
+    {
+        send(this.builders.documentMessageBuilder(documentReference), customConfigurations);
     }
 
     @Override

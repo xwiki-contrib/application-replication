@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication.entity;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.xwiki.component.annotation.Role;
@@ -128,7 +129,7 @@ public interface DocumentReplicationController
      * @since 2.0.0
      */
     void send(EntityReplicationSenderMessageBuilder messageBuilder,
-        List<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException;
+        Collection<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException;
 
     /**
      * Force sending to configured instances the current status of the document.
@@ -138,6 +139,18 @@ public interface DocumentReplicationController
      * @since 2.0.0
      */
     void sendDocument(DocumentReference documentReference) throws ReplicationException;
+
+    /**
+     * Force sending to configured instances the current status of the document.
+     * 
+     * @param documentReference the reference of the document
+     * @param customConfigurations optional custom replication configuration to use instead of the configured ones for
+     *            the document
+     * @throws ReplicationException when failing to send the document
+     * @since 2.0.0
+     */
+    void sendDocument(DocumentReference documentReference,
+        Collection<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException;
 
     // Receiver
 

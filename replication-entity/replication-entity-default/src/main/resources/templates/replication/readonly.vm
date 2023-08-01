@@ -18,7 +18,7 @@
 ## 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 ## ---------------------------------------------------------------------------
 #if ($services.replication.document.isReadonly($tdoc.documentReferenceWithLocale))
-  <div class="box warningmessage" id="replication_conflict">
+  <div class="box warningmessage" id="replication_readonly">
     $escapetool.xml($services.localization.render("replication.entity.readonly.message"))
   </div>
 #end
