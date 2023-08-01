@@ -38,7 +38,7 @@ import org.xwiki.model.reference.DocumentReference;
  * Base class for all standard message filters.
  * 
  * @version $Id$
- * @since 1.13.0
+ * @since 2.0.0
  */
 public abstract class AbstractDocumentReplicationReceiverMessageFilter
     implements DocumentReplicationReceiverMessageFilter
@@ -74,7 +74,7 @@ public abstract class AbstractDocumentReplicationReceiverMessageFilter
      * @return the message to handle/relay
      * @throws InvalidReplicationMessageException when the message format is wrong
      * @throws ReplicationException when failing to filter the message
-     * @since 1.13.0
+     * @since 2.0.0
      */
     protected ReplicationReceiverMessage filter(ReplicationReceiverMessage message, DocumentReference documentReference)
         throws ReplicationException

@@ -1,0 +1,77 @@
+/*
+ * See the NOTICE file distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
+package org.xwiki.contrib.replication.entity.internal;
+
+import java.util.Collection;
+import java.util.Map;
+
+import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
+import org.xwiki.contrib.replication.entity.EntityReplicationSenderMessageBuilderProducer;
+import org.xwiki.model.reference.DocumentReference;
+
+import com.xpn.xwiki.doc.XWikiDocument;
+
+/**
+ * An implementation of {@link DocumentReplicationSenderMessageBuilder} based on a generic
+ * {@link EntityReplicationSenderMessageBuilderProducer}.
+ * 
+ * @version $Id$
+ * @since 2.0.0
+ */
+public class ProducerDocumentReplicationSenderMessageBuilder extends AbstractDocumentReplicationSenderMessageBuilder
+{
+    private final EntityReplicationSenderMessageBuilderProducer<DocumentReplicationSenderMessageBuilder> producer;
+
+    /**
+     * @param messageProducer produce the message
+     * @param documentReference the reference of the existing document for which to send a message
+     */
+    public ProducerDocumentReplicationSenderMessageBuilder(
+        EntityReplicationSenderMessageBuilderProducer<DocumentReplicationSenderMessageBuilder> messageProducer,
+        DocumentReference documentReference)
+    {
+        super(documentReference);
+
+        this.producer = messageProducer;
+    }
+
+    /**
+     * @param messageProducer produce the message
+     * @param document the document for which to send a message
+     */
+    public ProducerDocumentReplicationSenderMessageBuilder(
+        EntityReplicationSenderMessageBuilderProducer<DocumentReplicationSenderMessageBuilder> messageProducer,
+        XWikiDocument document)
+    {
+        super(document);
+
+        this.producer = messageProducer;
+    }
+
+    @Override
+    public ReplicationSenderMessage build(DocumentReplicationLevel level, Boolean readonly,
+        Map<String, Collection<String>> metadata) throws ReplicationException
+    {
+        return this.producer.produce(this, level, readonly, metadata);
+    }
+}

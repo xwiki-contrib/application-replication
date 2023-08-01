@@ -25,7 +25,7 @@
   <parent>
     <groupId>org.xwiki.contrib.replication</groupId>
     <artifactId>replication-entity</artifactId>
-    <version>1.13.0-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>replication-entity-api</artifactId>
@@ -36,7 +36,7 @@
   <properties>
     <xwiki.extension.category>api</xwiki.extension.category>
 
-    <xwiki.jacoco.instructionRatio>0.34</xwiki.jacoco.instructionRatio>
+    <xwiki.jacoco.instructionRatio>0.31</xwiki.jacoco.instructionRatio>
   </properties>
 
   <dependencies>

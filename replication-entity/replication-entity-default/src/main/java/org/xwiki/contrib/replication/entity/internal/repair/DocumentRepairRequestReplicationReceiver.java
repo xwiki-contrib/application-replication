@@ -17,9 +17,8 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.entity.internal.repairrequest;
+package org.xwiki.contrib.replication.entity.internal.repair;
 
-import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
@@ -31,13 +30,14 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
+import org.xwiki.contrib.replication.entity.EntityReplicationBuilders;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.XWikiContext;
-import com.xpn.xwiki.XWikiException;
-import com.xpn.xwiki.doc.XWikiDocument;
 
 /**
  * @version $Id$
@@ -45,28 +45,38 @@ import com.xpn.xwiki.doc.XWikiDocument;
  */
 @Component
 @Singleton
-@Named(DocumentRepairRequestReplicationMessage.TYPE_DOCUMENT_REPAIRREQUEST)
+@Named(EntityReplicationMessage.TYPE_DOCUMENT_REPAIRREQUEST)
 public class DocumentRepairRequestReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
     @Inject
-    private DocumentReplicationUtils controllerUtils;
+    private DocumentReplicationUtils replicationUtils;
+
+    @Inject
+    private EntityReplicationBuilders builders;
 
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
     {
         // Only the owner is allowed to send repair messages
-        if (this.controllerUtils.isOwner(documentReference)) {
-            // Load the document
-            XWikiDocument document;
-            try {
-                document = xcontext.getWiki().getDocument(documentReference, xcontext);
-            } catch (XWikiException e) {
-                throw new ReplicationException("Failed to load document", e);
+        if (this.replicationUtils.isOwner(documentReference)) {
+            DocumentReplicationSenderMessageBuilder builder = this.builders.documentMessageBuilder(documentReference);
+
+            // Check if it should be a conflict message
+            if (this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_CONFLICT, true,
+                false)) {
+                // As a conflict
+                builder.conflict(true);
             }
 
-            // Send back a repair message
-            this.controller.sendDocumentRepair(document, Collections.singleton(message.getSource()));
+            // Decide where to send the message (everywhere or to the requester only)
+            if (this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_REPAIRREQUEST_SOURCE,
+                true, false)) {
+                builder.receivers(message.getSource());
+            }
+
+            // Send the message
+            this.controller.send(builder);
         }
     }
 
@@ -74,6 +84,6 @@ public class DocumentRepairRequestReplicationReceiver extends AbstractDocumentRe
     public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
         throws ReplicationException
     {
-        return this.documentRelay.relay(message, DocumentReplicationLevel.ALL);
+        return this.documentRelay.relay(message, DocumentReplicationLevel.REFERENCE);
     }
 }

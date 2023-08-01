@@ -32,7 +32,7 @@ import org.xwiki.model.reference.DocumentReference;
 
 /**
  * @version $Id$
- * @since 1.13.0
+ * @since 2.0.0
  */
 @Component
 @Singleton
@@ -43,8 +43,12 @@ public class DocumentReferenceReplicationFilter extends AbstractDocumentReplicat
     protected ReplicationReceiverMessage filter(ReplicationReceiverMessage message, DocumentReference documentReference,
         DocumentReplicationControllerInstance currentConfiguration) throws ReplicationException
     {
-        // It's forbidden to send REFERENCE messages to the owner
         if (this.replicationUtils.isOwner(documentReference)) {
+            // It does not make sense for the owner to receive a REFERENCE message, send back a correction in the hope
+            // to fix any inconsistency in the network
+            this.controller.sendDocument(documentReference);
+
+            // Reject the message
             throw new InvalidReplicationMessageException(
                 "It's forbidden to send REFERENCE messages to the owner instance");
         }

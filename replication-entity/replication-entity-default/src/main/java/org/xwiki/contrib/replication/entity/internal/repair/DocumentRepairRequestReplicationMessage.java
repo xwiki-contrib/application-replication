@@ -19,26 +19,37 @@
  */
 package org.xwiki.contrib.replication.entity.internal.repair;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
+import java.util.Collection;
+import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiverMessageFilter;
+import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
+import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentReplicationMessage;
 
 /**
  * @version $Id$
- * @since 1.13.0
+ * @since 1.5.0
  */
-@Component
-@Singleton
-@Named(DocumentRepairReplicationMessage.TYPE_DOCUMENT_REPAIR)
-public class DocumentRepairReplicationFilter extends AbstractDocumentReplicationReceiverMessageFilter
+@Component(roles = DocumentRepairRequestReplicationMessage.class)
+public class DocumentRepairRequestReplicationMessage extends AbstractNoContentDocumentReplicationMessage
 {
-    /**
-     * Only the owner is allowed to send this type of messages.
-     */
-    public DocumentRepairReplicationFilter()
+    @Override
+    public String getType()
     {
-        this.ownerOnly = true;
+        return TYPE_DOCUMENT_REPAIRREQUEST;
+    }
+
+    /**
+     * @param builder the builder used to produce the message
+     * @param sourceOnly true if the repair should be send back only to the source, false for a network wide repair
+     * @param extraMetadata custom metadata to add to the message
+     * @since 2.0.0
+     */
+    public void initialize(DocumentReplicationSenderMessageBuilder builder, boolean sourceOnly,
+        Map<String, Collection<String>> extraMetadata)
+    {
+        super.initialize(builder, extraMetadata);
+
+        putCustomMetadata(METADATA_DOCUMENT_REPAIRREQUEST_SOURCE, sourceOnly);
     }
 }

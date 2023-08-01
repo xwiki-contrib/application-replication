@@ -26,7 +26,7 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 
 /**
  * @version $Id$
- * @since 1.13.0
+ * @since 2.0.0
  */
 @Role
 public interface DocumentReplicationReceiverMessageFilter
@@ -36,7 +36,7 @@ public interface DocumentReplicationReceiverMessageFilter
      * @return the message to handle/relay
      * @throws InvalidReplicationMessageException when the message format is wrong
      * @throws ReplicationException when failing to filter the message
-     * @since 1.13.0
+     * @since 2.0.0
      */
     ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException;
 }

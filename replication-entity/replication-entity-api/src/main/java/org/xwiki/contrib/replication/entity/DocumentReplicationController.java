@@ -19,8 +19,6 @@
  */
 package org.xwiki.contrib.replication.entity;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.xwiki.component.annotation.Role;
@@ -38,6 +36,8 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Role
 public interface DocumentReplicationController
 {
+    // Configuration
+
     /**
      * Indicate the list of registered instances this document should be replicated to.
      * 
@@ -51,33 +51,13 @@ public interface DocumentReplicationController
     /**
      * Indicate the list of registered instances this document should be replicated to.
      * 
-     * @param entityReference the reference of the entity for which we want to know the replication configuration
-     * @param receivers the instances which are supposed to handler the message
+     * @param document the document for which we want to know the replication configuration
      * @return the registered instances on which to replicate the document
      * @throws ReplicationException when failing to get the configuration
-     * @since 1.1
+     * @since 2.0.0
      */
-    default List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference,
-        Collection<String> receivers) throws ReplicationException
-    {
-        return getReplicationConfiguration(entityReference);
-    }
-
-    /**
-     * Indicate the list of registered instances this document's messages should be relayed to.
-     * 
-     * @param entityReference the reference of the entity for which we want to know the replication configuration in the
-     *            case of a relay
-     * @return the registered instances on which to replicate the document
-     * @throws ReplicationException when failing to get the configuration
-     * @deprecated use {@link #getRelayConfiguration(ReplicationReceiverMessage)} instead
-     */
-    @Deprecated(since = "1.6.0")
-    default List<DocumentReplicationControllerInstance> getRelayConfiguration(EntityReference entityReference)
-        throws ReplicationException
-    {
-        return Collections.emptyList();
-    }
+    List<DocumentReplicationControllerInstance> getReplicationConfiguration(XWikiDocument document)
+        throws ReplicationException;
 
     /**
      * Indicate the list of registered instances this messages should be relayed to.
@@ -87,11 +67,8 @@ public interface DocumentReplicationController
      * @throws ReplicationException when failing to get the configuration
      * @since 1.6.0
      */
-    default List<DocumentReplicationControllerInstance> getRelayConfiguration(ReplicationReceiverMessage message)
-        throws ReplicationException
-    {
-        return Collections.emptyList();
-    }
+    List<DocumentReplicationControllerInstance> getRelayConfiguration(ReplicationReceiverMessage message)
+        throws ReplicationException;
 
     /**
      * Indicate the replication configuration associated with this received message.
@@ -99,13 +76,12 @@ public interface DocumentReplicationController
      * @param message the message to relay
      * @return the registered instances on which to replicate the document
      * @throws ReplicationException when failing to get the configuration
-     * @since 1.13.0
+     * @since 2.0.0
      */
-    default DocumentReplicationControllerInstance getReceiveConfiguration(ReplicationReceiverMessage message)
-        throws ReplicationException
-    {
-        return null;
-    }
+    DocumentReplicationControllerInstance getReceiveConfiguration(ReplicationReceiverMessage message)
+        throws ReplicationException;
+
+    // Events
 
     /**
      * @param document the created document
@@ -133,63 +109,41 @@ public interface DocumentReplicationController
      */
     void onDocumentHistoryDelete(XWikiDocument document, String from, String to) throws ReplicationException;
 
-    /**
-     * @param messageProducer called to generate the message to send
-     * @param entityReference the entity associated with the message
-     * @param minimumLevel the minimum level required from an instance configuration to receive the document
-     * @throws ReplicationException when failing to send the message
-     */
-    void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
-        DocumentReplicationLevel minimumLevel) throws ReplicationException;
+    // Send
 
     /**
-     * @param messageProducer called to generate the message to send
-     * @param entityReference the entity associated with the message
-     * @param minimumLevel the minimum level required from an instance configuration to receive the document
-     * @param receivers the instances which are supposed to handler the message
+     * @param messageBuilder the instance in charge of provide various document related information about the message
+     *            and eventually produce it
      * @throws ReplicationException when failing to send the message
-     * @since 1.1
+     * @since 2.0.0
      */
-    default void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
-        DocumentReplicationLevel minimumLevel, Collection<String> receivers) throws ReplicationException
-    {
-        send(messageProducer, entityReference, minimumLevel);
-    }
+    void send(EntityReplicationSenderMessageBuilder messageBuilder) throws ReplicationException;
 
     /**
-     * Force replicate the complete current state of the document to configured instances.
+     * @param messageBuilder the instance in charge of provide various document related information about the message
+     *            and eventually produce it
+     * @param customConfigurations optional custom replication configuration to use instead of the configured ones for
+     *            the document
+     * @throws ReplicationException when failing to send the message
+     * @since 2.0.0
+     */
+    void send(EntityReplicationSenderMessageBuilder messageBuilder,
+        List<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException;
+
+    /**
+     * Force sending to configured instances the current status of the document.
      * 
      * @param documentReference the reference of the document
-     * @param receivers the instances which are supposed to handler the message
-     * @throws ReplicationException when failing to replicate the document
-     * @since 1.1
+     * @throws ReplicationException when failing to send the document
+     * @since 2.0.0
      */
-    default void replicateDocument(DocumentReference documentReference, Collection<String> receivers)
-        throws ReplicationException
-    {
+    void sendDocument(DocumentReference documentReference) throws ReplicationException;
 
-    }
+    // Receiver
 
     /**
-     * Force pushing a complete document to allowed instances.
-     * 
-     * @param document the document to send
-     * @throws ReplicationException when failing to replicate the document
-     * @see #replicateDocument(DocumentReference, Collection)
-     */
-    void sendCompleteDocument(XWikiDocument document) throws ReplicationException;
-
-    /**
-     * Force pushing a complete document to allowed instances.
-     * 
-     * @param document the document to send
-     * @param authors the users involved in the conflict
-     * @throws ReplicationException when failing to replicate the document
-     */
-    void sendDocumentRepair(XWikiDocument document, Collection<String> authors) throws ReplicationException;
-
-    /**
-     * Give a chance to the controller to modify the document created for REFERENCE level replication before it's saved.
+     * SolrInputDocument Give a chance to the controller to modify the document created for REFERENCE level replication
+     * before it's saved.
      * 
      * @param document the document to modify
      * @param message the received message
@@ -204,10 +158,7 @@ public interface DocumentReplicationController
      * @return the message to handle/relay
      * @throws InvalidReplicationMessageException when the message format is wrong
      * @throws ReplicationException when failing to filter the message
-     * @since 1.13.0
+     * @since 2.0.0
      */
-    default ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException
-    {
-        return message;
-    }
+    ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException;
 }

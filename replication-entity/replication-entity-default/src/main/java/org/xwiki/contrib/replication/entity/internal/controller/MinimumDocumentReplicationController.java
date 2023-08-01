@@ -19,7 +19,6 @@
  */
 package org.xwiki.contrib.replication.entity.internal.controller;
 
-import java.util.Collection;
 import java.util.List;
 
 import javax.inject.Named;
@@ -30,8 +29,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
-import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
+import org.xwiki.contrib.replication.entity.EntityReplicationSenderMessageBuilder;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
@@ -56,17 +54,24 @@ public class MinimumDocumentReplicationController implements DocumentReplication
     }
 
     @Override
-    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference,
-        Collection<String> receivers) throws ReplicationException
+    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(XWikiDocument document)
+        throws ReplicationException
     {
         return List.of();
     }
 
     @Override
-    public List<DocumentReplicationControllerInstance> getRelayConfiguration(EntityReference entityReference)
+    public List<DocumentReplicationControllerInstance> getRelayConfiguration(ReplicationReceiverMessage message)
         throws ReplicationException
     {
         return List.of();
+    }
+
+    @Override
+    public DocumentReplicationControllerInstance getReceiveConfiguration(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        return null;
     }
 
     @Override
@@ -94,39 +99,6 @@ public class MinimumDocumentReplicationController implements DocumentReplication
     }
 
     @Override
-    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
-        DocumentReplicationLevel minimumLevel) throws ReplicationException
-    {
-        // Do nothing
-    }
-
-    @Override
-    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
-        DocumentReplicationLevel minimumLevel, Collection<String> receivers) throws ReplicationException
-    {
-        // Do nothing
-    }
-
-    @Override
-    public void replicateDocument(DocumentReference documentReference, Collection<String> receivers)
-        throws ReplicationException
-    {
-        // Do nothing
-    }
-
-    @Override
-    public void sendCompleteDocument(XWikiDocument document) throws ReplicationException
-    {
-        // Do nothing
-    }
-
-    @Override
-    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors) throws ReplicationException
-    {
-        // Do nothing
-    }
-
-    @Override
     public boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message)
         throws ReplicationException
     {
@@ -137,5 +109,24 @@ public class MinimumDocumentReplicationController implements DocumentReplication
     public ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException
     {
         return message;
+    }
+
+    @Override
+    public void send(EntityReplicationSenderMessageBuilder messageBuilder) throws ReplicationException
+    {
+        // Do nothing
+    }
+
+    @Override
+    public void send(EntityReplicationSenderMessageBuilder messageBuilder,
+        List<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
+    {
+        // Do nothing
+    }
+
+    @Override
+    public void sendDocument(DocumentReference documentReference) throws ReplicationException
+    {
+        // Do nothing
     }
 }

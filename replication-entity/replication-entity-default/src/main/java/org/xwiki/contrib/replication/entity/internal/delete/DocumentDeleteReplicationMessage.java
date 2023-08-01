@@ -25,8 +25,8 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
 import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentReplicationMessage;
-import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.refactoring.batch.BatchOperationExecutor;
 
 /**
@@ -45,10 +45,10 @@ public class DocumentDeleteReplicationMessage extends AbstractNoContentDocumentR
     }
 
     @Override
-    public void initialize(DocumentReference documentReference, Collection<String> receivers,
+    public void initialize(DocumentReplicationSenderMessageBuilder builder,
         Map<String, Collection<String>> extraMetadata)
     {
-        super.initialize(documentReference, receivers, extraMetadata);
+        super.initialize(builder.getDocumentReference(), builder.getReceivers(), extraMetadata);
 
         putCustomMetadata(METADATA_DOCUMENT_DELETE_BATCH, this.batchOperation.getCurrentBatchId());
     }

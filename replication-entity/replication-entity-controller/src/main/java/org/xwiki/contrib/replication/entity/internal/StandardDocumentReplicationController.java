@@ -37,6 +37,7 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstanc
 import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.XWikiException;
+import com.xpn.xwiki.doc.XWikiDocument;
 
 /**
  * Default implementation of {@link DocumentReplicationController}.
@@ -59,11 +60,10 @@ public class StandardDocumentReplicationController extends AbstractDocumentRepli
     }
 
     @Override
-    @Deprecated(since = "1.6.0")
-    public List<DocumentReplicationControllerInstance> getRelayConfiguration(EntityReference entityReference)
+    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(XWikiDocument document)
         throws ReplicationException
     {
-        return getConfiguration(entityReference, true);
+        return getReplicationConfiguration(document.getDocumentReference());
     }
 
     @Override

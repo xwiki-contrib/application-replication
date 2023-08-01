@@ -299,15 +299,15 @@ public class ReplicationDocumentStore
 
         ReplicationDocumentStoreCacheEntry cacheEntry = this.cache.getEntry(String.valueOf(docId), true);
 
-        if (cacheEntry.getConflict() != null) {
-            return cacheEntry.getConflict();
+        if (cacheEntry.getReadonly() != null) {
+            return cacheEntry.getReadonly();
         }
 
-        boolean conflict = Boolean.TRUE.equals(get(documentReference, docId, PROP_READONLY, Boolean.class));
+        boolean readonly = Boolean.TRUE.equals(get(documentReference, docId, PROP_READONLY, Boolean.class));
 
-        cacheEntry.setReadonly(conflict);
+        cacheEntry.setReadonly(readonly);
 
-        return conflict;
+        return readonly;
     }
 
     private void executeWrite(HibernateCallback<Void> callback, WikiReference wiki) throws ReplicationException

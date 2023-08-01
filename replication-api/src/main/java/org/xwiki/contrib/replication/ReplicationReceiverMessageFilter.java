@@ -25,7 +25,7 @@ import org.xwiki.component.annotation.Role;
  * Give a change to check or convert a receiving message before it's handled/relayed.
  * 
  * @version $Id$
- * @since 1.13.0
+ * @since 2.0.0
  */
 @Role
 public interface ReplicationReceiverMessageFilter

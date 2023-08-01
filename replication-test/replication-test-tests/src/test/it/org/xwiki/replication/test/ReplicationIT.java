@@ -34,6 +34,7 @@ import org.xwiki.contrib.replication.internal.instance.StandardReplicationInstan
 import org.xwiki.contrib.replication.test.po.PageReplicationAdministrationSectionPage;
 import org.xwiki.contrib.replication.test.po.RegisteredInstancePane;
 import org.xwiki.contrib.replication.test.po.ReplicationConflictPane;
+import org.xwiki.contrib.replication.test.po.ReplicationDocExtraPane;
 import org.xwiki.contrib.replication.test.po.ReplicationPage;
 import org.xwiki.contrib.replication.test.po.RequestedInstancePane;
 import org.xwiki.contrib.replication.test.po.RequestingInstancePane;
@@ -65,6 +66,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0_2;
 import static org.xwiki.replication.test.AllITs.INSTANCE_1;
@@ -464,7 +467,7 @@ public class ReplicationIT extends AbstractTest
         receivekey0To1 = registeredInstance.getReceiveKey();
         String sendkey1To0 = registeredInstance.getSendKey();
 
-        // Check if instance0 custom property was shared instance1
+        // Check if instance0 custom property was shared with instance1
         assertEqualsCustomWithTimeout(this.proxyURI0, INSTANCE_CUSTOM_0);
 
         // Link to instance2
@@ -489,7 +492,7 @@ public class ReplicationIT extends AbstractTest
         String receivekey1To0 = registeredInstance.getReceiveKey();
         assertEquals(sendkey1To0, receivekey1To0);
 
-        // Check if instance1 custom property was shared instance0
+        // Check if instance1 custom property was shared with instance0
         assertEqualsCustomWithTimeout(this.proxyURI1, INSTANCE_CUSTOM_1);
 
         // Reset the send key to instance1
@@ -604,23 +607,27 @@ public class ReplicationIT extends AbstractTest
         page.setContent("content");
         getUtil().rest().save(page);
         assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
-        assertEquals("Current instance", gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
+        ReplicationDocExtraPane replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals("Current instance", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
 
         // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
         getUtil().switchExecutor(INSTANCE_1);
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
-        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")",
-            gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
 
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
         getUtil().switchExecutor(INSTANCE_2);
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
-        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")",
-            gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
 
         ////////////////////////////////////
         // Minor edit on XWiki 0
@@ -806,23 +813,27 @@ public class ReplicationIT extends AbstractTest
         page.setContent("content");
         getUtil().rest().save(page);
         assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
-        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")",
-            gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
 
         // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
         getUtil().switchExecutor(INSTANCE_1);
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
-        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")",
-            gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 0
         getUtil().switchExecutor(INSTANCE_0);
         assertEqualsContentWithTimeout(documentReference, "content");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
-        assertEquals("Current instance", gotoPage(documentReference).openReplicationDocExtraPane().getOwner());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals("Current instance", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
     }
 
     private void replicateEmpty() throws Exception
@@ -840,13 +851,16 @@ public class ReplicationIT extends AbstractTest
         // Page creation on XWiki 0
         ////////////////////////////////////
 
-        // Edit a page on XWiki 0
+        // Create a page on XWiki 0
         getUtil().switchExecutor(INSTANCE_0);
         page.setContent("content");
         getUtil().rest().save(page);
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("content", page.getContent());
         assertEquals("1.1", page.getVersion());
+        ReplicationDocExtraPane replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals("Current instance", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
 
         // ASSERT) The page should exist but be empty on XWiki 1
         getUtil().switchExecutor(INSTANCE_1);
@@ -854,6 +868,9 @@ public class ReplicationIT extends AbstractTest
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")", replicationExtraPane.getOwner());
+        assertTrue(replicationExtraPane.isReadonly());
 
         // ASSERT) The page should exist but be empty on XWiki 2
         getUtil().switchExecutor(INSTANCE_2);
@@ -861,6 +878,9 @@ public class ReplicationIT extends AbstractTest
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")", replicationExtraPane.getOwner());
+        assertTrue(replicationExtraPane.isReadonly());
 
         ////////////////////////////////////
         // Edit on XWiki 0

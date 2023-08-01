@@ -33,6 +33,7 @@ import org.suigeneris.jrcs.rcs.Version;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.EntityReplicationBuilders;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.contrib.replication.entity.notification.ReplicationDocumentConflictEvent;
 import org.xwiki.logging.LogLevel;
@@ -58,6 +59,9 @@ import com.xpn.xwiki.doc.rcs.XWikiRCSNodeInfo;
 @Singleton
 public class DocumentUpdateConflictResolver
 {
+    @Inject
+    private EntityReplicationBuilders builders;
+
     @Inject
     private DocumentReplicationController controller;
 
@@ -126,18 +130,19 @@ public class DocumentUpdateConflictResolver
         // Notify involved authors about the conflict resolution but only if the merge had a real conflict
         if (mergeResult.getLog().hasLogLevel(LogLevel.ERROR)) {
             // Find all authors involved
-            authors = findAuthors(ancestorDocument, previousDocument, replicationDocument, xcontext);
+            authors = findAuthors(ancestorDocument, replicationDocument, xcontext);
 
             // Notify about the conflict
             notifyConflict(replicationDocument, authors);
         } else {
-            // Not a real conflict so no need to notify the authors
+            // Not a real conflict from merge point of view so no need to notify the authors
             authors = null;
         }
 
         // Send the complete document with updated history to other instances so that they synchronize
         try {
-            this.controller.sendDocumentRepair(replicationDocument, authors);
+            this.controller.send(this.builders.documentCompleteUpdateMessageBuilder(replicationDocument).conflict(true)
+                .conflictAuthors(authors));
         } catch (ReplicationException e) {
             this.logger.error("Failed to send back a conflict repair for document[{}]",
                 replicationDocument.getDocumentReferenceWithLocale(), e);
@@ -179,8 +184,8 @@ public class DocumentUpdateConflictResolver
         return null;
     }
 
-    private Set<String> findAuthors(XWikiDocument ancestorDocument, XWikiDocument currentDocument,
-        XWikiDocument newDocument, XWikiContext xcontext) throws ReplicationException
+    private Set<String> findAuthors(XWikiDocument ancestorDocument, XWikiDocument newDocument, XWikiContext xcontext)
+        throws ReplicationException
     {
         Set<String> authors = new HashSet<>();
         Collection<XWikiRCSNodeInfo> nodes;

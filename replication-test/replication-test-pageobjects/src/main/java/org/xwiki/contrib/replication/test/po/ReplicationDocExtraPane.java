@@ -33,8 +33,16 @@ public class ReplicationDocExtraPane extends BaseElement
     @FindBy(css = "dd[data-key='owner']")
     private WebElement ownerDD;
 
+    @FindBy(css = "dd[data-key='readonly']")
+    private WebElement readonlyDD;
+
     public String getOwner()
     {
         return this.ownerDD.getText();
+    }
+
+    public boolean isReadonly()
+    {
+        return Boolean.parseBoolean(this.readonlyDD.getText());
     }
 }

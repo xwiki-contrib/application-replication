@@ -263,7 +263,7 @@ public class StandardDocumentReplicationControllerConfiguration implements Docum
     }
 
     @Override
-    public DocumentReplicationController resolveDocumentDeleteReplicationController(XWikiDocument document)
+    public DocumentReplicationController resolveDocumentReplicationController(XWikiDocument document)
         throws ReplicationException
     {
         return resolveDocumentReplicationController(document.getDocumentReference());

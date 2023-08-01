@@ -26,20 +26,21 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 
 /**
+ * @param <B> the exact type of builder
  * @version $Id$
- * @since 1.13.0
+ * @since 2.0.0
  */
 @FunctionalInterface
-public interface EntityReplicationSenderMessageProducer
+public interface EntityReplicationSenderMessageBuilderProducer<B extends EntityReplicationSenderMessageBuilder>
 {
     /**
-     * @param id the identifier of the message
+     * @param builder the identifier of the message
      * @param level the level for which to produce the message
      * @param readonly indicate if the document update is readonly
-     * @param metadata custom metadata to add to the message
+     * @param extraMetadata custom metadata to add to the message
      * @return the message to send
      * @throws ReplicationException when failing to produce the message to send
      */
-    ReplicationSenderMessage produce(String id, DocumentReplicationLevel level, Boolean readonly,
-        Map<String, Collection<String>> metadata) throws ReplicationException;
+    ReplicationSenderMessage produce(B builder, DocumentReplicationLevel level, Boolean readonly,
+        Map<String, Collection<String>> extraMetadata) throws ReplicationException;
 }

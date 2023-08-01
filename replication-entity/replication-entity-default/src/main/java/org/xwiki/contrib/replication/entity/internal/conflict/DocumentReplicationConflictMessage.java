@@ -19,12 +19,8 @@
  */
 package org.xwiki.contrib.replication.entity.internal.conflict;
 
-import java.util.Collection;
-import java.util.Map;
-
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentReplicationMessage;
-import org.xwiki.model.reference.DocumentReference;
 
 /**
  * @version $Id$
@@ -36,18 +32,5 @@ public class DocumentReplicationConflictMessage extends AbstractNoContentDocumen
     public String getType()
     {
         return TYPE_DOCUMENT_CONFLICT;
-    }
-
-    /**
-     * @param documentReference the reference of the document for which to replicated the conflict status
-     * @param conflict true if the document has a replication conflict
-     * @param extraMetadata custom metadata to add to the message
-     */
-    public void initialize(DocumentReference documentReference, boolean conflict,
-        Map<String, Collection<String>> extraMetadata)
-    {
-        super.initialize(documentReference, null, extraMetadata);
-
-        putCustomMetadata(METADATA_DOCUMENT_CONFLICT, conflict);
     }
 }

@@ -43,6 +43,7 @@ import org.xwiki.eventstream.store.solr.internal.SolrEventStore;
 import org.xwiki.model.internal.reference.converter.EntityReferenceConverter;
 import org.xwiki.model.internal.reference.converter.WikiReferenceConverter;
 import org.xwiki.observation.ObservationManager;
+import org.xwiki.observation.remote.internal.DefaultRemoteObservationManagerConfiguration;
 import org.xwiki.search.solr.test.SolrComponentList;
 import org.xwiki.test.annotation.AfterComponent;
 import org.xwiki.test.annotation.ComponentList;
@@ -69,8 +70,8 @@ import static org.mockito.Mockito.when;
 @ComponentTest
 @ComponentList({EventsSolrCoreInitializer.class, WikiDeletedListener.class, WikiReferenceConverter.class,
     SpaceReferenceConverter.class, DocumentReferenceConverter.class, EntityReferenceConverter.class,
-    DefaultEventFactory.class, SolrEventStore.class, DefaultEventStore.class,
-    XWikiPropertiesMemoryConfigurationSource.class, ContextComponentManagerProvider.class})
+    DefaultEventFactory.class, DefaultRemoteObservationManagerConfiguration.class, SolrEventStore.class,
+    DefaultEventStore.class, XWikiPropertiesMemoryConfigurationSource.class, ContextComponentManagerProvider.class})
 @ReferenceComponentList
 @SolrComponentList
 class ReplicationMessageLogStoreTest

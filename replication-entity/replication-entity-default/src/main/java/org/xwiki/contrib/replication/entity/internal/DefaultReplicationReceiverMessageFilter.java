@@ -36,7 +36,7 @@ import org.xwiki.model.reference.EntityReference;
  * Default implementation of {@link ReplicationReceiverMessageFilter}.
  * 
  * @version $Id$
- * @since 1.13.0
+ * @since 2.0.0
  */
 @Component
 @Singleton

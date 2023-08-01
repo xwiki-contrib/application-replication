@@ -26,7 +26,7 @@ import org.xwiki.component.annotation.Component;
 
 /**
  * @version $Id$
- * @since 1.13.0
+ * @since 2.0.0
  */
 @Component
 @Singleton

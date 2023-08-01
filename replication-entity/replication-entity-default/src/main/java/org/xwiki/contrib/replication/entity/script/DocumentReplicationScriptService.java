@@ -102,7 +102,7 @@ public class DocumentReplicationScriptService implements ScriptService
     {
         this.authorization.checkAccess(Right.PROGRAM);
 
-        this.controller.replicateDocument(documentReference, null);
+        this.controller.sendDocument(documentReference);
     }
 
     /**
@@ -185,7 +185,7 @@ public class DocumentReplicationScriptService implements ScriptService
      * @param documentReference the reference of the document
      * @return true if the document is readonly
      * @throws ReplicationException when failing to get the owner
-     * @since 1.13.0
+     * @since 2.0.0
      */
     public boolean isReadonly(DocumentReference documentReference) throws ReplicationException
     {

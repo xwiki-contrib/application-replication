@@ -1,6 +1,6 @@
 org.xwiki.contrib.replication.entity.internal.DefaultDocumentReplicationMessageReader
-org.xwiki.contrib.replication.entity.internal.DefaultDocumentReplicationSender
 org.xwiki.contrib.replication.entity.internal.DefaultEntityReplication
+org.xwiki.contrib.replication.entity.internal.DefaultEntityReplicationBuilders
 org.xwiki.contrib.replication.entity.internal.DefaultReplicationReceiverMessageFilter
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationInstanceRecoverHandler
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationListener
@@ -18,9 +18,6 @@ org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationCont
 org.xwiki.contrib.replication.entity.internal.controller.MinimumDocumentReplicationController
 org.xwiki.contrib.replication.entity.internal.controller.ReplicationEntityConfigurationClassInitializer
 org.xwiki.contrib.replication.entity.internal.controller.StandardDocumentReplicationControllerConfiguration
-org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationFilter
-org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationMessage
-org.xwiki.contrib.replication.entity.internal.create.DocumentCreateReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationFilter
 org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationMessage
 org.xwiki.contrib.replication.entity.internal.delete.DocumentDeleteReplicationReceiver
@@ -41,11 +38,8 @@ org.xwiki.contrib.replication.entity.internal.notification.ReplicationDocumentCo
 org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationFilter
 org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationMessage
 org.xwiki.contrib.replication.entity.internal.reference.DocumentReferenceReplicationReceiver
-org.xwiki.contrib.replication.entity.internal.repair.DocumentRepairReplicationFilter
-org.xwiki.contrib.replication.entity.internal.repair.DocumentRepairReplicationMessage
-org.xwiki.contrib.replication.entity.internal.repair.DocumentRepairReplicationReceiver
-org.xwiki.contrib.replication.entity.internal.repairrequest.DocumentRepairRequestReplicationMessage
-org.xwiki.contrib.replication.entity.internal.repairrequest.DocumentRepairRequestReplicationReceiver
+org.xwiki.contrib.replication.entity.internal.repair.DocumentRepairRequestReplicationMessage
+org.xwiki.contrib.replication.entity.internal.repair.DocumentRepairRequestReplicationReceiver
 org.xwiki.contrib.replication.entity.internal.ui.DocumentReplicationConflictUIExtension
 org.xwiki.contrib.replication.entity.internal.ui.DocumentReplicationDocExtraUIExtension
 org.xwiki.contrib.replication.entity.internal.ui.DocumentReplicationReadonlyUIExtension

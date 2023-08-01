@@ -65,11 +65,8 @@ public interface DocumentReplicationControllerConfiguration
      * @param document the deleted document to replicate
      * @return the replication controller in charge of the deleted document
      * @throws ReplicationException when failing to retrieve the configured controller
-     * @since 1.9.0
+     * @since 2.0.0
      */
-    default DocumentReplicationController resolveDocumentDeleteReplicationController(XWikiDocument document)
-        throws ReplicationException
-    {
-        return resolveDocumentReplicationController(document.getDocumentReference());
-    }
+    DocumentReplicationController resolveDocumentReplicationController(XWikiDocument document)
+        throws ReplicationException;
 }

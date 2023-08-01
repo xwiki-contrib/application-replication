@@ -36,7 +36,7 @@ import org.xwiki.model.reference.DocumentReference;
 
 /**
  * @version $Id$
- * @since 1.13.0
+ * @since 2.0.0
  */
 public abstract class AbstractDocumentUpdateReplicationFilter extends AbstractDocumentReplicationReceiverMessageFilter
 {

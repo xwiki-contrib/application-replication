@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -36,6 +37,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
@@ -47,7 +49,10 @@ import com.xpn.xwiki.doc.XWikiDocument;
 public abstract class AbstractDocumentReplicationController implements DocumentReplicationController
 {
     @Inject
-    protected DocumentReplicationSender sender;
+    protected ReplicationSender sender;
+
+    @Inject
+    protected EntityReplicationBuilders builders;
 
     @Inject
     protected ReplicationInstanceManager instanceManager;
@@ -62,11 +67,27 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
     @Inject
     protected DocumentReplicationMessageReader messageReader;
 
-    @Override
-    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference,
+    protected List<DocumentReplicationControllerInstance> getReplicationConfiguration(XWikiDocument document,
+        Collection<String> receivers) throws ReplicationException
+    {
+        List<DocumentReplicationControllerInstance> configurations = getReplicationConfiguration(document);
+
+        return getReplicationConfiguration(configurations, receivers);
+    }
+
+    protected List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference,
         Collection<String> receivers) throws ReplicationException
     {
         List<DocumentReplicationControllerInstance> configurations = getReplicationConfiguration(entityReference);
+
+        return getReplicationConfiguration(configurations, receivers);
+    }
+
+    protected List<DocumentReplicationControllerInstance> getReplicationConfiguration(
+        List<DocumentReplicationControllerInstance> configurations, Collection<String> receivers)
+        throws ReplicationException
+    {
+        List<DocumentReplicationControllerInstance> filteredConfigurations = configurations;
 
         // Optimizing a bit the replication configuration based on the receivers
         if (receivers != null) {
@@ -85,17 +106,15 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
             }
 
             // Filter the replication configuration to keep only indicated receivers
-            List<DocumentReplicationControllerInstance> filteredConfigurations = new ArrayList<>(configurations.size());
+            filteredConfigurations = new ArrayList<>(configurations.size());
             for (DocumentReplicationControllerInstance configuration : configurations) {
                 if (receivers.contains(configuration.getInstance().getURI())) {
                     filteredConfigurations.add(configuration);
                 }
             }
-
-            configurations = filteredConfigurations;
         }
 
-        return configurations;
+        return filteredConfigurations;
     }
 
     @Override
@@ -139,67 +158,114 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
     @Override
     public void onDocumentCreated(XWikiDocument document) throws ReplicationException
     {
-        this.sender.sendDocument(document, true, true, getMetadata(document), DocumentReplicationLevel.REFERENCE, null);
+        send(this.builders.documentCreateMessageBuilder(document), null);
     }
 
     @Override
     public void onDocumentUpdated(XWikiDocument document) throws ReplicationException
     {
-        // There is no point in sending a message for each update if the instance is only allowed to
-        // replicate the reference
-        this.sender.sendDocument(document, false, false, getMetadata(document), DocumentReplicationLevel.ALL, null);
+        send(this.builders.documentPartialUpdateMessageBuilder(document), null);
     }
 
     @Override
     public void onDocumentDeleted(XWikiDocument document) throws ReplicationException
     {
-        this.sender.sendDocumentDelete(document.getDocumentReferenceWithLocale(), getMetadata(document), null);
+        send(this.builders.documentDeleteMessageBuilder(document), null);
     }
 
     @Override
     public void onDocumentHistoryDelete(XWikiDocument document, String from, String to) throws ReplicationException
     {
-        this.sender.sendDocumentHistoryDelete(document.getDocumentReferenceWithLocale(), from, to,
-            getMetadata(document), null);
+        send(this.builders.documentHistoryMessageBuilder(document, from, to), null);
     }
 
     @Override
-    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
-        DocumentReplicationLevel minimumLevel) throws ReplicationException
+    public void send(EntityReplicationSenderMessageBuilder messageBuilder) throws ReplicationException
     {
-        this.sender.send(messageProducer, entityReference, minimumLevel, getMetadata(entityReference), null);
+        send(messageBuilder, null);
     }
 
     @Override
-    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
-        DocumentReplicationLevel minimumLevel, Collection<String> receivers) throws ReplicationException
+    public void send(EntityReplicationSenderMessageBuilder messageBuilder,
+        List<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
     {
-        this.sender.send(messageProducer, entityReference, minimumLevel, receivers, getMetadata(entityReference), null);
-    }
+        XWikiDocument document = messageBuilder instanceof DocumentReplicationSenderMessageBuilder
+            ? ((DocumentReplicationSenderMessageBuilder) messageBuilder).getDocument() : null;
+        EntityReference entityReference =
+            document != null ? document.getDocumentReferenceWithLocale() : messageBuilder.getEntityReference();
 
-    @Override
-    public void replicateDocument(DocumentReference documentReference, Collection<String> receivers)
-        throws ReplicationException
-    {
-        List<DocumentReplicationControllerInstance> configurations =
-            getReplicationConfiguration(documentReference, receivers);
+        if (messageBuilder.getMinimumLevel() == null) {
+            // If there is no minimum level we send it to all instances
+            this.sender.send(messageBuilder.build(null, null, getMetadata(document)));
+        } else {
+            // Get the replication configurations
+            Collection<DocumentReplicationControllerInstance> configurations = customConfigurations;
+            if (customConfigurations == null) {
+                if (document != null) {
+                    configurations = getReplicationConfiguration(document, messageBuilder.getReceivers());
+                } else {
+                    configurations = getReplicationConfiguration(entityReference, messageBuilder.getReceivers());
+                }
+            }
 
-        if (!configurations.isEmpty()) {
-            this.sender.replicateDocument(documentReference, receivers, getMetadata(documentReference), configurations);
+            // No replication configuration
+            if (configurations == null || configurations.isEmpty()) {
+                // No instance to send the message to
+                return;
+            }
+
+            Map<String, Collection<String>> extraMetadata = getMetadata(document);
+
+            if (messageBuilder.getMinimumLevel() == DocumentReplicationLevel.REFERENCE) {
+                // If the minimum requirement is REFERENCE then, we don't really care about read only
+                // The message to send to instances allowed to receive full document
+                send(messageBuilder, DocumentReplicationLevel.ALL, null, extraMetadata, configurations);
+            } else {
+                // The message to send to instances allowed to receive full document and send it back
+                send(messageBuilder, DocumentReplicationLevel.ALL, true, extraMetadata, configurations);
+
+                // The message to send to instances allowed to receive full document but not to send it back
+                send(messageBuilder, DocumentReplicationLevel.ALL, false, extraMetadata, configurations);
+            }
+
+            // The message to send to instances allowed to receive only the reference
+            send(messageBuilder, DocumentReplicationLevel.REFERENCE, null, extraMetadata, configurations);
         }
     }
 
-    @Override
-    public void sendCompleteDocument(XWikiDocument document) throws ReplicationException
+    private void send(EntityReplicationSenderMessageBuilder messageBuilder, DocumentReplicationLevel level,
+        Boolean readonly, Map<String, Collection<String>> extraMetadata,
+        Collection<DocumentReplicationControllerInstance> configurations) throws ReplicationException
     {
-        this.sender.sendDocument(document, true, false, getMetadata(document), DocumentReplicationLevel.REFERENCE,
-            null);
+        if (level.ordinal() < messageBuilder.getMinimumLevel().ordinal()) {
+            // We don't want to send any message for this level of replication
+            return;
+        }
+
+        List<ReplicationInstance> instances = getInstances(level, readonly, configurations);
+
+        if (instances.isEmpty()) {
+            // No instance to send the message to
+            return;
+        }
+
+        this.sender.send(messageBuilder.build(level, readonly, extraMetadata), instances);
+    }
+
+    private List<ReplicationInstance> getInstances(DocumentReplicationLevel level, Boolean readonly,
+        Collection<DocumentReplicationControllerInstance> configurations)
+    {
+        return configurations.stream()
+            .filter(c -> c.getLevel() == level && c.getDirection() != DocumentReplicationDirection.RECEIVE_ONLY
+                && (readonly == null || (readonly ? c.getDirection() == DocumentReplicationDirection.SEND_ONLY
+                    : c.getDirection() == DocumentReplicationDirection.BOTH)))
+            .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
     }
 
     @Override
-    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors) throws ReplicationException
+    public void sendDocument(DocumentReference documentReference) throws ReplicationException
     {
-        this.sender.sendDocumentRepair(document, authors, getMetadata(document), null);
+        send(this.builders.documentMessageBuilder(documentReference));
     }
 
     @Override

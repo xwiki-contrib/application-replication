@@ -20,7 +20,6 @@
 package org.xwiki.contrib.replication.entity.internal;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 import javax.inject.Inject;
@@ -35,6 +34,7 @@ import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.EntityReplication;
+import org.xwiki.contrib.replication.entity.EntityReplicationBuilders;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.eventstream.Event;
 import org.xwiki.eventstream.EventSearchResult;
@@ -67,6 +67,9 @@ public class DocumentReplicationInstanceRecoverHandler extends AbstractEntityRep
 
     @Inject
     private DocumentReplicationController controller;
+
+    @Inject
+    private EntityReplicationBuilders builders;
 
     @Inject
     private EntityReplication entityReplication;
@@ -151,7 +154,7 @@ public class DocumentReplicationInstanceRecoverHandler extends AbstractEntityRep
             currentLocaleString = documentLocaleString;
 
             // If any message was "lost" make sure to replicate the current status of the document locale
-            this.controller.replicateDocument(documentReference, List.of(source));
+            this.controller.send(this.builders.documentMessageBuilder(documentReference).receivers(source));
         }
     }
 

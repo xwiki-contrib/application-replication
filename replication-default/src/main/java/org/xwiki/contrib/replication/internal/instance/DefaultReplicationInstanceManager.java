@@ -281,10 +281,6 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
         // Update
         this.store.updateInstance(newInstance);
 
-        // Send details about the current instance to the new linked one
-        // TODO: send custom properties as part of the ACCESS request along with the name ?
-        this.senderProvider.get().updateCurrentInstance(newInstance);
-
         return true;
     }
 

@@ -100,9 +100,9 @@ public class DefaultDocumentReplicationControllerConfiguration implements Docume
     }
 
     @Override
-    public DocumentReplicationController resolveDocumentDeleteReplicationController(XWikiDocument document)
+    public DocumentReplicationController resolveDocumentReplicationController(XWikiDocument document)
         throws ReplicationException
     {
-        return getDocumentReplicationControllerConfiguration().resolveDocumentDeleteReplicationController(document);
+        return getDocumentReplicationControllerConfiguration().resolveDocumentReplicationController(document);
     }
 }

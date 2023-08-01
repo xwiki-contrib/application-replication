@@ -26,6 +26,8 @@ import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.EntityReplication;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
+import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
@@ -50,6 +52,9 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
     @Inject
     protected ReplicationInstanceManager instances;
 
+    @Inject
+    protected ReplicationDocumentStore documentStore;
+
     @Override
     protected void receiveEntity(ReplicationReceiverMessage message, EntityReference entityReference,
         XWikiContext xcontext) throws ReplicationException
@@ -57,6 +62,32 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
         DocumentReference documentReference = this.documentMessageReader.getDocumentReference(message, entityReference);
 
         receiveDocument(message, documentReference, xcontext);
+    }
+
+    /**
+     * @param message the received message
+     * @param documentReference the reference of the document associated with the message
+     * @throws ReplicationException
+     */
+    protected void handlerOwner(ReplicationReceiverMessage message, DocumentReference documentReference)
+        throws ReplicationException
+    {
+        // Owner
+        // There is no owner yet so try to find one
+        String owner = this.entityReplication.getOwner(documentReference);
+        if (owner == null) {
+            // Check if one is explicitly provided
+            owner =
+                this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_OWNER, false);
+
+            // Fallback on the source
+            if (owner == null) {
+                owner = message.getSource();
+            }
+
+            // Set the document owner
+            this.documentStore.setOwner(documentReference, owner);
+        }
     }
 
     protected abstract void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,

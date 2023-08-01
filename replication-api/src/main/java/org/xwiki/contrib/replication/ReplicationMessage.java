@@ -31,42 +31,42 @@ public interface ReplicationMessage
     /**
      * The prefix of all instance recovering types.
      * 
-     * @since 1.13.0
+     * @since 2.0.0
      */
     String PREFIX_TYPE_INSTANCE_RECOVER = "instance_recover_";
 
     /**
      * The type of the messages in charge of indicating to other instance that recovery is finished.
      * 
-     * @since 1.13.0
+     * @since 2.0.0
      */
     String TYPE_INSTANCE_RECOVER_FINISHED = PREFIX_TYPE_INSTANCE_RECOVER + "finished";
 
     /**
      * The type of the messages in charge of requesting other instances to send back recovery messages.
      * 
-     * @since 1.13.0
+     * @since 2.0.0
      */
     String TYPE_INSTANCE_RECOVER_REQUEST = PREFIX_TYPE_INSTANCE_RECOVER + "requested";
 
     /**
      * The prefix in front of all entity metadata properties.
      * 
-     * @since 1.13.0
+     * @since 2.0.0
      */
     String PREFIX_METADATA_INSTANCE_RECOVER_REQUEST = PREFIX_TYPE_INSTANCE_RECOVER.toUpperCase();
 
     /**
      * The name of the metadata containing the minimum date for which to send back changes.
      * 
-     * @since 1.13.0
+     * @since 2.0.0
      */
     String METADATA_INSTANCE_RECOVER_REQUEST_DATE_MIN = PREFIX_METADATA_INSTANCE_RECOVER_REQUEST + "DATE_MIN";
 
     /**
      * The name of the metadata containing the maximum date for which to send changes.
      * 
-     * @since 1.13.0
+     * @since 2.0.0
      */
     String METADATA_INSTANCE_RECOVER_REQUEST_DATE_MAX = PREFIX_METADATA_INSTANCE_RECOVER_REQUEST + "DATE_MAX";
 
@@ -83,28 +83,28 @@ public interface ReplicationMessage
     /**
      * The type messages in charge of sending instance metadata to other instances.
      * 
-     * @since 1.13.0
+     * @since 2.0.0
      */
     String TYPE_INSTANCE_UPDATE = "instance_update";
 
     /**
      * The prefix in front of all entity metadata properties of instance update messages.
      * 
-     * @since 1.13.0
+     * @since 2.0.0
      */
     String PREFIX_METADATA_INSTANCE_UPDATE = TYPE_INSTANCE_UPDATE.toUpperCase() + '_';
 
     /**
      * The name of the metadata containing the instance name.
      * 
-     * @since 1.13.0
+     * @since 2.0.0
      */
     String METADATA_INSTANCE_UPDATE_NAME = PREFIX_METADATA_INSTANCE_UPDATE + "NAME";
 
     /**
      * The prefix used to generate the name of the custom instance properties.
      * 
-     * @since 1.13.0
+     * @since 2.0.0
      */
     String PREFIX_INSTANCE_UPDATE_CUSTOM = PREFIX_METADATA_INSTANCE_UPDATE + "CUSTOM_";
 

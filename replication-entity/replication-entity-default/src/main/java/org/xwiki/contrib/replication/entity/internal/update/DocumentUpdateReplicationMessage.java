@@ -32,6 +32,7 @@ import javax.inject.Provider;
 
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationConfiguration;
 import org.xwiki.filter.instance.input.DocumentInstanceInputProperties;
@@ -73,18 +74,17 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     /**
      * Initialize a message for a version replication.
      * 
-     * @param id the unique identifier of the message
+     * @param builder the builder used to produce the message
      * @param document the the document to send
      * @param readonly true if the document update is readonly
      * @param attachments the attachments content to send
-     * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
-     * @since 1.13.0
+     * @since 2.0.0
      */
-    public void initializeUpdate(String id, XWikiDocument document, Boolean readonly, Set<String> attachments,
-        Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
+    public void initializePartial(DocumentReplicationSenderMessageBuilder builder, XWikiDocument document,
+        Boolean readonly, Set<String> attachments, Map<String, Collection<String>> extraMetadata)
     {
-        initialize(id, document, readonly, false, receivers, extraMetadata);
+        initialize(builder, document, readonly, false, extraMetadata);
 
         this.attachments = attachments;
 
@@ -104,8 +104,7 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
                     break;
                 }
             }
-            this.modifiableMetadata.put(METADATA_DOCUMENT_UPDATE_ANCESTORS,
-                DocumentAncestorConverter.toStrings(ancestors));
+            putCustomMetadata(METADATA_DOCUMENT_UPDATE_ANCESTORS, DocumentAncestorConverter.toStrings(ancestors));
         } catch (XWikiException e) {
             this.logger.error("Failed to get document ancestors", e);
         }
@@ -114,36 +113,32 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     /**
      * Initialize a message for a complete replication.
      * 
-     * @param id the unique identifier of the message
+     * @param builder the builder used to produce the message
      * @param document the document affected by this message
      * @param readonly true if the document update is readonly
-     * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
-     * @since 1.13.0
+     * @since 2.0.0
      */
-    public void initializeComplete(String id, XWikiDocument document, Boolean readonly, Collection<String> receivers,
-        Map<String, Collection<String>> extraMetadata)
+    public void initializeComplete(DocumentReplicationSenderMessageBuilder builder, XWikiDocument document,
+        Boolean readonly, Map<String, Collection<String>> extraMetadata)
     {
-        initialize(id, document, readonly, true, receivers, extraMetadata);
+        initialize(builder, document, readonly, true, extraMetadata);
     }
 
     /**
      * Initialize a message for a complete replication.
      * 
-     * @param id the unique identifier of the message
+     * @param builder the builder used to produce the message
      * @param document the document affected by this message
      * @param readonly true if the document update is readonly
      * @param complete true if it's a creation
-     * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
-     * @since 1.13.0
+     * @since 2.0.0
      */
-    protected void initialize(String id, XWikiDocument document, Boolean readonly, boolean complete,
-        Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
+    protected void initialize(DocumentReplicationSenderMessageBuilder builder, XWikiDocument document, Boolean readonly,
+        boolean complete, Map<String, Collection<String>> extraMetadata)
     {
-        super.initialize(document.getDocumentReferenceWithLocale(), receivers, extraMetadata);
-
-        this.id = id;
+        super.initialize(builder, extraMetadata);
 
         if (readonly == Boolean.TRUE) {
             putCustomMetadata(METADATA_DOCUMENT_UPDATE_READONLY, readonly);

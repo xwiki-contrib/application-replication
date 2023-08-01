@@ -29,6 +29,7 @@ import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationMessageReader;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
+import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
 import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.user.UserReference;
@@ -57,7 +58,7 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentDocume
      * @param creatorReference the reference of the creator of the document
      * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
-     * @since 1.13.0
+     * @since 2.0.0
      */
     public void initialize(String id, DocumentReference documentReference, UserReference creatorReference,
         Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
@@ -69,6 +70,22 @@ public class DocumentReferenceReplicationMessage extends AbstractNoContentDocume
         }
 
         putCustomMetadata(METADATA_ENTITY_CREATOR, creatorReference);
+
+        // REFERENCE documents are readonly by definition
+        putCustomMetadata(METADATA_DOCUMENT_UPDATE_READONLY, true);
+    }
+
+    /**
+     * @param builder the builder used to produce the message
+     * @param creatorReference the reference of the creator of the document
+     * @param extraMetadata custom metadata to add to the message
+     * @since 2.0.0
+     */
+    public void initialize(DocumentReplicationSenderMessageBuilder builder, UserReference creatorReference,
+        Map<String, Collection<String>> extraMetadata)
+    {
+        initialize(builder.getId(), builder.getDocumentReference(), creatorReference, builder.getReceivers(),
+            extraMetadata);
     }
 
     /**

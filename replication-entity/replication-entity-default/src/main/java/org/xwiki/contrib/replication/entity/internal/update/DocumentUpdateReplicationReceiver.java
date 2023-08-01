@@ -21,28 +21,23 @@ package org.xwiki.contrib.replication.entity.internal.update;
 
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.EntityReplicationBuilders;
 import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils;
-import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
-import org.xwiki.contrib.replication.entity.internal.repairrequest.DocumentRepairRequestReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.XWikiContext;
@@ -63,19 +58,13 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     private DocumentUpdateLoaded loader;
 
     @Inject
-    private DocumentReplicationUtils controllerUtils;
-
-    @Inject
     private DocumentUpdateConflictResolver conflictResolver;
 
     @Inject
-    private ReplicationDocumentStore documentStore;
-
-    @Inject
-    private Provider<DocumentRepairRequestReplicationMessage> repairRequestMessageProvider;
-
-    @Inject
     private DocumentReplicationUtils replicationUtils;
+
+    @Inject
+    private EntityReplicationBuilders builders;
 
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
@@ -97,10 +86,43 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             update(message, documentReference, replicationDocument, xcontext);
         }
 
-        // Indicate if the document is readonly (it never is when the current instance is the owner)
-        if (this.replicationUtils.isOwner(documentReference)) {
-            this.entityReplication.setReadonly(documentReference, this.messageReader.getMetadata(message,
-                EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY, false, false));
+        boolean readonly = this.messageReader.getMetadata(message,
+            EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY, false, false);
+        if (!this.replicationUtils.isOwner(documentReference)) {
+            // Indicate if the document is readonly (it never is when the current instance is the owner)
+            this.entityReplication.setReadonly(documentReference, readonly);
+        } else if (readonly) {
+            // It does not make sense for the owner to receive a readonly message, send back a correction in the hope to
+            // fix any inconsistency in the network
+            this.controller.sendDocument(documentReference);
+
+            // We don't reject the entire message since it's still coming from an instance allowed to send updates
+        }
+
+        // Owner
+        handlerOwner(message, documentReference);
+
+        // Conflict
+        boolean conflict =
+            this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_CONFLICT, false, false);
+        if (conflict) {
+            // Indicate the document is in conflict
+            this.entityReplication.setConflict(documentReference, true);
+
+            // Get the authors involved in the conflict
+            Collection<String> authors =
+                message.getCustomMetadata().get(EntityReplicationMessage.METADATA_DOCUMENT_CONFLICT_AUTHORS);
+
+            if (authors != null) {
+                try {
+                    // Notify about the conflict
+                    this.conflictResolver.notifyConflict(xcontext.getWiki().getDocument(documentReference, xcontext),
+                        authors);
+                } catch (XWikiException e) {
+                    this.logger.error("Failed to generate conflict notification for document [{}]", documentReference,
+                        e);
+                }
+            }
         }
     }
 
@@ -169,12 +191,13 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             // Check if the previous version is the expected one
             if (!Objects.equals(currentVersion, previousAncestorVersion)
                 || !Objects.equals(currentVersionDate, previousAncestorVersionDate)) {
-                if (this.controllerUtils.isOwner(documentReference)) {
+                if (this.replicationUtils.isOwner(documentReference)) {
                     // Actually handle the conflict only if the current instance is the owner
                     // Create and save a merged version of the document
                     this.conflictResolver.merge(ancestors, databaseDocument, replicationDocument, xcontext);
                 } else {
-                    // Otherwise just ask the owner for a repair (it case the owner did not notice)
+                    // Otherwise just ask the owner for a repair (in case the owner did not notice any conflict on its
+                    // side)
                     requestRepair(documentReference);
                 }
             }
@@ -212,15 +235,8 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         String owner = this.documentStore.getOwner(documentReference);
 
         if (owner != null) {
-            Set<String> receivers = Collections.singleton(owner);
-
-            this.controller.send(m -> {
-                DocumentRepairRequestReplicationMessage repairRequestMessage = this.repairRequestMessageProvider.get();
-
-                repairRequestMessage.initialize(documentReference, receivers, m);
-
-                return repairRequestMessage;
-            }, documentReference, DocumentReplicationLevel.ALL, receivers);
+            this.controller.send(this.builders.documentRepairRequestMessageBuilder(documentReference, true)
+                .conflict(true).receivers(owner));
         }
     }
 

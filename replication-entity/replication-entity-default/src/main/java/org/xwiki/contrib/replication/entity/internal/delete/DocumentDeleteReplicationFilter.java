@@ -27,7 +27,7 @@ import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplication
 
 /**
  * @version $Id$
- * @since 1.13.0
+ * @since 2.0.0
  */
 @Component
 @Singleton

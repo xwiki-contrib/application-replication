@@ -21,7 +21,6 @@ package org.xwiki.contrib.replication.entity.internal.reference;
 
 import java.util.concurrent.CompletableFuture;
 
-import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -31,7 +30,6 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
-import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.rendering.syntax.Syntax;
 import org.xwiki.user.UserReference;
@@ -48,9 +46,6 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Named(DocumentReferenceReplicationMessage.TYPE_DOCUMENT_REFERENCE)
 public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
-    @Inject
-    private ReplicationDocumentStore documentStore;
-
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
@@ -83,10 +78,11 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
             throw new ReplicationException("Failed to save the document", e);
         }
 
-        // Set the document owner but only if there is not already one
-        if (this.entityReplication.getOwner(documentReference) == null) {
-            this.documentStore.setOwner(documentReference, message.getSource());
-        }
+        // Owner
+        handlerOwner(message, documentReference);
+
+        // REFERENCE documents are readonly by definition
+        this.entityReplication.setReadonly(documentReference, true);
     }
 
     @Override

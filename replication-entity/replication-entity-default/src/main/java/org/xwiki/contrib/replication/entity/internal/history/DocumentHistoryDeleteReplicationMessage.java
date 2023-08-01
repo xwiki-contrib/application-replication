@@ -23,8 +23,8 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
 import org.xwiki.contrib.replication.entity.internal.AbstractNoContentDocumentReplicationMessage;
-import org.xwiki.model.reference.DocumentReference;
 
 /**
  * @version $Id$
@@ -32,24 +32,25 @@ import org.xwiki.model.reference.DocumentReference;
 @Component(roles = DocumentHistoryDeleteReplicationMessage.class)
 public class DocumentHistoryDeleteReplicationMessage extends AbstractNoContentDocumentReplicationMessage
 {
-    /**
-     * @param documentReference the reference of the document affected by this message
-     * @param from the lowest version to delete
-     * @param to the highest version to delete
-     * @param extraMetadata custom metadata to add to the message
-     */
-    public void initialize(DocumentReference documentReference, String from, String to,
-        Map<String, Collection<String>> extraMetadata)
-    {
-        initialize(documentReference, receivers, extraMetadata);
-
-        putCustomMetadata(METADATA_DOCUMENT_HISTORYDELETE_VERSION_FROM, from);
-        putCustomMetadata(METADATA_DOCUMENT_HISTORYDELETE_VERSION_TO, to);
-    }
-
     @Override
     public String getType()
     {
         return TYPE_DOCUMENT_HISTORYDELETE;
+    }
+
+    /**
+     * @param builder the builder used to produce the message
+     * @param from the lowest version to delete
+     * @param to the highest version to delete
+     * @param extraMetadata custom metadata to add to the message
+     * @since 2.0.0
+     */
+    public void initialize(DocumentReplicationSenderMessageBuilder builder, String from, String to,
+        Map<String, Collection<String>> extraMetadata)
+    {
+        initialize(builder, extraMetadata);
+
+        putCustomMetadata(METADATA_DOCUMENT_HISTORYDELETE_VERSION_FROM, from);
+        putCustomMetadata(METADATA_DOCUMENT_HISTORYDELETE_VERSION_TO, to);
     }
 }

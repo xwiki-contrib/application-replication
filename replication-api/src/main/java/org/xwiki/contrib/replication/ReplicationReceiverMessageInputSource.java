@@ -28,7 +28,7 @@ import org.xwiki.filter.input.AbstractInputStreamInputSource;
  * Allow exposing a message as input stream.
  * 
  * @version $Id$
- * @since 1.13.0
+ * @since 2.0.0
  */
 public class ReplicationReceiverMessageInputSource extends AbstractInputStreamInputSource
 {

@@ -25,7 +25,7 @@ import org.xwiki.contrib.replication.ReplicationMessage;
  * Replication messages impacting entities.
  * 
  * @version $Id$
- * @since 1.13.0
+ * @since 2.0.0
  */
 public interface EntityReplicationMessage extends ReplicationMessage
 {
@@ -100,24 +100,9 @@ public interface EntityReplicationMessage extends ReplicationMessage
     String METADATA_DOCUMENT_UPDATE_READONLY = PREFIX_METADATA_DOCUMENT_UPDATE + "READONLY";
 
     /**
-     * The message type for these messages.
+     * The name of the metadata containing the owner of the document.
      */
-    String TYPE_DOCUMENT_CREATE = PREFIX_TYPE_ENTITY + "create";
-
-    /**
-     * The message type for these messages.
-     */
-    String TYPE_DOCUMENT_REPAIR = PREFIX_TYPE_ENTITY + "repair";
-
-    /**
-     * The prefix in front of all entity metadata properties.
-     */
-    String PREFIX_METADATA_DOCUMENT_REPAIR = TYPE_DOCUMENT_REPAIR.toUpperCase() + '_';
-
-    /**
-     * The name of the metadata containing the authors involved in the conflict.
-     */
-    String METADATA_DOCUMENT_REPAIR_AUTHORS = PREFIX_METADATA_DOCUMENT_REPAIR + "AUTHORS";
+    String METADATA_DOCUMENT_UPDATE_OWNER = PREFIX_METADATA_DOCUMENT_UPDATE + "OWNER";
 
     /**
      * The message type for these messages.
@@ -170,9 +155,19 @@ public interface EntityReplicationMessage extends ReplicationMessage
     String METADATA_DOCUMENT_REFERENCE_CREATE = PREFIX_METADATA_DOCUMENT_REFERENCE + "CREATE";
 
     /**
-     * The message type for these messages.
+     * The message type for repair request messages.
      */
     String TYPE_DOCUMENT_REPAIRREQUEST = PREFIX_TYPE_ENTITY + "repairrequest";
+
+    /**
+     * The prefix in front of all the document repair request metadata properties.
+     */
+    String PREFIX_METADATA_DOCUMENT_REPAIRREQUEST = TYPE_DOCUMENT_REPAIRREQUEST.toUpperCase() + '_';
+
+    /**
+     * The name of the metadata indicating if the repair should been sent back to the source only or all instances.
+     */
+    String METADATA_DOCUMENT_REPAIRREQUEST_SOURCE = PREFIX_METADATA_DOCUMENT_REPAIRREQUEST + "SOURCE";
 
     /**
      * The message type for these messages.
@@ -188,6 +183,11 @@ public interface EntityReplicationMessage extends ReplicationMessage
      * The name of the metadata indicating if the conflict marker should be set or removed.
      */
     String METADATA_DOCUMENT_CONFLICT = PREFIX_METADATA_DOCUMENT_CONFLICT + "CONFLICT";
+
+    /**
+     * The name of the metadata containing the authors involved in the conflict.
+     */
+    String METADATA_DOCUMENT_CONFLICT_AUTHORS = PREFIX_METADATA_DOCUMENT_CONFLICT + "AUTHORS";
 
     /**
      * The message type for these messages.

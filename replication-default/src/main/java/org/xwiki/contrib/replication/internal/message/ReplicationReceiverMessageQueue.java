@@ -121,37 +121,31 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
     @Override
     protected void handle(ReplicationReceiverMessage message) throws Exception
     {
-        // Filter the input message
-        ReplicationReceiverMessage filteredMessage;
-        try {
-            filteredMessage = this.filter.filter(message);
-        } catch (InvalidReplicationMessageException e) {
-            logInvalidMessage(message, e);
-
-            return;
-        }
-
-        // Notify that a message is about to be handled by a receiver
-        ReplicationMessageHandlingEvent event = new ReplicationMessageHandlingEvent();
-        this.observation.notify(event, filteredMessage);
-        if (event.isCanceled()) {
-            this.logger.warn("The message with id [{}] and type [{}] coming from instance [{}] was rejected: {}",
-                filteredMessage.getId(), filteredMessage.getType(), filteredMessage.getSource(), event.getReason());
-
-            return;
-        }
-
-        // Find the receiver corresponding to the type
-        ReplicationReceiver replicationReceiver =
-            this.componentManager.getInstance(ReplicationReceiver.class, filteredMessage.getType());
-
         // Make sure an ExecutionContext is available
         this.executionContextManager.pushContext(new ExecutionContext(), false);
 
-        // Indicate in the context that this is a replication change
-        ((DefaultReplicationContext) this.replicationContext).setReplicationMessage(filteredMessage);
-
+        ReplicationReceiverMessage filteredMessage = message;
         try {
+            // Filter the input message
+            filteredMessage = this.filter.filter(message);
+
+            // Notify that a message is about to be handled by a receiver
+            ReplicationMessageHandlingEvent event = new ReplicationMessageHandlingEvent();
+            this.observation.notify(event, filteredMessage);
+            if (event.isCanceled()) {
+                this.logger.warn("The message with id [{}] and type [{}] coming from instance [{}] was rejected: {}",
+                    filteredMessage.getId(), filteredMessage.getType(), filteredMessage.getSource(), event.getReason());
+
+                return;
+            }
+
+            // Find the receiver corresponding to the type
+            ReplicationReceiver replicationReceiver =
+                this.componentManager.getInstance(ReplicationReceiver.class, filteredMessage.getType());
+
+            // Indicate in the context that this is a replication change
+            ((DefaultReplicationContext) this.replicationContext).setReplicationMessage(filteredMessage);
+
             // Relay the message and wait until it's stored
             replicationReceiver.relay(filteredMessage).get();
 

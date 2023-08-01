@@ -32,10 +32,11 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
-import org.xwiki.contrib.replication.entity.DocumentReplicationSender;
 import org.xwiki.contrib.replication.entity.EntityReplication;
+import org.xwiki.contrib.replication.entity.EntityReplicationBuilders;
 import org.xwiki.contrib.replication.entity.internal.message.EntityReplicationControllerSender;
 import org.xwiki.model.EntityType;
 import org.xwiki.model.reference.DocumentReference;
@@ -63,7 +64,10 @@ public class EntityReplicationConfigurationUpdater
     private EntityReplicationStore store;
 
     @Inject
-    private DocumentReplicationSender documentSender;
+    private EntityReplicationBuilders builders;
+
+    @Inject
+    private DocumentReplicationController controller;
 
     @Inject
     private EntityReplicationControllerSender configurationSender;
@@ -252,8 +256,7 @@ public class EntityReplicationConfigurationUpdater
             XWikiDocument document = xcontext.getWiki().getDocument(documentReference, xcontext);
 
             if (!document.isNew()) {
-                this.documentSender.sendDocumentUnreplicate(document.getDocumentReferenceWithLocale(), null,
-                    removedInstances);
+                this.controller.send(this.builders.documentUnreplicateMessageBuilder(document), removedInstances);
             }
         }
     }
@@ -266,8 +269,11 @@ public class EntityReplicationConfigurationUpdater
             XWikiDocument document = xcontext.getWiki().getDocument(documentReference, xcontext);
 
             if (!document.isNew()) {
-                this.documentSender.sendDocument(document, true, create, null, DocumentReplicationLevel.REFERENCE,
-                    newInstances);
+                if (create) {
+                    this.controller.send(this.builders.documentCreateMessageBuilder(document), newInstances);
+                } else {
+                    this.controller.send(this.builders.documentCompleteUpdateMessageBuilder(document), newInstances);
+                }
             }
         }
     }

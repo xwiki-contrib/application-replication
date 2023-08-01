@@ -22,6 +22,8 @@ package org.xwiki.contrib.replication.entity.internal;
 import java.util.Collection;
 import java.util.Map;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
 import org.xwiki.model.reference.DocumentReference;
 
 /**
@@ -37,5 +39,30 @@ public abstract class AbstractDocumentReplicationMessage extends AbstractEntityR
         super.initialize(documentReference, receivers, extraMetadata);
 
         putCustomMetadata(METADATA_ENTITY_RECOVER_TYPE, VALUE_DOCUMENT_RECOVER_TYPE);
+    }
+
+    /**
+     * @param builder the builder used to produce the message
+     * @param extraMetadata custom metadata to add to the message
+     * @since 2.0.0
+     */
+    public void initialize(DocumentReplicationSenderMessageBuilder builder,
+        Map<String, Collection<String>> extraMetadata)
+    {
+        initialize(builder.getDocumentReference(), builder.getReceivers(), extraMetadata);
+
+        if (builder.getId() != null) {
+            this.id = builder.getId();
+        }
+
+        if (builder.getConflict() != null) {
+            // Indicate if the document is in conflict
+            putCustomMetadata(METADATA_DOCUMENT_CONFLICT, builder.getConflict());
+
+            if (CollectionUtils.isNotEmpty(builder.getConflictAuthors())) {
+                // Indicate the authors involved in the conflict
+                putCustomMetadata(METADATA_DOCUMENT_CONFLICT_AUTHORS, builder.getConflictAuthors());
+            }
+        }
     }
 }

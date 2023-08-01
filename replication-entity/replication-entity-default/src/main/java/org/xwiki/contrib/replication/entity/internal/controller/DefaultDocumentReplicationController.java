@@ -19,7 +19,6 @@
  */
 package org.xwiki.contrib.replication.entity.internal.controller;
 
-import java.util.Collection;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -31,8 +30,8 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfiguration;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
-import org.xwiki.contrib.replication.entity.ReplicationSenderMessageProducer;
+import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
+import org.xwiki.contrib.replication.entity.EntityReplicationSenderMessageBuilder;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
@@ -56,15 +55,28 @@ public class DefaultDocumentReplicationController implements DocumentReplication
         return this.configuration.resolveDocumentReplicationController(documentReference);
     }
 
+    private DocumentReplicationController getController(XWikiDocument document) throws ReplicationException
+    {
+        return this.configuration.resolveDocumentReplicationController(document);
+    }
+
     private DocumentReplicationController getController(ReplicationReceiverMessage message) throws ReplicationException
     {
         return this.configuration.resolveDocumentReplicationController(message);
     }
 
-    private DocumentReplicationController getDeleteReplicationController(XWikiDocument document)
+    private DocumentReplicationController getController(EntityReplicationSenderMessageBuilder messageBuilder)
         throws ReplicationException
     {
-        return this.configuration.resolveDocumentDeleteReplicationController(document);
+        if (messageBuilder instanceof DocumentReplicationSenderMessageBuilder) {
+            XWikiDocument document = ((DocumentReplicationSenderMessageBuilder) messageBuilder).getDocument();
+
+            if (document != null) {
+                return getController(document);
+            }
+        }
+
+        return getController(messageBuilder.getEntityReference());
     }
 
     @Override
@@ -75,18 +87,10 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     }
 
     @Override
-    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference,
-        Collection<String> receivers) throws ReplicationException
-    {
-        return getController(entityReference).getReplicationConfiguration(entityReference, receivers);
-    }
-
-    @Override
-    @Deprecated(since = "1.6.0")
-    public List<DocumentReplicationControllerInstance> getRelayConfiguration(EntityReference entityReference)
+    public List<DocumentReplicationControllerInstance> getReplicationConfiguration(XWikiDocument document)
         throws ReplicationException
     {
-        return getController(entityReference).getRelayConfiguration(entityReference);
+        return getController(document).getReplicationConfiguration(document);
     }
 
     @Override
@@ -97,72 +101,65 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     }
 
     @Override
+    public DocumentReplicationControllerInstance getReceiveConfiguration(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        return getController(message).getReceiveConfiguration(message);
+    }
+
+    @Override
     public void onDocumentCreated(XWikiDocument document) throws ReplicationException
     {
-        getController(document.getDocumentReference()).onDocumentCreated(document);
+        getController(document).onDocumentCreated(document);
     }
 
     @Override
     public void onDocumentUpdated(XWikiDocument document) throws ReplicationException
     {
-        getController(document.getDocumentReference()).onDocumentUpdated(document);
+        getController(document).onDocumentUpdated(document);
     }
 
     @Override
     public void onDocumentDeleted(XWikiDocument document) throws ReplicationException
     {
-        getDeleteReplicationController(document).onDocumentDeleted(document);
+        getController(document).onDocumentDeleted(document);
     }
 
     @Override
     public void onDocumentHistoryDelete(XWikiDocument document, String from, String to) throws ReplicationException
     {
-        getController(document.getDocumentReference()).onDocumentHistoryDelete(document, from, to);
-    }
-
-    @Override
-    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
-        DocumentReplicationLevel minimumLevel) throws ReplicationException
-    {
-        getController(entityReference).send(messageProducer, entityReference, minimumLevel);
-    }
-
-    @Override
-    public void send(ReplicationSenderMessageProducer messageProducer, EntityReference entityReference,
-        DocumentReplicationLevel minimumLevel, Collection<String> receivers) throws ReplicationException
-    {
-        getController(entityReference).send(messageProducer, entityReference, minimumLevel, receivers);
-    }
-
-    @Override
-    public void replicateDocument(DocumentReference documentReference, Collection<String> receivers)
-        throws ReplicationException
-    {
-        getController(documentReference).replicateDocument(documentReference, receivers);
-    }
-
-    @Override
-    public void sendCompleteDocument(XWikiDocument document) throws ReplicationException
-    {
-        getController(document.getDocumentReference()).sendCompleteDocument(document);
-    }
-
-    @Override
-    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors) throws ReplicationException
-    {
-        getController(document.getDocumentReference()).sendDocumentRepair(document, authors);
+        getController(document).onDocumentHistoryDelete(document, from, to);
     }
 
     @Override
     public boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message)
         throws ReplicationException
     {
-        return getController(document.getDocumentReference()).receiveREFERENCEDocument(document, message);
+        return getController(document).receiveREFERENCEDocument(document, message);
     }
 
     @Override
     public ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException
     {
         return getController(message).filter(message);
+    }
+
+    @Override
+    public void send(EntityReplicationSenderMessageBuilder messageBuilder) throws ReplicationException
+    {
+        getController(messageBuilder).send(messageBuilder);
+    }
+
+    @Override
+    public void send(EntityReplicationSenderMessageBuilder messageBuilder,
+        List<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
+    {
+        getController(messageBuilder).send(messageBuilder, customConfigurations);
+    }
+
+    @Override
+    public void sendDocument(DocumentReference documentReference) throws ReplicationException
+    {
+        getController(documentReference).sendDocument(documentReference);
     }
 }

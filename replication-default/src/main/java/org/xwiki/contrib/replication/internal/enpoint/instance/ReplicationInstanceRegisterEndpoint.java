@@ -19,7 +19,9 @@
  */
 package org.xwiki.contrib.replication.internal.enpoint.instance;
 
+import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,6 +33,7 @@ import org.xwiki.contrib.replication.UnauthorizedReplicationInstanceException;
 import org.xwiki.contrib.replication.internal.enpoint.AbstractReplicationEndpoint;
 import org.xwiki.contrib.replication.internal.enpoint.ReplicationResourceReference;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
+import org.xwiki.contrib.replication.internal.message.ReplicationInstanceMessageSender;
 
 /**
  * @version $Id$
@@ -60,6 +63,9 @@ public class ReplicationInstanceRegisterEndpoint extends AbstractReplicationEndp
      */
     public static final String PARAMETER_REQUESTKEY = "requestKey";
 
+    @Inject
+    private Provider<ReplicationInstanceMessageSender> senderProvider;
+
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, ReplicationResourceReference reference)
         throws Exception
@@ -82,11 +88,20 @@ public class ReplicationInstanceRegisterEndpoint extends AbstractReplicationEndp
                 }
 
                 // Confirm the registration
-                this.instances.confirmRequestedInstance(new DefaultReplicationInstance(name, instance.getURI(),
-                    Status.REGISTERED, this.signatureManager.unserializeKey(receiveKey), instance.getProperties()));
+                ReplicationInstance newInstance = new DefaultReplicationInstance(name, instance.getURI(),
+                    Status.REGISTERED, this.signatureManager.unserializeKey(receiveKey), instance.getProperties());
+                this.instances.confirmRequestedInstance(newInstance);
 
                 // The instance is now registered
                 response.setStatus(200);
+
+                // Make sure to flush the response before sending updates about the instance as otherwise the update
+                // message might be refused (before the instance is not REGISTERED yet)
+                response.flushBuffer();
+
+                // Send details about the current instance to the new linked one
+                // TODO: send custom properties as part of the ACCESS request along with the name ?
+                this.senderProvider.get().updateCurrentInstance(newInstance);
             } else if (instance.getStatus() == Status.REGISTERED) {
                 // Already registered
                 response.sendError(409, "An instance is already registered with URI: " + uri);
