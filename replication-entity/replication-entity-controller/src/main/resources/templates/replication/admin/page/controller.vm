@@ -60,14 +60,15 @@
   #set ($resolvedInstances = $services.replication.document.getDocumentInstances($replicationDocument.documentReference))
 #end
 
-#macro(resolveReplicationInstances $reference)
-  #if ($resolvedInstances.size() > 0)
+#macro(displayReplicationConfiguration $reference)
+  #set ($replicationConfigurations = $services.replication.document.getDocumentInstances($reference))
+  #if ($replicationConfigurations.size() > 0)
     <dl>
-      #foreach($resolvedInstance in $resolvedInstances)
-        <dt>$resolvedInstance.instance.name (<a href="$resolvedInstance.instance.uRI">$resolvedInstance.instance.uRI</a>)</dt>
+      #foreach($replicationConfiguration in $replicationConfigurations)
+        <dt>$replicationConfiguration.instance.name (<a href="$replicationConfiguration.instance.uRI">$replicationConfiguration.instance.uRI</a>)</dt>
         <dd>
-          #if ($resolvedInstance.level)
-            $escapetool.xml($services.localization.render("replication.entity.level.${resolvedInstance.level}.description"))
+          #if ($replicationConfiguration.level)
+            $escapetool.xml($services.localization.render("replication.entity.level.${replicationConfiguration.level}.description"))
           #else
             $escapetool.xml($services.localization.render('replication.admin.page.notreplicated'))
           #end
@@ -124,7 +125,7 @@
     <input type="radio" id="$inputId" name="${namePrefix}_replication_instance_type" value="default" #if($replicationType == 'default')checked#end>
     <label for="$inputId">$escapetool.xml($services.localization.render('replication.admin.page.type.default'))</label>
 
-    #resolveReplicationInstances($reference.parent)
+    #displayReplicationConfiguration($reference.parent)
 
     #set ($inputId = "${namePrefix}_replication_instance_type_all")
     <input type="radio" id="$inputId" name="${namePrefix}_replication_instance_type" value="all" #if($replicationType == 'all')checked#end>
@@ -149,7 +150,7 @@
       #end
     </dl>
   #else
-    #resolveReplicationInstances($reference)
+    #displayReplicationConfiguration($reference)
   #end
 #end
 
