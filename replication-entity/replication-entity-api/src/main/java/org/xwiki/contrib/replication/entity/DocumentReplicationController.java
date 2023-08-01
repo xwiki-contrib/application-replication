@@ -136,6 +136,7 @@ public interface DocumentReplicationController
      * 
      * @param documentReference the reference of the document
      * @throws ReplicationException when failing to send the document
+     * @see EntityReplicationBuilders#documentMessageBuilder(DocumentReference)
      * @since 2.0.0
      */
     void sendDocument(DocumentReference documentReference) throws ReplicationException;
@@ -147,6 +148,7 @@ public interface DocumentReplicationController
      * @param customConfigurations optional custom replication configuration to use instead of the configured ones for
      *            the document
      * @throws ReplicationException when failing to send the document
+     * @see EntityReplicationBuilders#documentMessageBuilder(DocumentReference)
      * @since 2.0.0
      */
     void sendDocument(DocumentReference documentReference,
