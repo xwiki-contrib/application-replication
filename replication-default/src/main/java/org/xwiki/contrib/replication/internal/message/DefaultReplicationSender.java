@@ -400,11 +400,11 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
     }
 
     @Override
-    public CompletableFuture<ReplicationSenderMessage> answer(String questionId,
+    public CompletableFuture<ReplicationSenderMessage> answer(String questionId, String questionInstance,
         Map<String, Collection<String>> customMetadata) throws ReplicationException
     {
         ReplicationAnswerMessage message = this.answerProvider.get();
-        message.initialize(questionId, customMetadata);
+        message.initialize(questionId, questionInstance, customMetadata);
 
         return send(message);
     }

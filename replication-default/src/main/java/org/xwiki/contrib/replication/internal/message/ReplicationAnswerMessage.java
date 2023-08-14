@@ -43,11 +43,12 @@ public class ReplicationAnswerMessage extends AbstractReplicationSenderMessage
     }
 
     /**
-     * @param questionId the identifier of the instance from which the question is coming
+     * @param questionId the identifier of the message which contained the question
+     * @param questionInstance the identifier of the instance which sent the question
      * @param customMetadata the actual content of the answer
      * @throws ReplicationException when failing to initialize the message
      */
-    public void initialize(String questionId, Map<String, Collection<String>> customMetadata)
+    public void initialize(String questionId, String questionInstance, Map<String, Collection<String>> customMetadata)
         throws ReplicationException
     {
         super.initialize();
@@ -56,7 +57,7 @@ public class ReplicationAnswerMessage extends AbstractReplicationSenderMessage
         this.modifiableMetadata.putAll(customMetadata);
 
         // The answer is sent to the instance which asked the question
-        this.receivers = Set.of(questionId);
+        this.receivers = Set.of(questionInstance);
 
         // Indicate the identifier of the question this answer is about
         putCustomMetadata(METADATA_ANSWER_QUESTION_ID, questionId);
