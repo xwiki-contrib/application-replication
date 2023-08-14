@@ -20,6 +20,7 @@
 package org.xwiki.contrib.replication;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.xwiki.component.annotation.Role;
@@ -50,6 +51,32 @@ public interface ReplicationSender
      */
     CompletableFuture<ReplicationSenderMessage> send(ReplicationSenderMessage message,
         Collection<ReplicationInstance> targets) throws ReplicationException;
+
+    /**
+     * Asynchronously send a question to passed instances. The {@link CompletableFuture} is waiting for the answer from
+     * each instance indicated by {@link ReplicationSenderMessage#getReceivers()}. If no specific receiver is provided,
+     * it just waits for the first answer.
+     * 
+     * @param message the data to send
+     * @param targets the instances to send the message to
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
+     * @throws ReplicationException when failing to queue the replication message
+     * @since 2.0.0
+     */
+    CompletableFuture<ReplicationAnswer> ask(ReplicationSenderMessage message, Collection<ReplicationInstance> targets)
+        throws ReplicationException;
+
+    /**
+     * Asynchronously send an answer to previously received question.
+     * 
+     * @param questionId the identifier of the instance from which the question is coming
+     * @param customMetadata the actual content of the answer
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
+     * @throws ReplicationException when failing to queue the replication message
+     * @since 2.0.0
+     */
+    CompletableFuture<ReplicationSenderMessage> answer(String questionId,
+        Map<String, Collection<String>> customMetadata) throws ReplicationException;
 
     /**
      * Notify the sender that the passed instance sent a ping. Among other things this suggest the sender to force

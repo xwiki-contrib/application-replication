@@ -109,6 +109,27 @@ public interface ReplicationMessage
     String PREFIX_INSTANCE_UPDATE_CUSTOM = PREFIX_METADATA_INSTANCE_UPDATE + "CUSTOM_";
 
     /**
+     * The type messages in charge of sending the answer to a question.
+     * 
+     * @since 2.0.0
+     */
+    String TYPE_ANSWER = "answer";
+
+    /**
+     * The prefix in front of all entity metadata properties of answers.
+     * 
+     * @since 2.0.0
+     */
+    String PREFIX_METADATA_ANSWER = TYPE_ANSWER.toUpperCase() + '_';
+
+    /**
+     * The name of the metadata containing the identifier of the question.
+     * 
+     * @since 2.0.0
+     */
+    String METADATA_ANSWER_QUESTION_ID = PREFIX_METADATA_ANSWER + "QUESTION_ID";
+
+    /**
      * @return the unique identifier of the message
      */
     String getId();

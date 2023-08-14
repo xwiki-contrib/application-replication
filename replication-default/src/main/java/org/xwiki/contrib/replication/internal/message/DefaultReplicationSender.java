@@ -47,6 +47,7 @@ import org.xwiki.component.phase.InitializationException;
 import org.xwiki.context.ExecutionContext;
 import org.xwiki.context.ExecutionContextException;
 import org.xwiki.context.ExecutionContextManager;
+import org.xwiki.contrib.replication.ReplicationAnswer;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
@@ -87,6 +88,12 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
     @Inject
     private EventStore eventStore;
+
+    @Inject
+    private ReplicationAnswerManager answers;
+
+    @Inject
+    private Provider<ReplicationAnswerMessage> answerProvider;
 
     @Inject
     private Logger logger;
@@ -379,5 +386,26 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
         } catch (Exception e) {
             throw new ReplicationException("Failed to query logged messages", e);
         }
+    }
+
+    @Override
+    public CompletableFuture<ReplicationAnswer> ask(ReplicationSenderMessage message,
+        Collection<ReplicationInstance> targets) throws ReplicationException
+    {
+        CompletableFuture<ReplicationAnswer> future = this.answers.ask(message.getId(), message.getReceivers());
+
+        send(message, targets);
+
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<ReplicationSenderMessage> answer(String questionId,
+        Map<String, Collection<String>> customMetadata) throws ReplicationException
+    {
+        ReplicationAnswerMessage message = this.answerProvider.get();
+        message.initialize(questionId, customMetadata);
+
+        return send(message);
     }
 }

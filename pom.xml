@@ -203,6 +203,22 @@
               </differences>
             </revapi.differences>
             <revapi.differences>
+              <justification>New question/answer API</justification>
+              <criticality>highlight</criticality>
+              <differences>
+                <item>
+                  <ignore>true</ignore>
+                  <code>java.method.addedToInterface</code>
+                  <new>method java.util.concurrent.CompletableFuture&lt;org.xwiki.contrib.replication.ReplicationSenderMessage&gt; org.xwiki.contrib.replication.ReplicationSender::answer(java.lang.String, java.util.Map&lt;java.lang.String, java.util.Collection&lt;java.lang.String&gt;&gt;) throws org.xwiki.contrib.replication.ReplicationException</new>
+                </item>
+                <item>
+                  <ignore>true</ignore>
+                  <code>java.method.addedToInterface</code>
+                  <new>method java.util.concurrent.CompletableFuture&lt;org.xwiki.contrib.replication.ReplicationAnswer&gt; org.xwiki.contrib.replication.ReplicationSender::ask(org.xwiki.contrib.replication.ReplicationSenderMessage, java.util.Collection&lt;org.xwiki.contrib.replication.ReplicationInstance&gt;) throws org.xwiki.contrib.replication.ReplicationException</new>
+                </item>
+              </differences>
+            </revapi.differences>
+            <revapi.differences>
               <justification>Yound API which does not make sense anymore</justification>
               <criticality>highlight</criticality>
               <differences>
