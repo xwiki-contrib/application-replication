@@ -19,12 +19,16 @@
  */
 package org.xwiki.replication.test;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,6 +53,7 @@ import org.xwiki.rest.model.jaxb.History;
 import org.xwiki.rest.model.jaxb.HistorySummary;
 import org.xwiki.rest.model.jaxb.Page;
 import org.xwiki.rest.model.jaxb.Property;
+import org.xwiki.rest.resources.attachments.AttachmentResource;
 import org.xwiki.rest.resources.pages.PageResource;
 import org.xwiki.test.ui.AbstractTest;
 import org.xwiki.test.ui.TestUtils;
@@ -61,6 +66,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
@@ -156,6 +162,29 @@ public class ReplicationIT extends AbstractTest
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    private void assertEqualsAttachContentWithTimeout(EntityReference attachmentReference, String content)
+        throws InterruptedException
+    {
+        assertEqualsWithTimeout(content, () -> {
+            try {
+                return getAttachContent(attachmentReference);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private String getAttachContent(EntityReference attachmentReference) throws Exception
+    {
+        try (InputStream is = getUtil().rest().<InputStream>get(AttachmentResource.class, attachmentReference, false)) {
+            if (is != null) {
+                return IOUtils.toString(is, StandardCharsets.UTF_8);
+            }
+
+            return null;
+        }
     }
 
     private void assertEqualsCustomWithTimeout(String uri, String value) throws InterruptedException
@@ -328,6 +357,9 @@ public class ReplicationIT extends AbstractTest
 
         // Reference replication
         replicateEmpty();
+
+        // Attachment replication
+        replicateAttachments();
 
         // Replication reaction to configuration change
         changeController();
@@ -900,6 +932,76 @@ public class ReplicationIT extends AbstractTest
         assertDoesNotExistWithTimeout(documentReference);
 
         // TODO: ASSERT) The deleted document has the expected id
+    }
+
+    private void replicateAttachments() throws Exception
+    {
+        Page page = new Page();
+        page.setSpace(REPLICATION_ALL.getParent().getName());
+        page.setName("ReplicatedWithAttachments");
+
+        LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
+        EntityReference attachment1Reference =
+            new EntityReference("attach1.txt", EntityType.ATTACHMENT, documentReference);
+        EntityReference attachment2Reference =
+            new EntityReference("attach2.txt", EntityType.ATTACHMENT, documentReference);
+
+        // Clean any pre-existing
+        getUtil().rest().delete(documentReference);
+
+        // Create a page on XWiki 0
+        getUtil().switchExecutor(INSTANCE_0);
+        page.setContent("content");
+        getUtil().rest().save(page);
+
+        // TODO: create the page with an attachment from the start
+
+        //////////////////////
+        // Add attachments
+
+        // Attachment several files
+        getUtil().switchExecutor(INSTANCE_0);
+        getUtil().attachFile(attachment1Reference, new ByteArrayInputStream("attach1".getBytes()), true);
+        getUtil().attachFile(attachment2Reference, new ByteArrayInputStream("attach2".getBytes()), true);
+        assertEquals("attach1", getAttachContent(attachment1Reference));
+        assertEquals("attach2", getAttachContent(attachment2Reference));
+
+        // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_1);
+        assertEqualsAttachContentWithTimeout(attachment1Reference, "attach1");
+        assertEqualsAttachContentWithTimeout(attachment2Reference, "attach2");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "3.1", page.getVersion());
+
+        // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_2);
+        assertEqualsAttachContentWithTimeout(attachment1Reference, "attach1");
+        assertEqualsAttachContentWithTimeout(attachment2Reference, "attach2");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "3.1", page.getVersion());
+
+        //////////////////////
+        // Update existing attachment
+
+        // Update attachment1 on XWiki 0
+        getUtil().switchExecutor(INSTANCE_0);
+        getUtil().attachFile(attachment1Reference, new ByteArrayInputStream("attach1modified".getBytes()), false);
+        assertEquals("attach1modified", getAttachContent(attachment1Reference));
+        assertEquals("attach2", getAttachContent(attachment2Reference));
+
+        // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_1);
+        assertEqualsAttachContentWithTimeout(attachment1Reference, "attach1modified");
+        assertEqualsAttachContentWithTimeout(attachment2Reference, "attach2");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "4.1", page.getVersion());
+
+        // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_2);
+        assertEqualsAttachContentWithTimeout(attachment1Reference, "attach1modified");
+        assertEqualsAttachContentWithTimeout(attachment2Reference, "attach2");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "4.1", page.getVersion());
     }
 
     private void setConfiguration(EntityReference reference, DocumentReplicationLevel level)
