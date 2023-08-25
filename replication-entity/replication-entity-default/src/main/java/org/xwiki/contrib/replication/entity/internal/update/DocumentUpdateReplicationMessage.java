@@ -243,7 +243,7 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
             document.toXML(documentProperties, xarProperties);
         } catch (Exception e) {
             throw new XWikiException(XWikiException.MODULE_XWIKI_DOC, XWikiException.ERROR_XWIKI_DOC_EXPORT,
-                "Error serializin document to xml", e, null);
+                "Error serializing document to XML", e, null);
         }
     }
 }
