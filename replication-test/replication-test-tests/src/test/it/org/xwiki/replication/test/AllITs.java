@@ -43,6 +43,8 @@ public class AllITs
 
     public static final int INSTANCE_0_2 = 3;
 
+    public static final boolean INSTANCE_0_2_ENABLED = true;
+
     public static final int INSTANCE_1 = 1;
 
     public static final int INSTANCE_2 = 2;
@@ -50,8 +52,10 @@ public class AllITs
     @PageObjectSuite.PreStart
     public void preStart(List<XWikiExecutor> executors) throws Exception
     {
-        setupChannel(executors.get(INSTANCE_0), "tcp");
-        setupChannel(executors.get(INSTANCE_0_2), "tcp");
+        if (INSTANCE_0_2_ENABLED) {
+            setupChannel(executors.get(INSTANCE_0), "tcp");
+            setupChannel(executors.get(INSTANCE_0_2), "tcp");
+        }
     }
 
     private void setupChannel(XWikiExecutor executor, String channelName) throws Exception
