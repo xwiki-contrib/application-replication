@@ -50,7 +50,7 @@
     <xwikiPropertiesAdditionalProperties>test.prchecker.excludePattern=.*:XWiki.Replication.Admin</xwikiPropertiesAdditionalProperties>
 
     <xwiki.instance.directory>${project.build.directory}/xwiki</xwiki.instance.directory>
-    <xwiki.database.directory>${project.build.directory}/data/database</xwiki.database.directory>
+    <xwiki.database.directory>${xwiki.instance.directory}/data/database</xwiki.database.directory>
     <xwiki.store.file.directory>${xwiki.instance.directory}/data/store/file</xwiki.store.file.directory>
 
     <xwiki.jacoco.instructionRatio>0.00</xwiki.jacoco.instructionRatio>

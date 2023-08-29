@@ -30,6 +30,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.suigeneris.jrcs.rcs.Version;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
@@ -149,8 +150,9 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         // Indicate in the new document the xobjects which don't exist anymore
         cleanXObjects(previousDocument, replicationDocument);
 
-        // Indicate in the new document the attachments which don't exist anymore
-        cleanAttachments(previousDocument, replicationDocument);
+        // We need to do some manipulations on the attachments to end up with the expected result, especially regarding
+        // the versionning and the content store
+        prepareUpdateAttachments(previousDocument, replicationDocument);
 
         if (replicationDocument.getRCSVersion().isLessOrEqualThan(databaseDocument.getRCSVersion())) {
             // The replicated document version conflicts with an existing one (generally because several instances sent
@@ -219,13 +221,42 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         }
     }
 
-    private void cleanAttachments(XWikiDocument previousDocument, XWikiDocument replicationDocument)
+    private void prepareUpdateAttachments(XWikiDocument previousDocument, XWikiDocument replicationDocument)
     {
-        for (XWikiAttachment previousAttachment : previousDocument.getAttachmentList()) {
-            if (replicationDocument.getAttachment(previousAttachment.getFilename()) == null) {
-                // The attachment does not exist anymore, add it and then properly remove it
-                replicationDocument.setAttachment(previousAttachment);
-                replicationDocument.removeAttachment(previousAttachment);
+        if (previousDocument != null) {
+            for (XWikiAttachment previousAttachment : previousDocument.getAttachmentList()) {
+                XWikiAttachment replicationAttachment =
+                    replicationDocument.getAttachment(previousAttachment.getFilename());
+                if (replicationAttachment == null) {
+                    // The attachment does not exist anymore, add it and then properly remove it
+                    replicationDocument.setAttachment(previousAttachment);
+                    replicationDocument.removeAttachment(previousAttachment);
+                } else {
+                    // Keep the same store and archive as the current attachment
+                    replicationAttachment.setContentStore(previousAttachment.getContentStore());
+                    replicationAttachment.setArchiveStore(previousAttachment.getArchiveStore());
+                }
+            }
+        }
+
+        // Prepare versions
+        for (XWikiAttachment replicationAttachment : replicationDocument.getAttachmentList()) {
+            // Prepare the version
+            if (replicationAttachment.getAttachment_content() != null) {
+                // Attachment for which a new content is provided is going to have its version incremented so me need to
+                // make sure that when incremented we end up with the intended version
+                Version previousVersion;
+                int[] numbers = replicationAttachment.getRCSVersion().getNumbers();
+                int versionIndex = numbers.length - 1;
+                if (numbers[versionIndex] == 1) {
+                    // Previous version of a new attachment is no version
+                    previousVersion = null;
+                } else {
+                    // Decrement the version
+                    numbers[versionIndex] = numbers[versionIndex] - 1;
+                    previousVersion = new Version(numbers);
+                }
+                replicationAttachment.setRCSVersion(previousVersion);
             }
         }
     }
@@ -242,7 +273,13 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
 
     private void completeUpdate(XWikiDocument replicationDocument, XWikiContext xcontext) throws ReplicationException
     {
-        // We want to save the document as is
+        // Make sure the document is going to be saved as is
+        for (XWikiAttachment replicationAttachment : replicationDocument.getAttachmentList()) {
+            replicationAttachment.setMetaDataDirty(false);
+            if (replicationAttachment.getAttachment_content() != null) {
+                replicationAttachment.getAttachment_content().setContentDirty(false);
+            }
+        }
         replicationDocument.setMetaDataDirty(false);
         replicationDocument.setContentDirty(false);
 

@@ -21,6 +21,7 @@ package org.xwiki.replication.test;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +51,7 @@ import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.LocalDocumentReference;
 import org.xwiki.model.reference.ObjectReference;
 import org.xwiki.model.reference.WikiReference;
+import org.xwiki.rest.model.jaxb.Attachment;
 import org.xwiki.rest.model.jaxb.History;
 import org.xwiki.rest.model.jaxb.HistorySummary;
 import org.xwiki.rest.model.jaxb.Page;
@@ -67,14 +69,15 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0_2;
+import static org.xwiki.replication.test.AllITs.INSTANCE_0_2_ENABLED;
 import static org.xwiki.replication.test.AllITs.INSTANCE_1;
 import static org.xwiki.replication.test.AllITs.INSTANCE_2;
 
@@ -166,27 +169,30 @@ public class ReplicationIT extends AbstractTest
         });
     }
 
-    private void assertEqualsAttachContentWithTimeout(EntityReference attachmentReference, String content)
+    private void assertEqualsVersionWithTimeout(LocalDocumentReference documentReference, String version)
         throws InterruptedException
     {
-        assertEqualsWithTimeout(content, () -> {
+        assertEqualsWithTimeout(version, () -> {
             try {
-                return getAttachContent(attachmentReference);
+                Page page = getUtil().rest().<Page>get(documentReference, false);
+
+                return page != null ? page.getVersion() : null;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
     }
 
-    private String getAttachContent(EntityReference attachmentReference) throws Exception
+    private void assertEqualsAttachContentWithTimeout(EntityReference attachmentReference, String content)
+        throws InterruptedException
     {
-        try (InputStream is = getUtil().rest().<InputStream>get(AttachmentResource.class, attachmentReference, false)) {
-            if (is != null) {
-                return IOUtils.toString(is, StandardCharsets.UTF_8);
+        assertEqualsWithTimeout(content, () -> {
+            try {
+                return getAttachmentContent(attachmentReference);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-
-            return null;
-        }
+        });
     }
 
     private void assertEqualsCustomWithTimeout(String uri, String value) throws InterruptedException
@@ -291,6 +297,26 @@ public class ReplicationIT extends AbstractTest
         });
 
         return new ReplicationPage();
+    }
+
+    private String getAttachmentContent(EntityReference attachmentReference) throws Exception
+    {
+        try (InputStream is = getUtil().rest().<InputStream>get(AttachmentResource.class, attachmentReference, false)) {
+            if (is != null) {
+                return IOUtils.toString(is, StandardCharsets.UTF_8);
+            }
+
+            return null;
+        }
+    }
+
+    private Page getPageWithAttachments(EntityReference documentReference) throws Exception
+    {
+        String uri = getUtil().rest()
+            .createUri(PageResource.class, Map.of(), getUtil().rest().toElements(documentReference)).toString();
+        uri += "?attachments=true";
+
+        return getUtil().rest().get(new URI(uri), documentReference);
     }
 
     private void saveMinor(Page page) throws Exception
@@ -429,10 +455,12 @@ public class ReplicationIT extends AbstractTest
         setCustom(INSTANCE_CUSTOM_0);
         assertEquals(INSTANCE_CUSTOM_0, getCustom(this.proxyURI0));
         // Make sure the other cluster member have the changes
-        getUtil().switchExecutor(INSTANCE_0_2);
-        admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
-        assertEquals(INSTANCE_NAME_0, admin0.getCurrentName());
-        assertEquals(this.proxyURI0, admin0.getCurrentURI());
+        if (INSTANCE_0_2_ENABLED) {
+            getUtil().switchExecutor(INSTANCE_0_2);
+            admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
+            assertEquals(INSTANCE_NAME_0, admin0.getCurrentName());
+            assertEquals(this.proxyURI0, admin0.getCurrentURI());
+        }
         // Configure instance1 name and URI
         getUtil().switchExecutor(INSTANCE_1);
         WikiReplicationAdministrationSectionPage admin1 = WikiReplicationAdministrationSectionPage.gotoPage();
@@ -593,9 +621,11 @@ public class ReplicationIT extends AbstractTest
         replicationPageAdmin.save();
 
         // Make sure the other cluster member have the changes
-        getUtil().switchExecutor(INSTANCE_0_2);
-        replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL.getParent(), "all");
-        assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
+        if (INSTANCE_0_2_ENABLED) {
+            getUtil().switchExecutor(INSTANCE_0_2);
+            replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL.getParent(), "all");
+            assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
+        }
 
         // Make sure the configuration is replicated on instance1
         getUtil().switchExecutor(INSTANCE_1);
@@ -625,9 +655,6 @@ public class ReplicationIT extends AbstractTest
         page.setName("ReplicatedPage");
 
         LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
-
-        // Clean any pre-existing
-        getUtil().rest().delete(documentReference);
 
         ////////////////////////////////////
         // Page creation on XWiki 0
@@ -875,9 +902,6 @@ public class ReplicationIT extends AbstractTest
 
         LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
 
-        // Clean any pre-existing
-        getUtil().rest().delete(documentReference);
-
         ////////////////////////////////////
         // Page creation on XWiki 0
         ////////////////////////////////////
@@ -992,9 +1016,6 @@ public class ReplicationIT extends AbstractTest
         EntityReference attachment2Reference =
             new EntityReference("attach2.txt", EntityType.ATTACHMENT, documentReference);
 
-        // Clean any pre-existing
-        getUtil().rest().delete(documentReference);
-
         // Create a page on XWiki 0
         getUtil().switchExecutor(INSTANCE_0);
         page.setContent("content");
@@ -1009,22 +1030,32 @@ public class ReplicationIT extends AbstractTest
         getUtil().switchExecutor(INSTANCE_0);
         getUtil().attachFile(attachment1Reference, new ByteArrayInputStream("attach1".getBytes()), true);
         getUtil().attachFile(attachment2Reference, new ByteArrayInputStream("attach2".getBytes()), true);
-        assertEquals("attach1", getAttachContent(attachment1Reference));
-        assertEquals("attach2", getAttachContent(attachment2Reference));
+        assertEquals("attach1", getAttachmentContent(attachment1Reference));
+        assertEquals("attach2", getAttachmentContent(attachment2Reference));
 
         // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
         getUtil().switchExecutor(INSTANCE_1);
-        assertEqualsAttachContentWithTimeout(attachment1Reference, "attach1");
-        assertEqualsAttachContentWithTimeout(attachment2Reference, "attach2");
-        page = getUtil().rest().<Page>get(documentReference);
+        assertEqualsVersionWithTimeout(documentReference, "3.1");
+        assertEquals("attach1", getAttachmentContent(attachment1Reference));
+        assertEquals("attach2", getAttachmentContent(attachment2Reference));
+        page = getPageWithAttachments(documentReference);
         assertEquals("Wrong version in the replicated document", "3.1", page.getVersion());
+        Attachment attachment1 = getAttachment(page, attachment1Reference.getName());
+        assertEquals("1.1", attachment1.getVersion());
+        Attachment attachment2 = getAttachment(page, attachment2Reference.getName());
+        assertEquals("1.1", attachment2.getVersion());
 
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
         getUtil().switchExecutor(INSTANCE_2);
-        assertEqualsAttachContentWithTimeout(attachment1Reference, "attach1");
-        assertEqualsAttachContentWithTimeout(attachment2Reference, "attach2");
-        page = getUtil().rest().<Page>get(documentReference);
+        assertEqualsVersionWithTimeout(documentReference, "3.1");
+        assertEquals("attach1", getAttachmentContent(attachment1Reference));
+        assertEquals("attach2", getAttachmentContent(attachment2Reference));
+        page = getPageWithAttachments(documentReference);
         assertEquals("Wrong version in the replicated document", "3.1", page.getVersion());
+        attachment1 = getAttachment(page, attachment1Reference.getName());
+        assertEquals("1.1", attachment1.getVersion());
+        attachment2 = getAttachment(page, attachment2Reference.getName());
+        assertEquals("1.1", attachment2.getVersion());
 
         //////////////////////
         // Update existing attachment
@@ -1032,22 +1063,43 @@ public class ReplicationIT extends AbstractTest
         // Update attachment1 on XWiki 0
         getUtil().switchExecutor(INSTANCE_0);
         getUtil().attachFile(attachment1Reference, new ByteArrayInputStream("attach1modified".getBytes()), false);
-        assertEquals("attach1modified", getAttachContent(attachment1Reference));
-        assertEquals("attach2", getAttachContent(attachment2Reference));
+        assertEquals("attach1modified", getAttachmentContent(attachment1Reference));
+        assertEquals("attach2", getAttachmentContent(attachment2Reference));
 
         // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
         getUtil().switchExecutor(INSTANCE_1);
-        assertEqualsAttachContentWithTimeout(attachment1Reference, "attach1modified");
-        assertEqualsAttachContentWithTimeout(attachment2Reference, "attach2");
-        page = getUtil().rest().<Page>get(documentReference);
+        assertEqualsVersionWithTimeout(documentReference, "4.1");
+        assertEquals("attach1modified", getAttachmentContent(attachment1Reference));
+        assertEquals("attach2", getAttachmentContent(attachment2Reference));
+        page = getPageWithAttachments(documentReference);
         assertEquals("Wrong version in the replicated document", "4.1", page.getVersion());
+        attachment1 = getAttachment(page, attachment1Reference.getName());
+        assertEquals("1.2", attachment1.getVersion());
+        attachment2 = getAttachment(page, attachment2Reference.getName());
+        assertEquals("1.1", attachment2.getVersion());
 
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
         getUtil().switchExecutor(INSTANCE_2);
-        assertEqualsAttachContentWithTimeout(attachment1Reference, "attach1modified");
-        assertEqualsAttachContentWithTimeout(attachment2Reference, "attach2");
-        page = getUtil().rest().<Page>get(documentReference);
+        assertEqualsVersionWithTimeout(documentReference, "4.1");
+        assertEquals("attach1modified", getAttachmentContent(attachment1Reference));
+        assertEquals("attach2", getAttachmentContent(attachment2Reference));
+        page = getPageWithAttachments(documentReference);
         assertEquals("Wrong version in the replicated document", "4.1", page.getVersion());
+        attachment1 = getAttachment(page, attachment1Reference.getName());
+        assertEquals("1.2", attachment1.getVersion());
+        attachment2 = getAttachment(page, attachment2Reference.getName());
+        assertEquals("1.1", attachment2.getVersion());
+    }
+
+    private Attachment getAttachment(Page page, String name)
+    {
+        for (Attachment attachment : page.getAttachments().getAttachments()) {
+            if (attachment.getName().equals(name)) {
+                return attachment;
+            }
+        }
+
+        return null;
     }
 
     private void setConfiguration(EntityReference reference, DocumentReplicationLevel level)
@@ -1273,10 +1325,6 @@ public class ReplicationIT extends AbstractTest
     {
         LocalDocumentReference reference = new LocalDocumentReference("Like", "WebHome");
 
-        // Clean any pre-existing
-        getUtil().switchExecutor(INSTANCE_0);
-        getUtil().rest().delete(reference);
-
         // Configure replication
         setConfiguration(reference, DocumentReplicationLevel.ALL);
         // Make sure to wait until the configuration is replicated
@@ -1308,14 +1356,6 @@ public class ReplicationIT extends AbstractTest
     private void network() throws Exception
     {
         LocalDocumentReference documentReference = new LocalDocumentReference("Network", "WebHome");
-
-        // Clean any pre-existing
-        getUtil().switchExecutor(INSTANCE_0);
-        getUtil().rest().delete(documentReference);
-        getUtil().switchExecutor(INSTANCE_1);
-        getUtil().rest().delete(documentReference);
-        getUtil().switchExecutor(INSTANCE_2);
-        getUtil().rest().delete(documentReference);
 
         // Configure replication
         getUtil().switchExecutor(INSTANCE_0);
@@ -1383,10 +1423,6 @@ public class ReplicationIT extends AbstractTest
     private void conflict() throws Exception
     {
         LocalDocumentReference documentReference = new LocalDocumentReference("Conflict", "WebHome");
-
-        // Clean any pre-existing
-        getUtil().switchExecutor(INSTANCE_0);
-        getUtil().rest().delete(documentReference);
 
         // Configure replication
         setConfiguration(documentReference, DocumentReplicationLevel.ALL);
