@@ -33,7 +33,6 @@ import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
-import org.suigeneris.jrcs.rcs.Version;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
@@ -49,6 +48,7 @@ import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
 import com.xpn.xwiki.doc.XWikiAttachment;
 import com.xpn.xwiki.doc.XWikiDocument;
+import com.xpn.xwiki.internal.doc.ListAttachmentArchive;
 import com.xpn.xwiki.objects.BaseObject;
 
 /**
@@ -95,6 +95,29 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         }
     }
 
+    private void prepare(XWikiDocument previousDocument, XWikiDocument replicationDocument, XWikiContext xcontext)
+        throws ReplicationException
+    {
+        // Indicate in the new document the xobjects which don't exist anymore
+        cleanXObjects(previousDocument, replicationDocument);
+
+        // We need to do some manipulations on the attachments to end up with the expected result, especially regarding
+        // the versionning and the content store
+        try {
+            prepareUpdateAttachments(previousDocument, replicationDocument, xcontext);
+        } catch (Exception e) {
+            throw new ReplicationException("Failed to prepare attachments", e);
+        }
+
+        if (replicationDocument.getRCSVersion().isLessOrEqualThan(previousDocument.getRCSVersion())) {
+            // The replicated document version conflicts with an existing one (generally because several instances sent
+            // concurrent modifications of the same document), we save it with a natural incrementation of the local
+            // version
+            replicationDocument.setRCSVersion(
+                XWikiDocument.getNextVersion(previousDocument.getRCSVersion(), replicationDocument.isMinorEdit()));
+        }
+    }
+
     private void update(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiDocument replicationDocument, XWikiContext xcontext) throws ReplicationException
     {
@@ -115,20 +138,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         // Clone the current document to have a modifiable version
         XWikiDocument previousDocument = databaseDocument.clone();
 
-        // Indicate in the new document the xobjects which don't exist anymore
-        cleanXObjects(previousDocument, replicationDocument);
-
-        // We need to do some manipulations on the attachments to end up with the expected result, especially regarding
-        // the versionning and the content store
-        prepareUpdateAttachments(previousDocument, replicationDocument);
-
-        if (replicationDocument.getRCSVersion().isLessOrEqualThan(databaseDocument.getRCSVersion())) {
-            // The replicated document version conflicts with an existing one (generally because several instances sent
-            // concurrent modifications of the same document), we save it with a natural incrementation of the local
-            // version
-            replicationDocument.setRCSVersion(
-                XWikiDocument.getNextVersion(databaseDocument.getRCSVersion(), replicationDocument.isMinorEdit()));
-        }
+        prepare(previousDocument, replicationDocument, xcontext);
 
         // We want to save the document as is (among other things we want to make sure to keep the same date as in
         // the message)
@@ -188,43 +198,53 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         }
     }
 
-    private void prepareUpdateAttachments(XWikiDocument previousDocument, XWikiDocument replicationDocument)
+    private void prepareUpdateAttachments(XWikiDocument previousDocument, XWikiDocument replicationDocument,
+        XWikiContext xcontext) throws XWikiException
     {
-        if (previousDocument != null) {
-            for (XWikiAttachment previousAttachment : previousDocument.getAttachmentList()) {
-                XWikiAttachment replicationAttachment =
-                    replicationDocument.getAttachment(previousAttachment.getFilename());
-                if (replicationAttachment == null) {
-                    // The attachment does not exist anymore, add it and then properly remove it
-                    replicationDocument.setAttachment(previousAttachment);
-                    replicationDocument.removeAttachment(previousAttachment);
-                } else {
-                    // Keep the same store and archive as the current attachment
-                    replicationAttachment.setContentStore(previousAttachment.getContentStore());
-                    replicationAttachment.setArchiveStore(previousAttachment.getArchiveStore());
+        for (XWikiAttachment previousAttachment : previousDocument.getAttachmentList()) {
+            XWikiAttachment replicationAttachment = replicationDocument.getAttachment(previousAttachment.getFilename());
+            if (replicationAttachment == null) {
+                // The attachment does not exist anymore, add it and then properly remove it
+                replicationDocument.setAttachment(previousAttachment);
+                replicationDocument.removeAttachment(previousAttachment);
+            } else {
+                // Make sure to keep the same content and archive stores as the currently stored attachment
+                // TODO: remove when upgrading to a version where https://jira.xwiki.org/browse/XWIKI-21273 is fixed
+                replicationAttachment.setContentStore(previousAttachment.getContentStore());
+                replicationAttachment.setArchiveStore(previousAttachment.getArchiveStore());
+
+                // The store assume the attachment does not have an archive at all if it's not already loaded
+                // TODO: remove when upgrading to a version where https://jira.xwiki.org/browse/XWIKI-21276 is fixed
+                replicationAttachment.setAttachment_archive(previousAttachment.getAttachmentArchive(xcontext));
+                if (replicationAttachment.getAttachment_archive() != null) {
+                    replicationAttachment.getAttachment_archive().setAttachment(replicationAttachment);
                 }
             }
         }
 
         // Prepare versions
         for (XWikiAttachment replicationAttachment : replicationDocument.getAttachmentList()) {
-            // Prepare the version
-            if (replicationAttachment.getAttachment_content() != null) {
-                // Attachment for which a new content is provided is going to have its version incremented so me need to
-                // make sure that when incremented we end up with the intended version
-                Version previousVersion;
-                int[] numbers = replicationAttachment.getRCSVersion().getNumbers();
-                int versionIndex = numbers.length - 1;
-                if (numbers[versionIndex] == 1) {
-                    // Previous version of a new attachment is no version
-                    previousVersion = null;
-                } else {
-                    // Decrement the version
-                    numbers[versionIndex] = numbers[versionIndex] - 1;
-                    previousVersion = new Version(numbers);
-                }
-                replicationAttachment.setRCSVersion(previousVersion);
+            if (replicationAttachment.getAttachment_content() != null
+                && previousDocument.getAttachment(replicationAttachment.getFilename()) == null) {
+                // New attachments will have their version incremented and date updated so we need to create the archive
+                // we want ourself before saving it
+                // The code is based on ListAttachmentArchive#updateArchive logic (which cannot be reused because it
+                // increment the version and update the date)
+                // TODO: remove when upgrading to a version where https://jira.xwiki.org/browse/XWIKI-21270 is fixed
+
+                // Craft a custom archive
+                ListAttachmentArchive archive = new ListAttachmentArchive(replicationAttachment);
+                XWikiAttachment archiveAttachment = replicationAttachment.clone();
+                archiveAttachment.setAttachment_archive(archive);
+                archive.add(archiveAttachment);
+
+                // Assign the custom archive to the attachment before the save so that it's not generated (and
+                // incremented) by the store
+                replicationAttachment.setAttachment_archive(archive);
             }
+
+            // Make sure the attachment metadata is not dirty
+            replicationAttachment.setMetaDataDirty(false);
         }
     }
 
