@@ -1085,6 +1085,8 @@ public class ReplicationIT extends AbstractTest
         LocalDocumentReference page1_2 =
             new LocalDocumentReference("WebHome", new EntityReference("page1_2", EntityType.SPACE, page1Space));
 
+        getUtil().switchExecutor(INSTANCE_1);
+
         getUtil().rest().savePage(page1, "content1", "");
         getUtil().rest().savePage(page1_1, "content1_1", "");
         getUtil().rest().savePage(page1_1_1, "content1_1_1", "");
