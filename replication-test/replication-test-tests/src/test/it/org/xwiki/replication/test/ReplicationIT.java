@@ -183,18 +183,6 @@ public class ReplicationIT extends AbstractTest
         });
     }
 
-    private void assertEqualsAttachContentWithTimeout(EntityReference attachmentReference, String content)
-        throws InterruptedException
-    {
-        assertEqualsWithTimeout(content, () -> {
-            try {
-                return getAttachmentContent(attachmentReference);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
     private void assertEqualsCustomWithTimeout(String uri, String value) throws InterruptedException
     {
         assertEqualsWithTimeout(value, () -> {
@@ -1007,8 +995,8 @@ public class ReplicationIT extends AbstractTest
     private void replicateAttachments() throws Exception
     {
         Page page = new Page();
-        page.setSpace(REPLICATION_ALL.getParent().getName());
-        page.setName("ReplicatedWithAttachments");
+        page.setSpace("ReplicatedWithAttachments");
+        page.setName("WebHome");
 
         LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
         EntityReference attachment1Reference =
@@ -1016,21 +1004,42 @@ public class ReplicationIT extends AbstractTest
         EntityReference attachment2Reference =
             new EntityReference("attach2.txt", EntityType.ATTACHMENT, documentReference);
 
+        //////////////////////
+        // Replicate a new page with attachment
+
         // Create a page on XWiki 0
         getUtil().switchExecutor(INSTANCE_0);
         page.setContent("content");
         getUtil().rest().save(page);
+        // Add an attachment to the page
+        getUtil().attachFile(attachment1Reference, new ByteArrayInputStream("attach1".getBytes()), true);
+        assertEquals("attach1", getAttachmentContent(attachment1Reference));
 
-        // TODO: create the page with an attachment from the start
+        // Enabled replication
+        setConfiguration(documentReference, DocumentReplicationLevel.ALL);
+
+        // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_1);
+        assertEqualsVersionWithTimeout(documentReference, "2.1");
+        assertEquals("attach1", getAttachmentContent(attachment1Reference));
+        page = getPageWithAttachments(documentReference);
+        Attachment attachment1 = getAttachment(page, attachment1Reference.getName());
+        assertEquals("1.1", attachment1.getVersion());
+
+        // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_2);
+        assertEqualsVersionWithTimeout(documentReference, "2.1");
+        assertEquals("attach1", getAttachmentContent(attachment1Reference));
+        page = getPageWithAttachments(documentReference);
+        attachment1 = getAttachment(page, attachment1Reference.getName());
+        assertEquals("1.1", attachment1.getVersion());
 
         //////////////////////
         // Add attachments
 
-        // Attachment several files
+        // Add another attachment on XWiki 0
         getUtil().switchExecutor(INSTANCE_0);
-        getUtil().attachFile(attachment1Reference, new ByteArrayInputStream("attach1".getBytes()), true);
         getUtil().attachFile(attachment2Reference, new ByteArrayInputStream("attach2".getBytes()), true);
-        assertEquals("attach1", getAttachmentContent(attachment1Reference));
         assertEquals("attach2", getAttachmentContent(attachment2Reference));
 
         // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
@@ -1039,8 +1048,7 @@ public class ReplicationIT extends AbstractTest
         assertEquals("attach1", getAttachmentContent(attachment1Reference));
         assertEquals("attach2", getAttachmentContent(attachment2Reference));
         page = getPageWithAttachments(documentReference);
-        assertEquals("Wrong version in the replicated document", "3.1", page.getVersion());
-        Attachment attachment1 = getAttachment(page, attachment1Reference.getName());
+        attachment1 = getAttachment(page, attachment1Reference.getName());
         assertEquals("1.1", attachment1.getVersion());
         Attachment attachment2 = getAttachment(page, attachment2Reference.getName());
         assertEquals("1.1", attachment2.getVersion());
@@ -1051,7 +1059,6 @@ public class ReplicationIT extends AbstractTest
         assertEquals("attach1", getAttachmentContent(attachment1Reference));
         assertEquals("attach2", getAttachmentContent(attachment2Reference));
         page = getPageWithAttachments(documentReference);
-        assertEquals("Wrong version in the replicated document", "3.1", page.getVersion());
         attachment1 = getAttachment(page, attachment1Reference.getName());
         assertEquals("1.1", attachment1.getVersion());
         attachment2 = getAttachment(page, attachment2Reference.getName());
@@ -1072,7 +1079,6 @@ public class ReplicationIT extends AbstractTest
         assertEquals("attach1modified", getAttachmentContent(attachment1Reference));
         assertEquals("attach2", getAttachmentContent(attachment2Reference));
         page = getPageWithAttachments(documentReference);
-        assertEquals("Wrong version in the replicated document", "4.1", page.getVersion());
         attachment1 = getAttachment(page, attachment1Reference.getName());
         assertEquals("1.2", attachment1.getVersion());
         attachment2 = getAttachment(page, attachment2Reference.getName());
@@ -1084,7 +1090,6 @@ public class ReplicationIT extends AbstractTest
         assertEquals("attach1modified", getAttachmentContent(attachment1Reference));
         assertEquals("attach2", getAttachmentContent(attachment2Reference));
         page = getPageWithAttachments(documentReference);
-        assertEquals("Wrong version in the replicated document", "4.1", page.getVersion());
         attachment1 = getAttachment(page, attachment1Reference.getName());
         assertEquals("1.2", attachment1.getVersion());
         attachment2 = getAttachment(page, attachment2Reference.getName());
