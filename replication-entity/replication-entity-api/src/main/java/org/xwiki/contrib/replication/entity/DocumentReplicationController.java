@@ -79,7 +79,7 @@ public interface DocumentReplicationController
     }
 
     /**
-     * Indicate the list of registered instances this messages should be relayed to.
+     * Indicate the list of registered instances this message should be relayed to.
      * 
      * @param message the message to relay
      * @return the registered instances on which to replicate the document
