@@ -96,8 +96,9 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
             throw new ReplicationException("Failed to save the document", e);
         }
 
-        // Set the document owner
-        if (this.messageReader.getMetadata(message, DocumentReferenceReplicationMessage.METADATA_CREATOR, true, true)) {
+        // Set the document owner if not already set
+        String owner = this.entityReplication.getOwner(documentReference);
+        if (owner == null) {
             this.documentStore.setOwner(documentReference, message.getSource());
         }
     }

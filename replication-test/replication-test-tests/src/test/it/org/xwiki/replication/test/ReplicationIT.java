@@ -39,6 +39,7 @@ import org.xwiki.contrib.replication.internal.instance.StandardReplicationInstan
 import org.xwiki.contrib.replication.test.po.PageReplicationAdministrationSectionPage;
 import org.xwiki.contrib.replication.test.po.RegisteredInstancePane;
 import org.xwiki.contrib.replication.test.po.ReplicationConflictPane;
+import org.xwiki.contrib.replication.test.po.ReplicationDocExtraPane;
 import org.xwiki.contrib.replication.test.po.ReplicationPage;
 import org.xwiki.contrib.replication.test.po.RequestedInstancePane;
 import org.xwiki.contrib.replication.test.po.RequestingInstancePane;
@@ -863,6 +864,8 @@ public class ReplicationIT extends AbstractTest
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("content", page.getContent());
         assertEquals("1.1", page.getVersion());
+        ReplicationDocExtraPane replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals("Current instance", replicationExtraPane.getOwner());
 
         // ASSERT) The page should exist but be empty on XWiki 1
         getUtil().switchExecutor(INSTANCE_1);
@@ -870,6 +873,8 @@ public class ReplicationIT extends AbstractTest
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")", replicationExtraPane.getOwner());
 
         // ASSERT) The page should exist but be empty on XWiki 2
         getUtil().switchExecutor(INSTANCE_2);
@@ -877,6 +882,8 @@ public class ReplicationIT extends AbstractTest
             "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
         page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + this.proxyURI0 + ")", replicationExtraPane.getOwner());
 
         ////////////////////////////////////
         // Edit on XWiki 0
