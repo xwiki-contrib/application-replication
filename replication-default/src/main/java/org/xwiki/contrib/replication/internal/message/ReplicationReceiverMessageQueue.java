@@ -23,7 +23,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
-import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -158,9 +157,6 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
                 // Log the successfully handled message
                 this.logStore.saveAsync(filteredMessage, (m, e) -> {
                     Map<String, Object> custom = new HashMap<>(e.getCustom());
-
-                    // Generate a new id to avoid overwriting the stored one
-                    e.setId(UUID.randomUUID().toString());
 
                     // Make the event date be the handled date
                     e.setDate(new Date());
