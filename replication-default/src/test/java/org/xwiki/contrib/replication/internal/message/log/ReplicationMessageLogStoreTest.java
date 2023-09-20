@@ -23,7 +23,9 @@ import java.io.File;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
@@ -121,7 +123,7 @@ class ReplicationMessageLogStoreTest
     }
 
     @Test
-    void exist() throws EventStreamException, InterruptedException
+    void exist() throws EventStreamException, InterruptedException, ExecutionException
     {
         DefaultReplicationSenderMessage message =
             new DefaultReplicationSenderMessage("id", new Date(), "type", "source", Set.of("receiver1", "receiver2"),
@@ -129,11 +131,19 @@ class ReplicationMessageLogStoreTest
 
         assertFalse(this.logStore.exist(message.getId()));
 
-        Event event = this.logStore.saveSync(message, null);
+        this.logStore.saveSync(message, null);
 
-        assertNotEquals(message.getId(), event.getId());
+        Optional<String> eventId = this.logStore.getEventId(message.getId());
+
+        assertTrue(eventId.isPresent());
+        assertNotEquals(message.getId(), eventId.get());
 
         assertTrue(this.logStore.exist(message.getId()));
+
+        this.logStore.deleteAsync(message.getId()).get();
+
+        assertFalse(this.logStore.exist(message.getId()));
+        assertTrue(this.logStore.getEventId(message.getId()).isEmpty());
     }
 
     @Test

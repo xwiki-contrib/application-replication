@@ -30,6 +30,7 @@ import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.replication.ReplicationInstance;
@@ -71,6 +72,9 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
 
     @Inject
     private Provider<HttpServletRequestReplicationReceiverMessage> messageProvider;
+
+    @Inject
+    private Logger logger;
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, ReplicationResourceReference reference)
@@ -134,6 +138,10 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
 
     private void forgetMessage(ReplicationReceiverMessage message)
     {
-        this.messageLog.deleteAsync(message.getId());
+        try {
+            this.messageLog.deleteAsync(message.getId());
+        } catch (EventStreamException e) {
+            this.logger.error("Failed to delete the event", e);
+        }
     }
 }
