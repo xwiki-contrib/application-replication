@@ -87,7 +87,17 @@ public class ReplicationMessageLogStore
      */
     public boolean exist(String messageId) throws EventStreamException
     {
-        return this.store.getEvent(messageId).isPresent();
+        SimpleEventQuery eventQuery = new SimpleEventQuery();
+        // Check of an event exist with the same message id
+        eventQuery.custom().eq(ReplicationMessageEventQuery.KEY_ID, messageId);
+        // We don't need to actually get the result, we just want to know if some exist
+        eventQuery.setLimit(0);
+
+        try (EventSearchResult result = this.store.search(eventQuery, Set.of(Event.FIELD_ID))) {
+            return result.getTotalHits() > 0;
+        } catch (Exception e) {
+            throw new EventStreamException("Failed to close the search result", e);
+        }
     }
 
     /**
@@ -160,7 +170,6 @@ public class ReplicationMessageLogStore
         // We want to hide this event as much as possible
         event.setHidden(true);
 
-        event.setId(message.getId());
         event.setUser(SUPERADMIN);
         event.setApplication(ReplicationMessageEventQuery.VALUE_APPLICATION);
         event.setImportance(Importance.BACKGROUND);
@@ -226,8 +235,8 @@ public class ReplicationMessageLogStore
 
     /**
      * @param id the identifier of the logged message
-     * @return the message extracted from the log or null if none exist for this id
      * @param receivers the instances which should handle the message
+     * @return the message extracted from the log or null if none exist for this id
      * @throws EventStreamException when failing to load the event matching the id
      * @since 1.3.0
      */
@@ -241,6 +250,7 @@ public class ReplicationMessageLogStore
 
         Event event = eventOptional.get();
 
+        String messageId = (String) event.getCustom().get(ReplicationMessageEventQuery.KEY_ID);
         String source = (String) event.getCustom().get(ReplicationMessageEventQuery.KEY_SOURCE);
         Collection<String> finalReceivers = receivers != null ? receivers
             : (Collection) event.getCustom().get(ReplicationMessageEventQuery.KEY_RECEIVERS);
@@ -254,7 +264,8 @@ public class ReplicationMessageLogStore
             }
         }
 
-        return new DefaultReplicationSenderMessage(id, event.getDate(), type, source, finalReceivers, metadata, null);
+        return new DefaultReplicationSenderMessage(messageId, event.getDate(), type, source, finalReceivers, metadata,
+            null);
     }
 
     /**

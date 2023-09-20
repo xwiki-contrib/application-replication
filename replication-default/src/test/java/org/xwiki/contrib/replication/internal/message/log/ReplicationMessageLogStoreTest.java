@@ -35,6 +35,7 @@ import org.xwiki.context.concurrent.ContextStoreManager;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.DefaultReplicationSenderMessage;
 import org.xwiki.environment.Environment;
+import org.xwiki.eventstream.Event;
 import org.xwiki.eventstream.EventStreamException;
 import org.xwiki.eventstream.internal.DefaultEventFactory;
 import org.xwiki.eventstream.internal.DefaultEventStore;
@@ -60,6 +61,9 @@ import com.xpn.xwiki.internal.model.reference.SpaceReferenceConverter;
 import com.xpn.xwiki.test.reference.ReferenceComponentList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 /**
@@ -117,15 +121,31 @@ class ReplicationMessageLogStoreTest
     }
 
     @Test
+    void exist() throws EventStreamException, InterruptedException
+    {
+        DefaultReplicationSenderMessage message =
+            new DefaultReplicationSenderMessage("id", new Date(), "type", "source", Set.of("receiver1", "receiver2"),
+                Map.of("key1", List.of("value1"), "key2", List.of("value2")), null);
+
+        assertFalse(this.logStore.exist(message.getId()));
+
+        Event event = this.logStore.saveSync(message, null);
+
+        assertNotEquals(message.getId(), event.getId());
+
+        assertTrue(this.logStore.exist(message.getId()));
+    }
+
+    @Test
     void loadMessage() throws EventStreamException, InterruptedException
     {
         DefaultReplicationSenderMessage message =
             new DefaultReplicationSenderMessage("id", new Date(), "type", "source", Set.of("receiver1", "receiver2"),
                 Map.of("key1", List.of("value1"), "key2", List.of("value2")), null);
 
-        this.logStore.saveSync(message, null);
+        Event event = this.logStore.saveSync(message, null);
 
-        ReplicationSenderMessage loadedMessage = this.logStore.loadMessage("id");
+        ReplicationSenderMessage loadedMessage = this.logStore.loadMessage(event.getId());
 
         assertEquals(message.getId(), loadedMessage.getId());
         assertEquals(message.getCustomMetadata(), loadedMessage.getCustomMetadata());
@@ -134,7 +154,7 @@ class ReplicationMessageLogStoreTest
         assertEquals(message.getType(), loadedMessage.getType());
         assertEquals(Set.copyOf(message.getReceivers()), Set.copyOf(loadedMessage.getReceivers()));
 
-        loadedMessage = this.logStore.loadMessage("id", Set.of("receiver3", "receiver4"));
+        loadedMessage = this.logStore.loadMessage(event.getId(), Set.of("receiver3", "receiver4"));
 
         assertEquals(message.getId(), loadedMessage.getId());
         assertEquals(message.getCustomMetadata(), loadedMessage.getCustomMetadata());
