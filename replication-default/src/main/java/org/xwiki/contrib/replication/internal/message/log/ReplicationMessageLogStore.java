@@ -82,22 +82,34 @@ public class ReplicationMessageLogStore
 
     /**
      * @param messageId the identifier of the message
-     * @return true if the message was found
+     * @return the first event corresponding to this message
      * @throws EventStreamException when failing to search for the message
      */
-    public boolean exist(String messageId) throws EventStreamException
+    public Optional<String> getEventId(String messageId) throws EventStreamException
     {
         SimpleEventQuery eventQuery = new SimpleEventQuery();
         // Check of an event exist with the same message id
         eventQuery.custom().eq(ReplicationMessageEventQuery.KEY_ID, messageId);
         // We don't need to actually get the result, we just want to know if some exist
-        eventQuery.setLimit(0);
+        eventQuery.setLimit(1);
 
         try (EventSearchResult result = this.store.search(eventQuery, Set.of(Event.FIELD_ID))) {
-            return result.getTotalHits() > 0;
+            Optional<Event> event = result.stream().findFirst();
+
+            return event.isPresent() ? Optional.of(event.get().getId()) : Optional.empty();
         } catch (Exception e) {
             throw new EventStreamException("Failed to close the search result", e);
         }
+    }
+
+    /**
+     * @param messageId the identifier of the message
+     * @return true if the message was found
+     * @throws EventStreamException when failing to search for the message
+     */
+    public boolean exist(String messageId) throws EventStreamException
+    {
+        return getEventId(messageId).isPresent();
     }
 
     /**
@@ -216,10 +228,13 @@ public class ReplicationMessageLogStore
     /**
      * @param messageId the identifier of the message to delete
      * @return the new {@link CompletableFuture} providing the deleted {@link Event} or empty if none could be found
+     * @throws EventStreamException when failing to delete the event
      */
-    public CompletableFuture<Optional<Event>> deleteAsync(String messageId)
+    public CompletableFuture<Optional<Event>> deleteAsync(String messageId) throws EventStreamException
     {
-        return this.store.deleteEvent(messageId);
+        Optional<String> eventId = getEventId(messageId);
+
+        return eventId.isPresent() ? this.store.deleteEvent(eventId.get()) : null;
     }
 
     /**
