@@ -25,7 +25,7 @@
   <parent>
     <groupId>org.xwiki.contrib.replication</groupId>
     <artifactId>replication-entity</artifactId>
-    <version>1.12.9</version>
+    <version>1.12.10-SNAPSHOT</version>
   </parent>
 
   <artifactId>replication-entity-default</artifactId>
