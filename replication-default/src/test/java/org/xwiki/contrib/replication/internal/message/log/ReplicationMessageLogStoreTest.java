@@ -125,9 +125,9 @@ class ReplicationMessageLogStoreTest
     @Test
     void exist() throws EventStreamException, InterruptedException, ExecutionException
     {
-        DefaultReplicationSenderMessage message =
-            new DefaultReplicationSenderMessage("id", new Date(), "type", "source", Set.of("receiver1", "receiver2"),
-                Map.of("key1", List.of("value1"), "key2", List.of("value2")), null);
+        DefaultReplicationSenderMessage message = new DefaultReplicationSenderMessage.Builder().id("id").type("type")
+            .source("source").receivers(Set.of("receiver1", "receiver2"))
+            .customMetadata(Map.of("key1", List.of("value1"), "key2", List.of("value2"))).build();
 
         assertFalse(this.logStore.exist(message.getId()));
 
