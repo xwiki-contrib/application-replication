@@ -127,9 +127,6 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
                 this.logStore.saveAsync(message, (m, e) -> {
                     Map<String, Object> custom = new HashMap<>(e.getCustom());
 
-                    // Make the event date be the sent date
-                    e.setDate(new Date());
-
                     custom.put(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_SENT);
                     custom.put(ReplicationMessageEventQuery.KEY_TARGET, this.instance.getURI());
 

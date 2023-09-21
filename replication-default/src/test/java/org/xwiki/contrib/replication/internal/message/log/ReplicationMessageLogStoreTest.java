@@ -150,7 +150,7 @@ class ReplicationMessageLogStoreTest
     void loadMessage() throws EventStreamException, InterruptedException
     {
         DefaultReplicationSenderMessage message =
-            new DefaultReplicationSenderMessage("id", new Date(), "type", "source", Set.of("receiver1", "receiver2"),
+            new DefaultReplicationSenderMessage("id", new Date(0), "type", "source", Set.of("receiver1", "receiver2"),
                 Map.of("key1", List.of("value1"), "key2", List.of("value2")), null);
 
         Event event = this.logStore.saveSync(message, null);
