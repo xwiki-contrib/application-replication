@@ -21,7 +21,6 @@ package org.xwiki.contrib.replication.internal.message;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -252,9 +251,6 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
                 // Log the message
                 this.logStore.saveAsync(fileMessage, (m, e) -> {
                     Map<String, Object> custom = new HashMap<>(e.getCustom());
-
-                    // Make the event date be the stored date
-                    e.setDate(new Date());
 
                     custom.put(ReplicationMessageEventQuery.KEY_STATUS,
                         ReplicationMessageEventQuery.VALUE_STATUS_STORED);

@@ -186,7 +186,6 @@ public class ReplicationMessageLogStore
         event.setApplication(ReplicationMessageEventQuery.VALUE_APPLICATION);
         event.setImportance(Importance.BACKGROUND);
 
-        event.setDate(message.getDate());
         event.setType(ReplicationMessageEventQuery.messageTypeValue(message.getType()));
 
         Map<String, Object> properties = new HashMap<>();
@@ -266,6 +265,7 @@ public class ReplicationMessageLogStore
         Event event = eventOptional.get();
 
         String messageId = (String) event.getCustom().get(ReplicationMessageEventQuery.KEY_ID);
+        Date messageDate = (Date) event.getCustom().get(ReplicationMessageEventQuery.KEY_DATE);
         String source = (String) event.getCustom().get(ReplicationMessageEventQuery.KEY_SOURCE);
         Collection<String> finalReceivers = receivers != null ? receivers
             : (Collection) event.getCustom().get(ReplicationMessageEventQuery.KEY_RECEIVERS);
@@ -279,7 +279,7 @@ public class ReplicationMessageLogStore
             }
         }
 
-        return new DefaultReplicationSenderMessage.Builder().id(messageId).date(event.getDate()).type(type).source(source)
+        return new DefaultReplicationSenderMessage.Builder().id(messageId).date(messageDate).type(type).source(source)
             .receivers(finalReceivers).customMetadata(metadata).build();
     }
 

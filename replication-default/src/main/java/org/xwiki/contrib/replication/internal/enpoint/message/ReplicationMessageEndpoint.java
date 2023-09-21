@@ -19,7 +19,6 @@
  */
 package org.xwiki.contrib.replication.internal.enpoint.message;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -126,9 +125,6 @@ public class ReplicationMessageEndpoint extends AbstractReplicationEndpoint
 
         this.messageLog.saveSync(message, (m, e) -> {
             Map<String, Object> custom = new HashMap<>(e.getCustom());
-
-            // Make the event date be the received date
-            e.setDate(new Date());
 
             custom.put(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_RECEIVED);
 

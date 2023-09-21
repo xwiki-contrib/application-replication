@@ -158,9 +158,6 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
                 this.logStore.saveAsync(filteredMessage, (m, e) -> {
                     Map<String, Object> custom = new HashMap<>(e.getCustom());
 
-                    // Make the event date be the handled date
-                    e.setDate(new Date());
-
                     custom.put(ReplicationMessageEventQuery.KEY_STATUS,
                         ReplicationMessageEventQuery.VALUE_STATUS_HANDLED);
 
