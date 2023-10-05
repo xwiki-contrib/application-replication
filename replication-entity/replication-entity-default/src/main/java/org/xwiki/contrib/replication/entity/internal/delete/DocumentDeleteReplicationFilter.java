@@ -23,6 +23,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiverMessageFilter;
 
 /**
@@ -31,7 +32,7 @@ import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplication
  */
 @Component
 @Singleton
-@Named(DocumentDeleteReplicationMessage.TYPE_DOCUMENT_DELETE)
+@Named(EntityReplicationMessage.TYPE_DOCUMENT_DELETE)
 public class DocumentDeleteReplicationFilter extends AbstractDocumentReplicationReceiverMessageFilter
 {
 

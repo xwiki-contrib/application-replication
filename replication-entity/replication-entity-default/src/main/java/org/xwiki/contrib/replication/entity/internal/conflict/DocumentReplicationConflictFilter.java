@@ -23,6 +23,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiverMessageFilter;
 
 /**
@@ -31,8 +32,8 @@ import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplication
  */
 @Component
 @Singleton
-@Named(DocumentReplicationConflictMessage.TYPE_DOCUMENT_CONFLICT)
+@Named(EntityReplicationMessage.TYPE_DOCUMENT_CONFLICT)
 public class DocumentReplicationConflictFilter extends AbstractDocumentReplicationReceiverMessageFilter
 {
-
+ 
 }

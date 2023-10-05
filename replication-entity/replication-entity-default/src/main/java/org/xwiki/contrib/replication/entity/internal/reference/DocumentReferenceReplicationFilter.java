@@ -27,6 +27,7 @@ import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiverMessageFilter;
 import org.xwiki.model.reference.DocumentReference;
 
@@ -36,7 +37,7 @@ import org.xwiki.model.reference.DocumentReference;
  */
 @Component
 @Singleton
-@Named(DocumentReferenceReplicationMessage.TYPE_DOCUMENT_REFERENCE)
+@Named(EntityReplicationMessage.TYPE_DOCUMENT_REFERENCE)
 public class DocumentReferenceReplicationFilter extends AbstractDocumentReplicationReceiverMessageFilter
 {
     @Override

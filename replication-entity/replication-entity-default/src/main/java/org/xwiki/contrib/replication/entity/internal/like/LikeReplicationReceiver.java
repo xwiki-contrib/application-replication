@@ -26,6 +26,7 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractEntityReplicationReceiver;
 import org.xwiki.like.LikeException;
 import org.xwiki.like.LikeManager;
@@ -39,7 +40,7 @@ import com.xpn.xwiki.XWikiContext;
  */
 @Component
 @Singleton
-@Named(LikeReplicationMessage.TYPE_LIKE)
+@Named(EntityReplicationMessage.TYPE_LIKE)
 public class LikeReplicationReceiver extends AbstractEntityReplicationReceiver
 {
     @Inject
@@ -50,9 +51,9 @@ public class LikeReplicationReceiver extends AbstractEntityReplicationReceiver
         XWikiContext xcontext) throws ReplicationException
     {
         boolean like =
-            this.messageReader.getMetadata(message, LikeReplicationMessage.METADATA_LIKE, true, Boolean.class);
+            this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_LIKE, true, Boolean.class);
         UserReference userReference = this.messageReader.getMetadata(message,
-            LikeReplicationMessage.METADATA_ENTITY_CREATOR, true, UserReference.class);
+            EntityReplicationMessage.METADATA_ENTITY_CREATOR, true, UserReference.class);
 
         try {
             if (like) {

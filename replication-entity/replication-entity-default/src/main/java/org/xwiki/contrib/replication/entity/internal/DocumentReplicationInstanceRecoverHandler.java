@@ -35,6 +35,7 @@ import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.EntityReplication;
 import org.xwiki.contrib.replication.entity.EntityReplicationBuilders;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.eventstream.Event;
 import org.xwiki.eventstream.EventSearchResult;
@@ -50,11 +51,11 @@ import org.xwiki.properties.ConverterManager;
  */
 @Component
 @Singleton
-@Named(AbstractDocumentReplicationMessage.VALUE_DOCUMENT_RECOVER_TYPE)
+@Named(EntityReplicationMessage.VALUE_DOCUMENT_RECOVER_TYPE)
 public class DocumentReplicationInstanceRecoverHandler extends AbstractEntityReplicationInstanceRecoverHandler
 {
     private static final String EVENT_FIELD_METADATA_LOCALE =
-        ReplicationMessageEventQuery.customMetadataName(AbstractEntityReplicationMessage.METADATA_ENTITY_LOCALE);
+        ReplicationMessageEventQuery.customMetadataName(EntityReplicationMessage.METADATA_ENTITY_LOCALE);
 
     @Inject
     private EventStore eventStore;
@@ -81,7 +82,7 @@ public class DocumentReplicationInstanceRecoverHandler extends AbstractEntityRep
 
         // Get only messages related to document updates
         query.customMetadata().eq(EVENT_FIELD_METADATA_RECOVER_TYPE,
-            AbstractDocumentReplicationMessage.VALUE_DOCUMENT_RECOVER_TYPE);
+            EntityReplicationMessage.VALUE_DOCUMENT_RECOVER_TYPE);
 
         // And only the stored and received ones
         query.custom().in(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_STORED,

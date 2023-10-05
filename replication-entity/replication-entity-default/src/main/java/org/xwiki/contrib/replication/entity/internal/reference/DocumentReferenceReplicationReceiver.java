@@ -29,6 +29,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.rendering.syntax.Syntax;
@@ -43,7 +44,7 @@ import com.xpn.xwiki.doc.XWikiDocument;
  */
 @Component
 @Singleton
-@Named(DocumentReferenceReplicationMessage.TYPE_DOCUMENT_REFERENCE)
+@Named(EntityReplicationMessage.TYPE_DOCUMENT_REFERENCE)
 public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
     @Override
@@ -55,7 +56,7 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
 
         // Just indicate who created it
         UserReference creatorReference = this.messageReader.getMetadata(message,
-            DocumentReferenceReplicationMessage.METADATA_ENTITY_CREATOR, true, UserReference.class);
+            EntityReplicationMessage.METADATA_ENTITY_CREATOR, true, UserReference.class);
         document.getAuthors().setCreator(creatorReference);
         document.getAuthors().setContentAuthor(creatorReference);
         document.getAuthors().setEffectiveMetadataAuthor(creatorReference);

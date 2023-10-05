@@ -32,6 +32,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractEntityReplicationInstanceRecoverHandler;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.eventstream.Event;
@@ -52,11 +53,11 @@ import org.xwiki.user.UserReference;
  */
 @Component
 @Singleton
-@Named(LikeReplicationMessage.TYPE_LIKE)
+@Named(EntityReplicationMessage.TYPE_LIKE)
 public class LikeRecoverHandler extends AbstractEntityReplicationInstanceRecoverHandler
 {
     private static final String EVENT_FIELD_METADATA_CREATOR =
-        ReplicationMessageEventQuery.customMetadataName(LikeReplicationMessage.METADATA_ENTITY_CREATOR);
+        ReplicationMessageEventQuery.customMetadataName(EntityReplicationMessage.METADATA_ENTITY_CREATOR);
 
     @Inject
     private EventStore eventStore;
@@ -86,7 +87,7 @@ public class LikeRecoverHandler extends AbstractEntityReplicationInstanceRecover
         ReplicationMessageEventQuery query = new ReplicationMessageEventQuery();
 
         // Get all message related to likes
-        query.eq(Event.FIELD_TYPE, ReplicationMessageEventQuery.messageTypeValue(LikeReplicationMessage.TYPE_LIKE));
+        query.eq(Event.FIELD_TYPE, ReplicationMessageEventQuery.messageTypeValue(EntityReplicationMessage.TYPE_LIKE));
 
         // And only the stored and received ones
         query.custom().in(ReplicationMessageEventQuery.KEY_STATUS, ReplicationMessageEventQuery.VALUE_STATUS_STORED,

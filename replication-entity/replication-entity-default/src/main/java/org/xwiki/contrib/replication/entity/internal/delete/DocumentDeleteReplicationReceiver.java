@@ -30,6 +30,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.refactoring.batch.BatchOperationExecutor;
@@ -43,7 +44,7 @@ import com.xpn.xwiki.doc.XWikiDocument;
  */
 @Component
 @Singleton
-@Named(DocumentDeleteReplicationMessage.TYPE_DOCUMENT_DELETE)
+@Named(EntityReplicationMessage.TYPE_DOCUMENT_DELETE)
 public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
     @Inject
@@ -67,7 +68,7 @@ public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicati
             try {
                 // Set the batch id if any is provided
                 String batchId = this.messageReader.getMetadata(message,
-                    DocumentDeleteReplicationMessage.METADATA_DOCUMENT_DELETE_BATCH, false);
+                    EntityReplicationMessage.METADATA_DOCUMENT_DELETE_BATCH, false);
                 if (batchId != null) {
                     this.batchOperation.execute(() -> xcontext.getWiki().deleteDocument(document, xcontext), batchId);
                 } else {
