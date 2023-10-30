@@ -116,14 +116,7 @@ public class ReplicationInstanceStore
     public ReplicationInstance getCurrentInstance() throws ReplicationException
     {
         if (this.currentInstance == null) {
-            try {
-                String currentURI = getDefaultCurrentURI();
-                String currentName = getDefaultCurrentName();
-
-                this.currentInstance = new DefaultReplicationInstance(currentName, currentURI, null, null, null);
-            } catch (Exception e) {
-                throw new ReplicationException("Failed to get the current instance URI", e);
-            }
+            this.currentInstance = loadCurrentInstance();
         }
 
         return this.currentInstance;
@@ -186,7 +179,8 @@ public class ReplicationInstanceStore
      */
     public String getURI(BaseObject instanceObject)
     {
-        return instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_URI);
+        return instanceObject != null
+            ? instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_URI) : null;
     }
 
     /**
@@ -195,7 +189,8 @@ public class ReplicationInstanceStore
      */
     public String getName(BaseObject instanceObject)
     {
-        return instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_NAME);
+        return instanceObject != null
+            ? instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_NAME) : null;
     }
 
     /**
@@ -204,9 +199,18 @@ public class ReplicationInstanceStore
      */
     public Status getStatus(BaseObject instanceObject)
     {
-        String statusString = instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_STATUS);
+        Status status = null;
 
-        return StringUtils.isEmpty(statusString) ? null : Enum.valueOf(Status.class, statusString);
+        if (instanceObject != null) {
+            String statusString =
+                instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_STATUS);
+
+            if (StringUtils.isNotEmpty(statusString)) {
+                status = Enum.valueOf(Status.class, statusString);
+            }
+        }
+
+        return status;
     }
 
     private void setStatus(BaseObject instanceObject, Status status)
@@ -221,14 +225,16 @@ public class ReplicationInstanceStore
      */
     public CertifiedPublicKey getPublicKey(BaseObject instanceObject)
     {
-        try {
-            return this.signatureManager.unserializeKey(
-                instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_RECEIVEKEY));
-        } catch (IOException e) {
-            this.logger.error("Failed to parse public key from [{}]", instanceObject.getReference(), e);
-
-            return null;
+        if (instanceObject != null) {
+            try {
+                return this.signatureManager.unserializeKey(
+                    instanceObject.getStringValue(StandardReplicationInstanceClassInitializer.FIELD_RECEIVEKEY));
+            } catch (IOException e) {
+                this.logger.error("Failed to parse public key from [{}]", instanceObject.getReference(), e);
+            }
         }
+
+        return null;
     }
 
     private void setPublicKey(BaseObject instanceObject, CertifiedPublicKey publicKey) throws IOException
@@ -319,11 +325,14 @@ public class ReplicationInstanceStore
     private Map<String, Object> getProperties(BaseObject instanceObject)
     {
         Map<String, Object> properties = new HashMap<>();
-        for (String propertyKey : instanceObject.getPropertyList()) {
-            if (!STANDARD_PROPERTIES.contains(propertyKey)) {
-                PropertyInterface property = instanceObject.safeget(propertyKey);
-                if (property instanceof BaseProperty) {
-                    properties.put(propertyKey.toLowerCase(), ((BaseProperty) property).getValue());
+
+        if (instanceObject != null) {
+            for (String propertyKey : instanceObject.getPropertyList()) {
+                if (!STANDARD_PROPERTIES.contains(propertyKey)) {
+                    PropertyInterface property = instanceObject.safeget(propertyKey);
+                    if (property instanceof BaseProperty) {
+                        properties.put(propertyKey.toLowerCase(), ((BaseProperty) property).getValue());
+                    }
                 }
             }
         }
@@ -377,18 +386,7 @@ public class ReplicationInstanceStore
                     // Current instance
                     if (getStatus(instanceObject) == null) {
                         try {
-                            String name = getName(instanceObject);
-                            if (StringUtils.isBlank(name)) {
-                                name = getDefaultCurrentName();
-                            }
-                            String uri = getURI(instanceObject);
-                            if (StringUtils.isBlank(uri)) {
-
-                                uri = getDefaultCurrentURI();
-                            }
-
-                            this.currentInstance =
-                                new DefaultReplicationInstance(name, uri, null, null, getProperties(instanceObject));
+                            this.currentInstance = toCurrentReplicationInstance(instanceObject);
                         } catch (Exception e) {
                             // Skip invalid instance
                             this.logger.error("Failed to load instance from xobject with reference [{}]",
@@ -403,6 +401,37 @@ public class ReplicationInstanceStore
 
             return instances;
         });
+    }
+
+    private DefaultReplicationInstance loadCurrentInstance() throws ReplicationException
+    {
+        return executeInstanceDocument((instancesDocument, xcontext) -> {
+            BaseObject instanceObject =
+                instancesDocument.getXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE,
+                    StandardReplicationInstanceClassInitializer.FIELD_STATUS, "", false);
+
+            return toCurrentReplicationInstance(instanceObject);
+        });
+
+    }
+
+    private DefaultReplicationInstance toCurrentReplicationInstance(BaseObject instanceObject)
+        throws ReplicationException
+    {
+        try {
+            String name = getName(instanceObject);
+            if (StringUtils.isBlank(name)) {
+                name = getDefaultCurrentName();
+            }
+            String uri = getURI(instanceObject);
+            if (StringUtils.isBlank(uri)) {
+                uri = getDefaultCurrentURI();
+            }
+
+            return new DefaultReplicationInstance(name, uri, null, null, getProperties(instanceObject));
+        } catch (Exception e) {
+            throw new ReplicationException("Failed to load current instance", e);
+        }
     }
 
     /**
