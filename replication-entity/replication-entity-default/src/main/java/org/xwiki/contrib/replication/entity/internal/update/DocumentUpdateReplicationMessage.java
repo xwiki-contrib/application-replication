@@ -120,8 +120,8 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
     public void initializeUpdate(XWikiDocument document, Set<String> attachments, Collection<String> receivers,
         Map<String, Collection<String>> extraMetadata) throws ReplicationException
     {
-        initialize(document.getDocumentReferenceWithLocale(), document.getVersion(), false, null, receivers,
-            extraMetadata);
+        initialize(document.getDocumentReferenceWithLocale(), document.getVersion(), false,
+            document.getAuthors().getCreator(), receivers, extraMetadata);
 
         this.attachments = attachments;
 
