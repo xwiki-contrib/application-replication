@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.entity;
 
 import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
@@ -50,7 +51,6 @@ public interface EntityReplicationBuilders
      * @param document the document associated with the message
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentMessageBuilder(
         EntityReplicationSenderMessageBuilderProducer<DocumentReplicationSenderMessageBuilder> messageProducer,
@@ -61,7 +61,6 @@ public interface EntityReplicationBuilders
      * @param document the document associated with the message
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     EntityReplicationSenderMessageBuilder entityMessageBuilder(
         EntityReplicationSenderMessageBuilderProducer<EntityReplicationSenderMessageBuilder> messageProducer,
@@ -73,9 +72,18 @@ public interface EntityReplicationBuilders
      * @param document the document associated with the message
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentReferenceMessageBuilder(XWikiDocument document)
+        throws ReplicationException;
+
+    /**
+     * Provide a builder which produce a REFERENCE replication message converted from another document message.
+     * 
+     * @param message the message to convert
+     * @return the document sender message builder
+     * @throws ReplicationException when failing to create the document sender message builder
+     */
+    DocumentReplicationSenderMessageBuilder documentReferenceMessageBuilder(ReplicationMessage message)
         throws ReplicationException;
 
     /**
@@ -84,7 +92,6 @@ public interface EntityReplicationBuilders
      * @param document the document associated with the message
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentPartialUpdateMessageBuilder(XWikiDocument document)
         throws ReplicationException;
@@ -95,7 +102,6 @@ public interface EntityReplicationBuilders
      * @param document the document associated with the message
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentCompleteUpdateMessageBuilder(XWikiDocument document)
         throws ReplicationException;
@@ -106,7 +112,6 @@ public interface EntityReplicationBuilders
      * @param document the document associated with the message
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentCreateMessageBuilder(XWikiDocument document)
         throws ReplicationException;
@@ -117,7 +122,6 @@ public interface EntityReplicationBuilders
      * @param documentReference the reference of the document to delete
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentDeleteMessageBuilder(DocumentReference documentReference)
         throws ReplicationException;
@@ -128,7 +132,6 @@ public interface EntityReplicationBuilders
      * @param document the document to delete
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentDeleteMessageBuilder(XWikiDocument document)
         throws ReplicationException;
@@ -139,7 +142,6 @@ public interface EntityReplicationBuilders
      * @param document the document to unreplicate
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentUnreplicateMessageBuilder(XWikiDocument document)
         throws ReplicationException;
@@ -152,7 +154,6 @@ public interface EntityReplicationBuilders
      * @param to the version where to stop deleting
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentHistoryMessageBuilder(XWikiDocument document, String from,
         String to) throws ReplicationException;
@@ -164,7 +165,6 @@ public interface EntityReplicationBuilders
      * @param sourceOnly true if the repair should be send back only to the source, false for a network wide repair
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentRepairRequestMessageBuilder(DocumentReference documentReference,
         boolean sourceOnly) throws ReplicationException;
@@ -175,7 +175,6 @@ public interface EntityReplicationBuilders
      * @param documentReference the reference of the document to repair
      * @return the document sender message builder
      * @throws ReplicationException when failing to create the document sender message builder
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentConflictUpdateMessageBuilder(DocumentReference documentReference)
         throws ReplicationException;
@@ -190,7 +189,6 @@ public interface EntityReplicationBuilders
      * @param documentReference the reference of the document to replicate
      * @return the document sender message builder
      * @throws ReplicationException when failing to replicate the document
-     * @since 2.0.0
      */
     DocumentReplicationSenderMessageBuilder documentMessageBuilder(DocumentReference documentReference)
         throws ReplicationException;

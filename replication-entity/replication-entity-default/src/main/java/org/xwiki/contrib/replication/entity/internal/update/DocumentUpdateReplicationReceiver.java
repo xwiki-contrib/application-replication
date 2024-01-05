@@ -318,6 +318,6 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
         throws ReplicationException
     {
-        return this.documentRelay.relayDocumentUpdate(message);
+        return this.controller.relayDocumentUpdate(message);
     }
 }

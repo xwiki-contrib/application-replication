@@ -32,6 +32,8 @@ import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
 import com.xpn.xwiki.XWikiContext;
+import com.xpn.xwiki.XWikiException;
+import com.xpn.xwiki.doc.XWikiDocument;
 
 /**
  * Base class for replication receivers handling message affecting document.
@@ -40,9 +42,6 @@ import com.xpn.xwiki.XWikiContext;
  */
 public abstract class AbstractDocumentReplicationReceiver extends AbstractEntityReplicationReceiver
 {
-    @Inject
-    protected DocumentReplicationRelay documentRelay;
-
     @Inject
     protected DocumentReplicationController controller;
 
@@ -87,6 +86,16 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
 
             // Set the document owner
             this.documentStore.setOwner(documentReference, owner);
+        }
+    }
+
+    protected void unreplicate(XWikiDocument document, XWikiContext xcontext) throws ReplicationException
+    {
+        try {
+            // Skip the trash bin since that instance is not supposed to know about this document at all anymore
+            xcontext.getWiki().deleteDocument(document, false, xcontext);
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to delete the document", e);
         }
     }
 

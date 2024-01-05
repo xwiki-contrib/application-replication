@@ -32,8 +32,10 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
 import org.xwiki.contrib.replication.entity.EntityReplicationBuilders;
 import org.xwiki.contrib.replication.entity.EntityReplicationSenderMessageBuilder;
@@ -48,6 +50,7 @@ import org.xwiki.contrib.replication.entity.internal.unreplicate.DocumentUnrepli
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
+import org.xwiki.user.UserReference;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
@@ -90,6 +93,9 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
 
     @Inject
     private ReplicationInstanceManager instanceManager;
+
+    @Inject
+    private DocumentReplicationMessageReader documentMessageReader;
 
     @Inject
     private Provider<XWikiContext> xcontextProvider;
@@ -149,9 +155,9 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
     public DocumentReplicationSenderMessageBuilder documentReferenceMessageBuilder(XWikiDocument document)
         throws ReplicationException
     {
-        return documentMessageBuilder((builder, level, readonly, extraMetadata) -> {
-            return referenceMessage(builder, document, extraMetadata);
-        }, document).minimumLevel(DocumentReplicationLevel.REFERENCE);
+        return documentMessageBuilder(
+            (builder, level, readonly, extraMetadata) -> referenceMessage(builder, document, extraMetadata), document)
+                .minimumLevel(DocumentReplicationLevel.REFERENCE);
     }
 
     private DocumentReferenceReplicationMessage referenceMessage(DocumentReplicationSenderMessageBuilder builder,
@@ -160,6 +166,35 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
         DocumentReferenceReplicationMessage message = this.documentReferenceMessageProvider.get();
 
         message.initialize(builder, document.getAuthors().getCreator(), extraMetadata);
+
+        return message;
+    }
+
+    @Override
+    public DocumentReplicationSenderMessageBuilder documentReferenceMessageBuilder(ReplicationMessage message)
+        throws ReplicationException
+    {
+        // Extract the reference of the document from the message
+        DocumentReference documentReference = this.documentMessageReader.getDocumentReference(message);
+        // Extract the creator of the document from the message
+        UserReference creator = this.documentMessageReader.getCreatorReference(message);
+
+        DocumentReplicationSenderMessageBuilder referenceBuilder = documentMessageBuilder(
+            (builder, level, readonly, extraMetadata) -> referenceMessage(builder, creator, extraMetadata),
+            documentReference).minimumLevel(DocumentReplicationLevel.REFERENCE);
+
+        // Copy the source message plumbing
+        referenceBuilder.message(message);
+
+        return referenceBuilder;
+    }
+
+    private DocumentReferenceReplicationMessage referenceMessage(DocumentReplicationSenderMessageBuilder builder,
+        UserReference creator, Map<String, Collection<String>> extraMetadata)
+    {
+        DocumentReferenceReplicationMessage message = this.documentReferenceMessageProvider.get();
+
+        message.initialize(builder, creator, extraMetadata);
 
         return message;
     }

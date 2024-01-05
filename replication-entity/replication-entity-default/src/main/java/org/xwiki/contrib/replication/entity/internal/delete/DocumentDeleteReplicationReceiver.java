@@ -84,6 +84,6 @@ public class DocumentDeleteReplicationReceiver extends AbstractDocumentReplicati
     public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
         throws ReplicationException
     {
-        return this.documentRelay.relay(message, DocumentReplicationLevel.REFERENCE);
+        return this.controller.relay(message, DocumentReplicationLevel.REFERENCE);
     }
 }

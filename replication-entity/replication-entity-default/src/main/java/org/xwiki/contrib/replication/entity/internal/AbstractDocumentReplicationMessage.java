@@ -49,10 +49,14 @@ public abstract class AbstractDocumentReplicationMessage extends AbstractEntityR
     public void initialize(DocumentReplicationSenderMessageBuilder builder,
         Map<String, Collection<String>> extraMetadata)
     {
-        initialize(builder.getDocumentReference(), builder.getReceivers(), extraMetadata);
+        initialize(builder.getDocumentReference(), builder.getReceivers(), builder.getCustomMetadata());
 
         if (builder.getId() != null) {
             this.id = builder.getId();
+        }
+
+        if (builder.getSource() != null) {
+            this.source = builder.getSource();
         }
 
         if (builder.getConflict() != null) {
@@ -63,6 +67,10 @@ public abstract class AbstractDocumentReplicationMessage extends AbstractEntityR
                 // Indicate the authors involved in the conflict
                 putCustomMetadata(METADATA_DOCUMENT_CONFLICT_AUTHORS, builder.getConflictAuthors());
             }
+        }
+
+        if (extraMetadata != null) {
+            this.modifiableMetadata.putAll(extraMetadata);
         }
     }
 }

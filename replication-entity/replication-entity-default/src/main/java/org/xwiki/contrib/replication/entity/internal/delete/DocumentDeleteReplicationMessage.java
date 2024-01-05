@@ -48,7 +48,7 @@ public class DocumentDeleteReplicationMessage extends AbstractNoContentDocumentR
     public void initialize(DocumentReplicationSenderMessageBuilder builder,
         Map<String, Collection<String>> extraMetadata)
     {
-        super.initialize(builder.getDocumentReference(), builder.getReceivers(), extraMetadata);
+        super.initialize(builder, extraMetadata);
 
         putCustomMetadata(METADATA_DOCUMENT_DELETE_BATCH, this.batchOperation.getCurrentBatchId());
     }

@@ -24,6 +24,7 @@ import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
+import org.xwiki.user.UserReference;
 
 /**
  * @version $Id$
@@ -83,4 +84,12 @@ public interface DocumentReplicationMessageReader
      * @throws InvalidReplicationMessageException when failing to parse the message
      */
     boolean isComplete(ReplicationMessage message) throws InvalidReplicationMessageException;
+
+    /**
+     * @param message the message
+     * @return the reference of the creator of the document
+     * @throws InvalidReplicationMessageException when failing to parse the message
+     * @since 2.0.0
+     */
+    UserReference getCreatorReference(ReplicationMessage message) throws InvalidReplicationMessageException;
 }

@@ -20,7 +20,9 @@
 package org.xwiki.contrib.replication.entity.internal;
 
 import java.util.Collection;
+import java.util.Map;
 
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
 import org.xwiki.model.reference.DocumentReference;
@@ -105,6 +107,12 @@ public abstract class AbstractDocumentReplicationSenderMessageBuilder
     }
 
     @Override
+    public AbstractDocumentReplicationSenderMessageBuilder source(String source)
+    {
+        return (AbstractDocumentReplicationSenderMessageBuilder) super.source(source);
+    }
+
+    @Override
     public AbstractDocumentReplicationSenderMessageBuilder receivers(Collection<String> receivers)
     {
         return (AbstractDocumentReplicationSenderMessageBuilder) super.receivers(receivers);
@@ -114,6 +122,19 @@ public abstract class AbstractDocumentReplicationSenderMessageBuilder
     public AbstractDocumentReplicationSenderMessageBuilder receivers(String... receivers)
     {
         return (AbstractDocumentReplicationSenderMessageBuilder) super.receivers(receivers);
+    }
+
+    @Override
+    public AbstractDocumentReplicationSenderMessageBuilder customMetadata(
+        Map<String, Collection<String>> customMetadata)
+    {
+        return (AbstractDocumentReplicationSenderMessageBuilder) super.customMetadata(customMetadata);
+    }
+
+    @Override
+    public AbstractDocumentReplicationSenderMessageBuilder message(ReplicationMessage message)
+    {
+        return (AbstractDocumentReplicationSenderMessageBuilder) super.message(message);
     }
 
     @Override

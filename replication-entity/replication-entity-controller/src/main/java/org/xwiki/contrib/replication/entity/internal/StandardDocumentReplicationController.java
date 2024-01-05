@@ -70,7 +70,7 @@ public class StandardDocumentReplicationController extends AbstractDocumentRepli
     public List<DocumentReplicationControllerInstance> getRelayConfiguration(ReplicationReceiverMessage message)
         throws ReplicationException
     {
-        EntityReference reference = this.messageReader.getEntityReference(message);
+        EntityReference reference = this.documentMessageReader.getEntityReference(message);
 
         return getConfiguration(reference, true);
     }

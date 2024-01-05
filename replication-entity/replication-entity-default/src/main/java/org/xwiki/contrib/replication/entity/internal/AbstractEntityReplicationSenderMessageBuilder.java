@@ -21,8 +21,10 @@ package org.xwiki.contrib.replication.entity.internal;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.EntityReplicationSenderMessageBuilder;
 import org.xwiki.model.reference.EntityReference;
@@ -39,7 +41,11 @@ public abstract class AbstractEntityReplicationSenderMessageBuilder implements E
 
     protected String id;
 
+    protected String source;
+
     protected Collection<String> receivers;
+
+    protected Map<String, Collection<String>> customMetadata;
 
     protected DocumentReplicationLevel minimumLevel = DocumentReplicationLevel.REFERENCE;
 
@@ -60,6 +66,14 @@ public abstract class AbstractEntityReplicationSenderMessageBuilder implements E
     }
 
     @Override
+    public AbstractEntityReplicationSenderMessageBuilder source(String source)
+    {
+        this.source = source;
+
+        return this;
+    }
+
+    @Override
     public AbstractEntityReplicationSenderMessageBuilder receivers(Collection<String> receivers)
     {
         this.receivers = receivers;
@@ -73,6 +87,25 @@ public abstract class AbstractEntityReplicationSenderMessageBuilder implements E
         this.receivers = List.of(receivers);
 
         return this;
+    }
+
+    @Override
+    public AbstractEntityReplicationSenderMessageBuilder customMetadata(Map<String, Collection<String>> customMetadata)
+    {
+        this.customMetadata = customMetadata;
+
+        return this;
+    }
+
+    @Override
+    public AbstractEntityReplicationSenderMessageBuilder message(ReplicationMessage message)
+    {
+        id(message.getId());
+        source(message.getSource());
+        receivers(message.getReceivers());
+        customMetadata(message.getCustomMetadata());
+
+        return null;
     }
 
     @Override
@@ -95,6 +128,12 @@ public abstract class AbstractEntityReplicationSenderMessageBuilder implements E
     }
 
     @Override
+    public String getSource()
+    {
+        return this.source;
+    }
+
+    @Override
     public EntityReference getEntityReference()
     {
         return this.entityReference;
@@ -104,6 +143,12 @@ public abstract class AbstractEntityReplicationSenderMessageBuilder implements E
     public Collection<String> getReceivers()
     {
         return this.receivers;
+    }
+
+    @Override
+    public Map<String, Collection<String>> getCustomMetadata()
+    {
+        return this.customMetadata;
     }
 
     @Override

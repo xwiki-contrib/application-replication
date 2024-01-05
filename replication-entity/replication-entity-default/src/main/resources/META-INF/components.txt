@@ -4,7 +4,6 @@ org.xwiki.contrib.replication.entity.internal.DefaultEntityReplicationBuilders
 org.xwiki.contrib.replication.entity.internal.DefaultReplicationReceiverMessageFilter
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationInstanceRecoverHandler
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationListener
-org.xwiki.contrib.replication.entity.internal.DocumentReplicationRelay
 org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils
 org.xwiki.contrib.replication.entity.internal.EntityReplicationConfiguration
 org.xwiki.contrib.replication.entity.internal.EntityReplicationMessageEventInitializer

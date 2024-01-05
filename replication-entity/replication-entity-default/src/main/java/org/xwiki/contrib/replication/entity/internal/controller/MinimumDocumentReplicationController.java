@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.entity.internal.controller;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -28,8 +29,10 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.EntityReplicationSenderMessageBuilder;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
@@ -136,5 +139,26 @@ public class MinimumDocumentReplicationController implements DocumentReplication
         Collection<DocumentReplicationControllerInstance> customConfigurations) throws ReplicationException
     {
         // Do nothing
+    }
+
+    @Override
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel) throws ReplicationException
+    {
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel, DocumentReplicationLevel maximumLevel) throws ReplicationException
+    {
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<ReplicationSenderMessage> relayDocumentUpdate(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        return CompletableFuture.completedFuture(null);
     }
 }

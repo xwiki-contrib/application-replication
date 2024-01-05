@@ -229,6 +229,17 @@
                 </item>
               </differences>
             </revapi.differences>
+            <revapi.differences>
+              <justification>New features in APIs very unlikelly to be implemented by extensions</justification>
+              <criticality>highlight</criticality>
+              <differences>
+                <item>
+                  <ignore>true</ignore>
+                  <code>java.method.addedToInterface</code>
+                  <new>method org.xwiki.user.UserReference org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader::getCreatorReference(org.xwiki.contrib.replication.ReplicationMessage) throws org.xwiki.contrib.replication.InvalidReplicationMessageException</new>
+                </item>
+              </differences>
+            </revapi.differences>
           </analysisConfiguration>
         </configuration>
       </plugin>

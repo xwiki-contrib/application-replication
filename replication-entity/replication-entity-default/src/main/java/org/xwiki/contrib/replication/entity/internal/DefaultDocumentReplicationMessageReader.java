@@ -36,6 +36,7 @@ import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.DocumentReferenceResolver;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.EntityReferenceResolver;
+import org.xwiki.user.UserReference;
 
 /**
  * @version $Id$
@@ -106,5 +107,12 @@ public class DefaultDocumentReplicationMessageReader implements DocumentReplicat
     {
         return BooleanUtils.toBoolean(this.reader.getMetadata(message,
             DocumentUpdateReplicationMessage.METADATA_DOCUMENT_UPDATE_COMPLETE, false));
+    }
+
+    @Override
+    public UserReference getCreatorReference(ReplicationMessage message) throws InvalidReplicationMessageException
+    {
+        return this.reader.getMetadata(message, AbstractEntityReplicationMessage.METADATA_ENTITY_CREATOR, false,
+            UserReference.class);
     }
 }

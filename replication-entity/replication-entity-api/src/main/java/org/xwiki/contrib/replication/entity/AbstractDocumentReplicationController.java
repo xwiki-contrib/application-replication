@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -33,11 +34,13 @@ import javax.inject.Provider;
 import org.xwiki.component.descriptor.ComponentDescriptor;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.component.manager.ComponentManager;
+import org.xwiki.contrib.replication.RelayReplicationSender;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSender;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
@@ -65,7 +68,10 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
     protected ComponentDescriptor<DocumentReplicationController> descriptor;
 
     @Inject
-    protected DocumentReplicationMessageReader messageReader;
+    protected DocumentReplicationMessageReader documentMessageReader;
+
+    @Inject
+    protected RelayReplicationSender relay;
 
     protected List<DocumentReplicationControllerInstance> getReplicationConfiguration(XWikiDocument document,
         Collection<String> receivers) throws ReplicationException
@@ -122,7 +128,7 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
         throws ReplicationException
     {
         List<DocumentReplicationControllerInstance> configurations =
-            getReplicationConfiguration(this.messageReader.getDocumentReference(message));
+            getReplicationConfiguration(this.documentMessageReader.getDocumentReference(message));
 
         for (DocumentReplicationControllerInstance configuration : configurations) {
             if (configuration.getInstance() == message.getInstance()) {
@@ -316,5 +322,81 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
         }
 
         return null;
+    }
+
+    private List<ReplicationInstance> getInstances(DocumentReplicationLevel level,
+        Collection<DocumentReplicationControllerInstance> configurations)
+    {
+        return configurations.stream().filter(c -> c.getLevel() == level)
+            .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
+    }
+
+    private List<ReplicationInstance> getRelayInstances(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel) throws ReplicationException
+    {
+        List<DocumentReplicationControllerInstance> instances = getRelayConfiguration(message);
+
+        return instances.stream().filter(i -> i.getLevel().ordinal() >= minimumLevel.ordinal())
+            .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
+    }
+
+    private List<ReplicationInstance> getRelayInstances(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel, DocumentReplicationLevel maximumLevel) throws ReplicationException
+    {
+        List<DocumentReplicationControllerInstance> instances = getRelayConfiguration(message);
+
+        return instances.stream().filter(
+            i -> i.getLevel().ordinal() >= minimumLevel.ordinal() && i.getLevel().ordinal() <= maximumLevel.ordinal())
+            .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
+    }
+
+    @Override
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel) throws ReplicationException
+    {
+        // Find the instances allowed to receive the message
+        List<ReplicationInstance> targets = getRelayInstances(message, minimumLevel);
+
+        // Relay the message
+        return this.relay.relay(message, targets);
+    }
+
+    @Override
+    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel, DocumentReplicationLevel maximumLevel) throws ReplicationException
+    {
+        // Find the instances allowed to receive the message
+        List<ReplicationInstance> targets = getRelayInstances(message, minimumLevel, maximumLevel);
+
+        // Relay the message
+        return this.relay.relay(message, targets);
+    }
+
+    @Override
+    public CompletableFuture<ReplicationSenderMessage> relayDocumentUpdate(ReplicationReceiverMessage message)
+        throws ReplicationException
+    {
+        List<DocumentReplicationControllerInstance> allInstances = getRelayConfiguration(message);
+
+        // Get instances allowed to receive updates
+        List<ReplicationInstance> fullInstances = getInstances(DocumentReplicationLevel.ALL, allInstances);
+
+        // Send the message as is for instances allowed to receive complete updates
+        CompletableFuture<ReplicationSenderMessage> future = this.relay.relay(message, fullInstances);
+
+        // Get instances only allowed to receive references
+        List<ReplicationInstance> referenceInstances =
+            this.relay.getRelayedInstances(message, getInstances(DocumentReplicationLevel.REFERENCE, allInstances));
+
+        if (!referenceInstances.isEmpty()) {
+            // Convert the message to a reference message and send it to instances not allowed to receive updates
+            DocumentReplicationSenderMessageBuilder builder =
+                this.builders.documentReferenceMessageBuilder(message);
+            ReplicationSenderMessage sendMessage = builder.build(DocumentReplicationLevel.REFERENCE, true, null);
+
+            future = this.sender.send(sendMessage, referenceInstances);
+        }
+
+        return future;
     }
 }

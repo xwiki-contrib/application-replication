@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.model.reference.EntityReference;
 
@@ -41,6 +42,12 @@ public interface EntityReplicationSenderMessageBuilder
     EntityReplicationSenderMessageBuilder id(String id);
 
     /**
+     * @param source the instance from which the message is originally coming
+     * @return this builder
+     */
+    EntityReplicationSenderMessageBuilder source(String source);
+
+    /**
      * @param receivers the instances which are supposed to handler the message
      * @return this builder
      */
@@ -51,6 +58,18 @@ public interface EntityReplicationSenderMessageBuilder
      * @return this builder
      */
     EntityReplicationSenderMessageBuilder receivers(String... receivers);
+
+    /**
+     * @param customMetadata custom metadata to associate with the message
+     * @return this builder
+     */
+    EntityReplicationSenderMessageBuilder customMetadata(Map<String, Collection<String>> customMetadata);
+
+    /**
+     * @param message the message to copy
+     * @return this builder
+     */
+    EntityReplicationSenderMessageBuilder message(ReplicationMessage message);
 
     /**
      * @param minimumLevel the minimum level required from an instance replication configuration to receive the entity,
@@ -65,6 +84,11 @@ public interface EntityReplicationSenderMessageBuilder
     String getId();
 
     /**
+     * @return the instance from which the message is originally coming
+     */
+    String getSource();
+
+    /**
      * @return the reference of the entity associated with the message
      */
     EntityReference getEntityReference();
@@ -73,6 +97,11 @@ public interface EntityReplicationSenderMessageBuilder
      * @return the instances which are supposed to handler the message
      */
     Collection<String> getReceivers();
+
+    /**
+     * @return custom metadata to associate with the message
+     */
+    Map<String, Collection<String>> getCustomMetadata();
 
     /**
      * @return the minimum level required from an instance configuration to receive the entity

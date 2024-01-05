@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.entity;
 
 import java.util.Collection;
 
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.doc.XWikiDocument;
@@ -44,6 +45,9 @@ public interface DocumentReplicationSenderMessageBuilder extends EntityReplicati
 
     @Override
     DocumentReplicationSenderMessageBuilder minimumLevel(DocumentReplicationLevel minimumLevel);
+
+    @Override
+    DocumentReplicationSenderMessageBuilder message(ReplicationMessage message);
 
     /**
      * @param owner the owner of the document

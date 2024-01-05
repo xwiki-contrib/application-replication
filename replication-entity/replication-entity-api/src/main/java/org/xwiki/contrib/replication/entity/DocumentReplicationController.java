@@ -21,11 +21,13 @@ package org.xwiki.contrib.replication.entity;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.xwiki.component.annotation.Role;
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReference;
 
@@ -176,4 +178,39 @@ public interface DocumentReplicationController
      * @since 2.0.0
      */
     ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException;
+
+    // Relay
+
+    /**
+     * @param message the message to relay
+     * @param minimumLevel the minimum level required to relay the message
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
+     * @throws ReplicationException when failing to queue the replication message
+     * @since 2.0.0
+     * @since 1.12.11
+     */
+    CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel) throws ReplicationException;
+
+    /**
+     * @param message the message to relay
+     * @param minimumLevel the minimum level required to relay the message
+     * @param maximumLevel the maximum level required to relay the message
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
+     * @throws ReplicationException when failing to queue the replication message
+     * @since 2.0.0
+     * @since 1.12.11
+     */
+    CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message,
+        DocumentReplicationLevel minimumLevel, DocumentReplicationLevel maximumLevel) throws ReplicationException;
+
+    /**
+     * @param message the document update message to relay
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
+     * @throws ReplicationException when failing to queue the replication message
+     * @since 2.0.0
+     * @since 1.12.11
+     */
+    CompletableFuture<ReplicationSenderMessage> relayDocumentUpdate(ReplicationReceiverMessage message)
+        throws ReplicationException;
 }

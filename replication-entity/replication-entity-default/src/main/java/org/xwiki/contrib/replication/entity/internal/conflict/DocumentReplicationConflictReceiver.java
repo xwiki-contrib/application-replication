@@ -19,7 +19,6 @@
  */
 package org.xwiki.contrib.replication.entity.internal.conflict;
 
-import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -28,7 +27,6 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
-import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.XWikiContext;
@@ -41,9 +39,6 @@ import com.xpn.xwiki.XWikiContext;
 @Named(EntityReplicationMessage.TYPE_DOCUMENT_CONFLICT)
 public class DocumentReplicationConflictReceiver extends AbstractDocumentReplicationReceiver
 {
-    @Inject
-    private ReplicationDocumentStore store;
-
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
@@ -51,6 +46,6 @@ public class DocumentReplicationConflictReceiver extends AbstractDocumentReplica
         boolean conflict = this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_CONFLICT,
             true, boolean.class);
 
-        this.store.setConflict(documentReference, conflict);
+        this.documentStore.setConflict(documentReference, conflict);
     }
 }
