@@ -48,11 +48,14 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Named(DocumentReferenceReplicationMessage.TYPE)
 public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
+    private static final String REFERENCE_CONTENT =
+        "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}";
+
     @Override
     protected void checkMessageInstance(ReplicationReceiverMessage message, DocumentReference documentReference,
         DocumentReplicationControllerInstance currentConfiguration) throws ReplicationException
     {
-        // It's forbidden to send unreplicate messages to the owner
+        // It's forbidden to send reference messages to the owner
         if (this.replicationUtils.isOwner(documentReference)) {
             throw new InvalidReplicationMessageException(
                 "It's forbidden to send REFERENCE messages to the owner instance");
@@ -63,6 +66,19 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
     {
+        if (this.documentStore.getOwner(documentReference) != null) {
+            // If there is a previous replication which is not a REFERENCE replication, unreplicate it first
+            XWikiDocument existingDocument;
+            try {
+                existingDocument = xcontext.getWiki().getDocument(documentReference, xcontext);
+            } catch (XWikiException e) {
+                throw new ReplicationException("Failed to access existing document", e);
+            }
+            if (!existingDocument.isNew() && !REFERENCE_CONTENT.equals(existingDocument.getContent())) {
+                unreplicate(existingDocument, xcontext);
+            }
+        }
+
         // Create an empty document
         XWikiDocument document = new XWikiDocument(documentReference);
 
@@ -79,7 +95,7 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
         document.setSyntax(Syntax.XWIKI_2_1);
         document.setContent(
             // TODO: go through an xobject and a sheet instead to keep an empty document content (less impacting)
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+            REFERENCE_CONTENT);
 
         // Ask the controller for modification before save
         this.controller.receiveREFERENCEDocument(document, message);

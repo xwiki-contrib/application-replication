@@ -67,12 +67,7 @@ public class DocumentUnreplicateReplicationReceiver extends AbstractDocumentRepl
         // Delete the document
         // If the document is already deleted or does not exist for some reason, ignore it
         if (!document.isNew()) {
-            try {
-                // Skip the trash bin since that instance is not supposed to know about this document at all anymore
-                xcontext.getWiki().deleteDocument(document, false, xcontext);
-            } catch (XWikiException e) {
-                throw new ReplicationException("Failed to delete the document", e);
-            }
+            unreplicate(document, xcontext);
         }
 
         // Reset the owner since that document is not replicated anymore
