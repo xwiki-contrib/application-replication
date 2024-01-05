@@ -40,7 +40,6 @@ import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.contrib.replication.entity.internal.DocumentReplicationUtils;
-import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.contrib.replication.entity.internal.repairrequest.DocumentRepairRequestReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 
@@ -69,9 +68,6 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     private DocumentUpdateConflictResolver conflictResolver;
 
     @Inject
-    private ReplicationDocumentStore documentStore;
-
-    @Inject
     private Provider<DocumentRepairRequestReplicationMessage> repairRequestMessageProvider;
 
     @Override
@@ -93,6 +89,9 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         } else {
             update(message, documentReference, replicationDocument, xcontext);
         }
+
+        // Owner
+        handlerOwner(message, documentReference);
     }
 
     private void prepare(XWikiDocument previousDocument, XWikiDocument replicationDocument, XWikiContext xcontext)

@@ -25,7 +25,6 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.model.reference.DocumentReference;
 
 import com.xpn.xwiki.XWikiContext;
@@ -39,13 +38,11 @@ import com.xpn.xwiki.XWikiContext;
 @Named(DocumentUpdateProbeResponseReplicationMessage.TYPE)
 public class DocumentUpdateProbeResponseReplicationReceiver extends AbstractDocumentUpdateProbeReplicationReceiver
 {
-    private ReplicationDocumentStore store;
-
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
     {
         // Change document readonly status
-        this.store.setReadonly(documentReference, false);
+        this.documentStore.setReadonly(documentReference, false);
     }
 }

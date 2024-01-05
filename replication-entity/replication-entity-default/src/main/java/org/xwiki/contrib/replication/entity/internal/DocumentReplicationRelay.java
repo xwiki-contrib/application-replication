@@ -132,21 +132,22 @@ public class DocumentReplicationRelay
     {
         List<DocumentReplicationControllerInstance> allInstances = this.controller.getRelayConfiguration(message);
 
+        // Get instances allowed to receive updates
+        List<ReplicationInstance> fullInstances = getInstances(DocumentReplicationLevel.ALL, allInstances);
+
         // Send the message as is for instances allowed to receive complete updates
-        CompletableFuture<ReplicationSenderMessage> future =
-            this.relay.relay(message, getInstances(DocumentReplicationLevel.ALL, allInstances));
+        CompletableFuture<ReplicationSenderMessage> future = this.relay.relay(message, fullInstances);
 
-        // Strip the message for instances allowed to receive only references
-        if (this.documentMessageTool.isComplete(message)) {
-            List<ReplicationInstance> referenceInstances =
-                this.relay.getRelayedInstances(message, getInstances(DocumentReplicationLevel.REFERENCE, allInstances));
+        // Get instances only allowed to receive references
+        List<ReplicationInstance> referenceInstances =
+            this.relay.getRelayedInstances(message, getInstances(DocumentReplicationLevel.REFERENCE, allInstances));
 
-            if (!referenceInstances.isEmpty()) {
-                DocumentReferenceReplicationMessage sendMessage = this.documentReferenceMessageProvider.get();
-                sendMessage.initialize(message);
+        if (!referenceInstances.isEmpty()) {
+            // Convert the message to a reference message and send it to instances not allowed to receive updates
+            DocumentReferenceReplicationMessage sendMessage = this.documentReferenceMessageProvider.get();
+            sendMessage.initialize(message);
 
-                future = this.sender.send(sendMessage, referenceInstances);
-            }
+            future = this.sender.send(sendMessage, referenceInstances);
         }
 
         return future;

@@ -32,6 +32,8 @@ import javax.inject.Provider;
 
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.entity.EntityReplication;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.EntityReplicationConfiguration;
 import org.xwiki.filter.instance.input.DocumentInstanceInputProperties;
@@ -78,6 +80,13 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      */
     public static final String METADATA_VERSION = METADATA_PREFIX + "VERSION";
 
+    /**
+     * The name of the metadata containing the owner of the document.
+     * 
+     * @since 1.12.11
+     */
+    public static final String METADATA_DOCUMENT_UPDATE_OWNER = METADATA_PREFIX + "OWNER";
+
     @Inject
     private Provider<XWikiContext> xcontextProvider;
 
@@ -86,6 +95,9 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
 
     @Inject
     private EntityReplicationConfiguration configuration;
+
+    @Inject
+    private EntityReplication entityReplication;
 
     @Inject
     private Logger logger;
@@ -103,9 +115,10 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param attachments the attachments content to send
      * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
+     * @throws ReplicationException when failing to initialize the message
      */
     public void initializeUpdate(XWikiDocument document, Set<String> attachments, Collection<String> receivers,
-        Map<String, Collection<String>> extraMetadata)
+        Map<String, Collection<String>> extraMetadata) throws ReplicationException
     {
         initialize(document.getDocumentReferenceWithLocale(), document.getVersion(), false, null, receivers,
             extraMetadata);
@@ -142,10 +155,11 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param creator the user who created the document
      * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
+     * @throws ReplicationException when failing to initialize the message
      * @since 1.1
      */
     public void initializeComplete(DocumentReference documentReference, String version, UserReference creator,
-        Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
+        Collection<String> receivers, Map<String, Collection<String>> extraMetadata) throws ReplicationException
     {
         initialize(documentReference, version, true, creator, receivers, extraMetadata);
     }
@@ -159,10 +173,12 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
      * @param creator the user who created the document
      * @param receivers the instances which are supposed to handler the message
      * @param extraMetadata custom metadata to add to the message
+     * @throws ReplicationException when failing to initialize the message
      * @since 1.1
      */
     protected void initialize(DocumentReference documentReference, String version, boolean complete,
         UserReference creator, Collection<String> receivers, Map<String, Collection<String>> extraMetadata)
+        throws ReplicationException
     {
         super.initialize(documentReference, receivers, extraMetadata);
 
@@ -176,6 +192,9 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
         if (creator != null) {
             putCustomMetadata(METADATA_CREATOR, creator);
         }
+
+        // Owner
+        putCustomMetadata(METADATA_DOCUMENT_UPDATE_OWNER, this.entityReplication.getOwner(documentReference));
     }
 
     @Override

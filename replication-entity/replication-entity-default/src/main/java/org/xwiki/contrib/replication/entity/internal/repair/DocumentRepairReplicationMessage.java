@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.xwiki.component.annotation.Component;
+import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.user.UserReference;
@@ -63,10 +64,12 @@ public class DocumentRepairReplicationMessage extends DocumentUpdateReplicationM
      * @param authors the users involved in the conflict
      * @param receivers the instances which are supposed to handler the message
      * @param metadata custom metadata to add to the message
+     * @throws ReplicationException when failing to initialize the message
      * @since 1.1
      */
     public void initializeRepair(DocumentReference documentReference, String version, UserReference creator,
         Collection<String> authors, Collection<String> receivers, Map<String, Collection<String>> metadata)
+        throws ReplicationException
     {
         initialize(documentReference, version, true, creator, receivers, metadata);
 

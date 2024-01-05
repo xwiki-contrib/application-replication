@@ -21,7 +21,6 @@ package org.xwiki.contrib.replication.entity.internal.reference;
 
 import java.util.concurrent.CompletableFuture;
 
-import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -33,7 +32,6 @@ import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
-import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.rendering.syntax.Syntax;
 import org.xwiki.user.UserReference;
@@ -50,9 +48,6 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Named(DocumentReferenceReplicationMessage.TYPE)
 public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
-    @Inject
-    private ReplicationDocumentStore documentStore;
-
     @Override
     protected void checkMessageInstance(ReplicationReceiverMessage message, DocumentReference documentReference,
         DocumentReplicationControllerInstance currentConfiguration) throws ReplicationException
@@ -96,11 +91,8 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
             throw new ReplicationException("Failed to save the document", e);
         }
 
-        // Set the document owner if not already set
-        String owner = this.entityReplication.getOwner(documentReference);
-        if (owner == null) {
-            this.documentStore.setOwner(documentReference, message.getSource());
-        }
+        // Owner
+        handlerOwner(message, documentReference);
     }
 
     @Override

@@ -19,7 +19,6 @@
  */
 package org.xwiki.contrib.replication.entity.internal.create;
 
-import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -28,11 +27,8 @@ import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
-import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
-
-import com.xpn.xwiki.XWikiContext;
 
 /**
  * @version $Id$
@@ -42,22 +38,6 @@ import com.xpn.xwiki.XWikiContext;
 @Named(DocumentCreateReplicationMessage.TYPE)
 public class DocumentCreateReplicationReceiver extends DocumentUpdateReplicationReceiver
 {
-    @Inject
-    private ReplicationDocumentStore documentStore;
-
-    @Override
-    protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
-        XWikiContext xcontext) throws ReplicationException
-    {
-        super.receiveDocument(message, documentReference, xcontext);
-
-        // Set the document owner
-        this.documentStore.setOwner(documentReference, message.getSource());
-
-        // Update the readonly status of the document
-        // TOTO 1.13.0: this.entityReplication.updateDocumentReadonly(documentReference);
-    }
-
     @Override
     protected void checkMessageInstance(ReplicationReceiverMessage message, DocumentReference documentReference,
         DocumentReplicationControllerInstance currentConfiguration) throws ReplicationException
