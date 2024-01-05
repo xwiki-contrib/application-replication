@@ -25,11 +25,9 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
-import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
@@ -46,17 +44,12 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Named(DocumentUnreplicateReplicationMessage.TYPE)
 public class DocumentUnreplicateReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
-    @Override
-    protected void checkMessageInstance(ReplicationReceiverMessage message, DocumentReference documentReference,
-        DocumentReplicationControllerInstance currentConfiguration) throws ReplicationException
+    /**
+     * Only the owner is allowed to send this type of messages.
+     */
+    public DocumentUnreplicateReplicationReceiver()
     {
-        super.checkMessageInstance(message, documentReference, currentConfiguration);
-
-        // It's forbidden to send unreplicate messages to the owner
-        if (this.replicationUtils.isOwner(documentReference)) {
-            throw new InvalidReplicationMessageException(
-                "It's forbidden to send REFERENCE messages to the owner instance");
-        }
+        this.ownerOnly = true;
     }
 
     @Override
