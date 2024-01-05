@@ -84,14 +84,14 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             throw new ReplicationException("Failed to parse document message to update", e);
         }
 
+        // Owner
+        handlerOwner(message, documentReference);
+
         if (complete) {
             completeUpdate(replicationDocument, xcontext);
         } else {
             update(message, documentReference, replicationDocument, xcontext);
         }
-
-        // Owner
-        handlerOwner(message, documentReference);
     }
 
     private void prepare(XWikiDocument previousDocument, XWikiDocument replicationDocument, XWikiContext xcontext)
