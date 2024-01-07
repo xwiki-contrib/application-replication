@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.xwiki.component.annotation.Role;
+import org.xwiki.contrib.replication.ReplicationInstance.Status;
 
 /**
  * @version $Id$
@@ -56,7 +57,12 @@ public interface ReplicationInstanceManager
      * @since 1.12.11
      * @since 2.0.0
      */
-    ReplicationInstance getRegisteredInstanceByURI(String uri) throws ReplicationException;
+    default ReplicationInstance getRegisteredInstanceByURI(String uri) throws ReplicationException
+    {
+        ReplicationInstance instance = getInstanceByURI(uri);
+
+        return instance != null && instance.getStatus() == Status.REGISTERED ? instance : null;
+    }
 
     /**
      * @param name the instance name
