@@ -127,7 +127,7 @@ public class EntityReplicationControllerReceiver extends AbstractEntityReplicati
         }
 
         // Invert sending on the source if needed and if the source is known
-        ReplicationInstance sourceInstance = this.instances.getInstanceByURI(message.getSource());
+        ReplicationInstance sourceInstance = this.instances.getRegisteredInstanceByURI(message.getSource());
         if (sourceInstance != null) {
             // If current instance is receive_only then the source is too (from current instance point of view)
             if (currentConfiguration.getDirection() == DocumentReplicationDirection.RECEIVE_ONLY) {

@@ -37,6 +37,7 @@ import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.replication.RelayReplicationSender;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSender;
@@ -104,7 +105,7 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
 
             // Check if all receivers are direct links
             for (String receiver : receivers) {
-                ReplicationInstance instance = this.instanceManager.getInstanceByURI(receiver);
+                ReplicationInstance instance = this.instanceManager.getRegisteredInstanceByURI(receiver);
                 if (instance == null) {
                     // One of the receiver is unknown so we don't filter the replication configuration
                     return configurations;

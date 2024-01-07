@@ -112,7 +112,7 @@ public class DocumentReplicationInstanceRecoverHandler extends AbstractEntityRep
     private void handle(EventSearchResult result, String source) throws ReplicationException
     {
         ReplicationInstance currentInstance = this.instances.getCurrentInstance();
-        ReplicationInstance sourceInstance = this.instances.getInstanceByURI(source);
+        ReplicationInstance sourceInstance = this.instances.getRegisteredInstanceByURI(source);
 
         String currentDocumentReferenceString = null;
         String currentLocaleString = null;

@@ -112,6 +112,14 @@ public class DefaultReplicationInstanceManager implements ReplicationInstanceMan
     }
 
     @Override
+    public ReplicationInstance getRegisteredInstanceByURI(String uri) throws ReplicationException
+    {
+        ReplicationInstance instance = getInstanceByURI(uri);
+
+        return instance != null && instance.getStatus() == Status.REGISTERED ? instance : null;
+    }
+
+    @Override
     public ReplicationInstance getInstanceByName(String name) throws ReplicationException
     {
         if (name == null) {

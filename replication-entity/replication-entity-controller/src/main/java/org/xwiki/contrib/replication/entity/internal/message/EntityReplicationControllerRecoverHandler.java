@@ -112,7 +112,7 @@ public class EntityReplicationControllerRecoverHandler extends AbstractEntityRep
 
     private void handle(EventSearchResult result, String source) throws XWikiException, ReplicationException
     {
-        ReplicationInstance sourceInstance = this.instances.getInstanceByURI(source);
+        ReplicationInstance sourceInstance = this.instances.getRegisteredInstanceByURI(source);
 
         // Taking care of this only in direct linked instance is enough
         if (sourceInstance == null) {
