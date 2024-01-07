@@ -174,6 +174,21 @@ public interface DocumentReplicationController
     void sendDocumentRepair(XWikiDocument document, Collection<String> authors) throws ReplicationException;
 
     /**
+     * Force pushing a complete document to allowed instances.
+     * 
+     * @param document the document to send
+     * @param authors the users involved in the conflict
+     * @param receivers the instances where to send the repair
+     * @throws ReplicationException when failing to replicate the document
+     * @since 1.12.11
+     */
+    default void sendDocumentRepair(XWikiDocument document, Collection<String> authors, Collection<String> receivers)
+        throws ReplicationException
+    {
+        sendDocumentRepair(document, authors);
+    }
+
+    /**
      * Give a chance to the controller to modify the document created for REFERENCE level replication before it's saved.
      * 
      * @param document the document to modify

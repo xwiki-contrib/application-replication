@@ -154,6 +154,13 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     }
 
     @Override
+    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors, Collection<String> receivers)
+        throws ReplicationException
+    {
+        getController(document.getDocumentReference()).sendDocumentRepair(document, authors, receivers);
+    }
+
+    @Override
     public boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message)
         throws ReplicationException
     {

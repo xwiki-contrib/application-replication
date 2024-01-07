@@ -175,7 +175,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
                     // Create and save a merged version of the document
                     this.conflictResolver.merge(ancestors, databaseDocument, replicationDocument, xcontext);
                 } else {
-                    // Otherwise just ask the owner for a repair (it case the owner did not notice)
+                    // Otherwise just ask the owner for a repair (in case the owner did not notice)
                     requestRepair(documentReference);
                 }
             }

@@ -127,6 +127,13 @@ public class MinimumDocumentReplicationController implements DocumentReplication
     }
 
     @Override
+    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors, Collection<String> receivers)
+        throws ReplicationException
+    {
+        // Do nothing
+    }
+
+    @Override
     public boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message)
         throws ReplicationException
     {

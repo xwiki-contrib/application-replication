@@ -172,6 +172,13 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
     }
 
     @Override
+    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors, Collection<String> receivers)
+        throws ReplicationException
+    {
+        this.sender.sendDocumentRepair(document, authors, receivers, getMetadata(document), null);
+    }
+
+    @Override
     public boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message)
     {
         return false;

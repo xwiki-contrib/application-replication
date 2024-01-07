@@ -128,11 +128,19 @@ public class DefaultDocumentReplicationSender implements DocumentReplicationSend
         Map<String, Collection<String>> metadata, Collection<DocumentReplicationControllerInstance> configurations)
         throws ReplicationException
     {
+        sendDocumentRepair(document, authors, null, metadata, configurations);
+    }
+
+    @Override
+    public void sendDocumentRepair(XWikiDocument document, Collection<String> authors, Collection<String> receivers,
+        Map<String, Collection<String>> metadata, Collection<DocumentReplicationControllerInstance> configurations)
+        throws ReplicationException
+    {
         send(m -> {
             DocumentRepairReplicationMessage message = this.repairMessageProvider.get();
 
             message.initializeRepair(document.getDocumentReferenceWithLocale(), document.getVersion(),
-                document.getAuthors().getCreator(), authors, null, m);
+                document.getAuthors().getCreator(), authors, receivers, m);
 
             return message;
         }, document.getDocumentReference(), DocumentReplicationLevel.ALL, metadata, configurations);

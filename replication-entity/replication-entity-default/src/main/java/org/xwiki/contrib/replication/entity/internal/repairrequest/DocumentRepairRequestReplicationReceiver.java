@@ -66,7 +66,7 @@ public class DocumentRepairRequestReplicationReceiver extends AbstractDocumentRe
             }
 
             // Send back a repair message
-            this.controller.sendDocumentRepair(document, Collections.singleton(message.getSource()));
+            this.controller.sendDocumentRepair(document, null, Collections.singleton(message.getSource()));
         }
     }
 
