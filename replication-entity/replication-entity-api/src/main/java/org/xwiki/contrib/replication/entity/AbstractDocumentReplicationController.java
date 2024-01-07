@@ -29,7 +29,6 @@ import javax.inject.Inject;
 
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
-import org.xwiki.contrib.replication.ReplicationInstance.Status;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.model.reference.DocumentReference;
