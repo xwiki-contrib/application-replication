@@ -50,6 +50,15 @@ public interface ReplicationInstanceManager
     ReplicationInstance getInstanceByURI(String uri) throws ReplicationException;
 
     /**
+     * @param uri the uri of the instance
+     * @return the instance
+     * @throws ReplicationException when failing to load the instances
+     * @since 1.12.11
+     * @since 2.0.0
+     */
+    ReplicationInstance getRegisteredInstanceByURI(String uri) throws ReplicationException;
+
+    /**
      * @param name the instance name
      * @return the instance
      * @throws ReplicationException when failing to load the instances

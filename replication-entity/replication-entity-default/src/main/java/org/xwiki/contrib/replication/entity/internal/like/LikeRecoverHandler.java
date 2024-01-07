@@ -76,7 +76,7 @@ public class LikeRecoverHandler extends AbstractEntityReplicationInstanceRecover
     @Override
     public void receive(Date dateMin, Date dateMax, ReplicationReceiverMessage message) throws ReplicationException
     {
-        ReplicationInstance sourceInstance = this.instances.getInstanceByURI(message.getSource());
+        ReplicationInstance sourceInstance = this.instances.getRegisteredInstanceByURI(message.getSource());
 
         // Taking care of this only in direct linked instances is enough
         if (sourceInstance == null) {
