@@ -31,6 +31,7 @@ import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
+import org.xwiki.model.reference.WikiReference;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
@@ -60,10 +61,18 @@ public class DocumentHistoryReplicationReceiver extends AbstractDocumentReplicat
             throw new ReplicationException("Failed to load document to update", e);
         }
 
+        WikiReference currentWiki = xcontext.getWikiReference();
         try {
+            // Workaround https://jira.xwiki.org/browse/XWIKI-21761 (XWiki#deleteDocumentVersions does not work when
+            // called from a different wiki) by making sure to witch to the wiki of the document before calling it
+            // TODO: remove when upgrading to a version of XWiki Standard where the bug is fixed
+            xcontext.setWikiReference(document.getDocumentReference().getWikiReference());
+
             xcontext.getWiki().deleteDocumentVersions(document, fromVersion, toVersion, xcontext);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to delete document versions", e);
+        } finally {
+            xcontext.setWikiReference(currentWiki);
         }
     }
 
