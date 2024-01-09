@@ -25,7 +25,7 @@
   <parent>
     <groupId>org.xwiki.contrib</groupId>
     <artifactId>parent-platform</artifactId>
-    <version>14.3.1</version>
+    <version>14.10.7</version>
   </parent>
 
   <groupId>org.xwiki.contrib.replication</groupId>
@@ -133,7 +133,11 @@
               <differences>
                 <item>
                   <ignore>true</ignore>
-                  <regex>true</regex>
+                  <code>java.class.removed</code>
+                  <old>interface org.xwiki.contrib.replication.entity.DocumentReplicationSender</old>
+                </item>
+                <item>
+                  <ignore>true</ignore>
                   <code>java.class.removed</code>
                   <old>interface org.xwiki.contrib.replication.entity.DocumentReplicationSender</old>
                 </item>
@@ -237,6 +241,18 @@
                   <ignore>true</ignore>
                   <code>java.method.addedToInterface</code>
                   <new>method org.xwiki.user.UserReference org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader::getCreatorReference(org.xwiki.contrib.replication.ReplicationMessage) throws org.xwiki.contrib.replication.InvalidReplicationMessageException</new>
+                </item>
+                <item>
+                  <ignore>true</ignore>
+                  <code>java.method.noLongerDefault</code>
+                  <old>method org.xwiki.contrib.replication.ReplicationInstance org.xwiki.contrib.replication.ReplicationInstanceManager::getRegisteredInstanceByURI(java.lang.String) throws org.xwiki.contrib.replication.ReplicationException</old>
+                  <new>method org.xwiki.contrib.replication.ReplicationInstance org.xwiki.contrib.replication.ReplicationInstanceManager::getRegisteredInstanceByURI(java.lang.String) throws org.xwiki.contrib.replication.ReplicationException</new>
+                </item>
+                <item>
+                  <ignore>true</ignore>
+                  <code>java.method.nowAbstract</code>
+                  <old>method org.xwiki.contrib.replication.ReplicationInstance org.xwiki.contrib.replication.ReplicationInstanceManager::getRegisteredInstanceByURI(java.lang.String) throws org.xwiki.contrib.replication.ReplicationException</old>
+                  <new>method org.xwiki.contrib.replication.ReplicationInstance org.xwiki.contrib.replication.ReplicationInstanceManager::getRegisteredInstanceByURI(java.lang.String) throws org.xwiki.contrib.replication.ReplicationException</new>
                 </item>
               </differences>
             </revapi.differences>

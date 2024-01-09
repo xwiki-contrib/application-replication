@@ -33,6 +33,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
+import org.xwiki.component.embed.EmbeddableComponentManager;
+import org.xwiki.component.manager.ComponentLookupException;
+import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.internal.instance.ReplicationInstanceStore;
 import org.xwiki.contrib.replication.internal.instance.StandardReplicationInstanceClassInitializer;
@@ -44,6 +47,9 @@ import org.xwiki.contrib.replication.test.po.ReplicationPage;
 import org.xwiki.contrib.replication.test.po.RequestedInstancePane;
 import org.xwiki.contrib.replication.test.po.RequestingInstancePane;
 import org.xwiki.contrib.replication.test.po.WikiReplicationAdministrationSectionPage;
+import org.xwiki.extension.ExtensionId;
+import org.xwiki.extension.job.InstallRequest;
+import org.xwiki.extension.job.internal.InstallJob;
 import org.xwiki.like.test.po.LikeButton;
 import org.xwiki.model.EntityType;
 import org.xwiki.model.reference.DocumentReference;
@@ -51,13 +57,20 @@ import org.xwiki.model.reference.EntityReference;
 import org.xwiki.model.reference.LocalDocumentReference;
 import org.xwiki.model.reference.ObjectReference;
 import org.xwiki.model.reference.WikiReference;
+import org.xwiki.platform.wiki.creationjob.WikiCreationRequest;
+import org.xwiki.platform.wiki.creationjob.internal.WikiCreationJob;
+import org.xwiki.rest.XWikiRestException;
+import org.xwiki.rest.internal.ModelFactory;
 import org.xwiki.rest.model.jaxb.Attachment;
 import org.xwiki.rest.model.jaxb.History;
 import org.xwiki.rest.model.jaxb.HistorySummary;
 import org.xwiki.rest.model.jaxb.Page;
 import org.xwiki.rest.model.jaxb.Property;
+import org.xwiki.rest.model.jaxb.Wiki;
+import org.xwiki.rest.model.jaxb.Wikis;
 import org.xwiki.rest.resources.attachments.AttachmentResource;
 import org.xwiki.rest.resources.pages.PageResource;
+import org.xwiki.test.docker.internal.junit5.JobExecutor;
 import org.xwiki.test.ui.AbstractTest;
 import org.xwiki.test.ui.TestUtils;
 import org.xwiki.test.ui.TestUtils.RestTestUtils;
@@ -140,6 +153,8 @@ public class ReplicationIT extends AbstractTest
     StubMapping proxyStub2;
 
     MappingBuilder proxyFailingBuilder;
+
+    private EmbeddableComponentManager fullComponentManager;
 
     private <T> void assertEqualsWithTimeout(T expected, Supplier<T> supplier) throws InterruptedException
     {
@@ -334,6 +349,26 @@ public class ReplicationIT extends AbstractTest
     @Test
     public void all() throws Exception
     {
+        // Setup
+        setup();
+
+        // Execute tests on main wiki
+        tests("xwiki");
+
+        // Make sure all instances have subwiki "testwiki"
+        getUtil().switchExecutor(INSTANCE_0);
+        setupWiki("testwiki");
+        getUtil().switchExecutor(INSTANCE_1);
+        setupWiki("testwiki");
+        getUtil().switchExecutor(INSTANCE_2);
+        setupWiki("testwiki");
+
+        // Execute tests on sub wiki
+        tests("testwiki");
+    }
+
+    private void setup() throws Exception
+    {
         getUtil().switchExecutor(INSTANCE_0);
         getUtil().loginAsSuperAdmin();
         this.uri0 = StringUtils.removeEnd(getUtil().getBaseURL(), "/");
@@ -364,6 +399,70 @@ public class ReplicationIT extends AbstractTest
 
         // Link two instances
         instances();
+    }
+
+    private void setupWiki(String wiki) throws Exception
+    {
+        // Check if the wiki already exist
+        Wikis wikis = getUtil().rest().getResource("/wikis", null);
+        for (Wiki restWiki : wikis.getWikis()) {
+            if (restWiki.getName().equals(wiki)) {
+                // The wiki already exist
+                return;
+            }
+        }
+
+        // Create the wiki
+        createWiki(wiki);
+        installReplication(wiki);
+    }
+
+    private ComponentManager getFullComponentManager()
+    {
+        if (this.fullComponentManager == null) {
+            this.fullComponentManager = new EmbeddableComponentManager();
+            this.fullComponentManager.initialize(Thread.currentThread().getContextClassLoader());
+        }
+
+        return this.fullComponentManager;
+    }
+
+    private ModelFactory getModelFactory() throws ComponentLookupException
+    {
+        return getFullComponentManager().getInstance(ModelFactory.class);
+    }
+
+    private void installReplication(String wiki) throws XWikiRestException, ComponentLookupException, Exception
+    {
+        System.out.println(System.getProperties());
+
+        InstallRequest installRequest = new InstallRequest();
+        installRequest.setInteractive(false);
+        installRequest.addNamespace("wiki:" + wiki);
+        installRequest.addExtension(new ExtensionId("org.xwiki.contrib.replication:replication-ui", "2.0.0-SNAPSHOT"));
+        installRequest.setProperty("user.reference", new DocumentReference("xwiki", "XWiki", "superadmin"));
+
+        JobExecutor jobExecutor = new JobExecutor();
+        jobExecutor.execute(InstallJob.JOBTYPE, getModelFactory().toRestJobRequest(installRequest),
+            getUtil().rest().getBaseURL(), getUtil().getDefaultCredentials());
+    }
+
+    private void createWiki(String wiki) throws Exception
+    {
+        WikiCreationRequest wikiRequest = new WikiCreationRequest();
+        wikiRequest.setInteractive(false);
+        wikiRequest.setWikiId(wiki);
+        wikiRequest.setAlias(wiki);
+        wikiRequest.setFailOnExist(true);
+
+        JobExecutor jobExecutor = new JobExecutor();
+        jobExecutor.execute(WikiCreationJob.JOB_TYPE, getModelFactory().toRestJobRequest(wikiRequest),
+            getUtil().rest().getBaseURL(), getUtil().getDefaultCredentials());
+    }
+
+    private void tests(String wiki) throws Exception
+    {
+        getUtil().gotoPage(new DocumentReference(wiki, "Main", "WebHome"));
 
         // Configure replication
         controller();
@@ -1401,6 +1500,9 @@ public class ReplicationIT extends AbstractTest
             assertNotEquals(getUtil().rest().<Page>get(documentReference).getContent(), content);
         }
 
+        // Switch to main wiki
+        String currentWiki = getUtil().getCurrentWiki();
+        getUtil().setCurrentWiki("xwiki");
         // Make sure the UI indicate this waiting message
         getUtil().switchExecutor(INSTANCE_0);
         WikiReplicationAdministrationSectionPage admin0 = WikiReplicationAdministrationSectionPage.gotoPage();
@@ -1417,6 +1519,9 @@ public class ReplicationIT extends AbstractTest
 
         // Force pushing waiting messages
         instance.clickRetry();
+
+        // Switch back to the wiki
+        getUtil().setCurrentWiki(currentWiki);
 
         // Make sure the document is finally replicated on XWIKI 1
         getUtil().switchExecutor(INSTANCE_1);
@@ -1473,9 +1578,14 @@ public class ReplicationIT extends AbstractTest
         this.proxy0.stubFor(this.proxyStubBuilder0);
         this.proxy1.stubFor(this.proxyStubBuilder1);
 
+        // Switch to main wiki
+        String currentWiki = getUtil().getCurrentWiki();
+        getUtil().setCurrentWiki("xwiki");
         // Force pushing waiting messages on XWIKI 0
         getUtil().switchExecutor(INSTANCE_0);
         WikiReplicationAdministrationSectionPage.gotoPage().getRegisteredInstances().get(0).clickRetry();
+        // Switch back to the wiki
+        getUtil().setCurrentWiki(currentWiki);
 
         // Wait for the conflict resolution
         getUtil().switchExecutor(INSTANCE_0);

@@ -58,6 +58,14 @@ public class AllITs
             setupChannel(executors.get(INSTANCE_0), "tcp");
             setupChannel(executors.get(INSTANCE_0_2), "tcp");
         }
+
+        // Disable DW
+        disableDW(executors.get(INSTANCE_0));
+        if (INSTANCE_0_2_ENABLED) {
+            disableDW(executors.get(INSTANCE_0_2));
+        }
+        disableDW(executors.get(INSTANCE_1));
+        disableDW(executors.get(INSTANCE_2));
     }
 
     private void setupChannel(XWikiExecutor executor, String channelName) throws Exception
@@ -70,6 +78,14 @@ public class AllITs
 
             setupExecutor(executor);
         }
+    }
+
+    private void disableDW(XWikiExecutor executor) throws Exception
+    {
+        PropertiesConfiguration properties = executor.loadXWikiPropertiesConfiguration();
+        properties.setProperty("distribution.automaticStartOnMainWiki", "false");
+        properties.setProperty("distribution.automaticStartOnWiki", "false");
+        executor.saveXWikiProperties();
     }
 
     public static void setupExecutor(XWikiExecutor executor)
