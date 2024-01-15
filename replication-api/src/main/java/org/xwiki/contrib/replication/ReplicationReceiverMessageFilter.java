@@ -22,7 +22,7 @@ package org.xwiki.contrib.replication;
 import org.xwiki.component.annotation.Role;
 
 /**
- * Give a change to check or convert a receiving message before it's handled/relayed.
+ * Give a chance to check or convert a receiving message before it's handled/relayed.
  * 
  * @version $Id$
  * @since 2.0.0

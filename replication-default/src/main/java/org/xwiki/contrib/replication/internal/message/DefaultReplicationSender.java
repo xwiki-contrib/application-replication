@@ -320,26 +320,14 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
     public CompletableFuture<ReplicationSenderMessage> send(ReplicationSenderMessage message)
         throws ReplicationException
     {
-        QueueEntry entry = new QueueEntry(message, (Collection<ReplicationInstance>) null);
-        try {
-            this.storeQueue.put(entry);
-        } catch (InterruptedException e) {
-            entry.future.completeExceptionally(e);
-
-            // Mark the thread as interrupted
-            this.storeThread.interrupt();
-
-            throw new ReplicationException(String.format("Failed to queue the message [%s]", message), e);
-        }
-
-        return entry.future;
+        return send(message, null);
     }
 
     @Override
     public CompletableFuture<ReplicationSenderMessage> send(ReplicationSenderMessage message,
         Collection<ReplicationInstance> targets) throws ReplicationException
     {
-        if (targets.isEmpty()) {
+        if (targets != null && targets.isEmpty()) {
             CompletableFuture<ReplicationSenderMessage> future = new CompletableFuture<>();
             future.complete(message);
 
@@ -355,8 +343,9 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
             // Mark the thread as interrupted
             this.storeThread.interrupt();
 
-            throw new ReplicationException(
-                String.format("Failed to queue the message [%s] targetting instances %s", message, targets), e);
+            String exceptionMessage =
+                String.format("Failed to queue the message [%s] targetting instances %s", message, targets);
+            throw new ReplicationException(exceptionMessage, e);
         }
 
         return entry.future;
@@ -382,6 +371,12 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
         } catch (Exception e) {
             throw new ReplicationException("Failed to query logged messages", e);
         }
+    }
+
+    @Override
+    public CompletableFuture<ReplicationAnswer> ask(ReplicationSenderMessage message) throws ReplicationException
+    {
+        return ask(message, null);
     }
 
     @Override

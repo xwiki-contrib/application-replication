@@ -45,7 +45,7 @@ public interface ReplicationSender
      * Asynchronously send a message to passed instances.
      * 
      * @param message the data to send
-     * @param targets the instances to send the message to
+     * @param targets the direct instances to send the message to or {@code null} for all
      * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to queue the replication message
      */
@@ -58,7 +58,19 @@ public interface ReplicationSender
      * it just waits for the first answer.
      * 
      * @param message the data to send
-     * @param targets the instances to send the message to
+     * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
+     * @throws ReplicationException when failing to queue the replication message
+     * @since 2.0.0
+     */
+    CompletableFuture<ReplicationAnswer> ask(ReplicationSenderMessage message) throws ReplicationException;
+
+    /**
+     * Asynchronously send a question to passed instances. The {@link CompletableFuture} is waiting for the answer from
+     * each instance indicated by {@link ReplicationSenderMessage#getReceivers()}. If no specific receiver is provided,
+     * it just waits for the first answer.
+     * 
+     * @param message the data to send
+     * @param targets the direct instances to send the message to
      * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to queue the replication message
      * @since 2.0.0
@@ -88,8 +100,9 @@ public interface ReplicationSender
     void ping(ReplicationInstance instance);
 
     /**
-     * @param query the query to match logged events to send
-     * @param receivers the specific instances to send the message to, null for all instances
+     * @param query the query to match logged events to re-send
+     * @param receivers the specific instances that should eventually receive the message (direct or not), null for all
+     *            instances
      * @throws ReplicationException when failing to query or send logged messages
      * @since 1.3.0
      */
