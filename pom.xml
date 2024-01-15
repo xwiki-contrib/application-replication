@@ -220,6 +220,11 @@
                   <code>java.method.addedToInterface</code>
                   <new>method java.util.concurrent.CompletableFuture&lt;org.xwiki.contrib.replication.ReplicationAnswer&gt; org.xwiki.contrib.replication.ReplicationSender::ask(org.xwiki.contrib.replication.ReplicationSenderMessage, java.util.Collection&lt;org.xwiki.contrib.replication.ReplicationInstance&gt;) throws org.xwiki.contrib.replication.ReplicationException</new>
                 </item>
+                <item>
+                  <ignore>true</ignore>
+                  <code>java.method.addedToInterface</code>
+                  <new>method java.util.concurrent.CompletableFuture&lt;org.xwiki.contrib.replication.ReplicationAnswer&gt; org.xwiki.contrib.replication.ReplicationSender::ask(org.xwiki.contrib.replication.ReplicationSenderMessage) throws org.xwiki.contrib.replication.ReplicationException</new>
+                </item>
               </differences>
             </revapi.differences>
             <revapi.differences>
