@@ -105,7 +105,7 @@ public class ReplicationAnswerManager
 
             if (entry == null) {
                 throw new InvalidReplicationMessageException(
-                    "Received an answer [{}] to an unknown question id [" + questionId + "]");
+                    "Received an answer [" + message.getId() + "] to an unknown question id [" + questionId + "]");
             }
 
             // Update the receivers

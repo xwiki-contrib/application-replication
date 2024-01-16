@@ -343,8 +343,9 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
             // Mark the thread as interrupted
             this.storeThread.interrupt();
 
-            String exceptionMessage =
-                String.format("Failed to queue the message [%s] targetting instances %s", message, targets);
+            String exceptionMessage = targets != null
+                ? String.format("Failed to queue the message [%s] targetting instances %s", message, targets)
+                : String.format("Failed to queue the message [%s]", message);
             throw new ReplicationException(exceptionMessage, e);
         }
 
