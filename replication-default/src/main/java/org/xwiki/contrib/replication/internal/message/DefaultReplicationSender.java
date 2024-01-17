@@ -50,6 +50,7 @@ import org.xwiki.contrib.replication.ReplicationAnswer;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
+import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationSender;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageStore.FileReplicationSenderMessage;
@@ -392,11 +393,11 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
     }
 
     @Override
-    public CompletableFuture<ReplicationSenderMessage> answer(String questionId, String questionInstance,
+    public CompletableFuture<ReplicationSenderMessage> answer(ReplicationMessage questionMessage,
         Map<String, Collection<String>> customMetadata) throws ReplicationException
     {
         ReplicationAnswerMessage message = this.answerProvider.get();
-        message.initialize(questionId, questionInstance, customMetadata);
+        message.initialize(questionMessage, customMetadata);
 
         return send(message);
     }

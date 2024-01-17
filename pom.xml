@@ -213,7 +213,7 @@
                 <item>
                   <ignore>true</ignore>
                   <code>java.method.addedToInterface</code>
-                  <new>method java.util.concurrent.CompletableFuture&lt;org.xwiki.contrib.replication.ReplicationSenderMessage&gt; org.xwiki.contrib.replication.ReplicationSender::answer(java.lang.String, java.lang.String, java.util.Map&lt;java.lang.String, java.util.Collection&lt;java.lang.String&gt;&gt;) throws org.xwiki.contrib.replication.ReplicationException</new>
+                  <new>method java.util.concurrent.CompletableFuture&lt;org.xwiki.contrib.replication.ReplicationSenderMessage&gt; org.xwiki.contrib.replication.ReplicationSender::answer(org.xwiki.contrib.replication.ReplicationMessage, java.util.Map&lt;java.lang.String, java.util.Collection&lt;java.lang.String&gt;&gt;) throws org.xwiki.contrib.replication.ReplicationException</new>
                 </item>
                 <item>
                   <ignore>true</ignore>

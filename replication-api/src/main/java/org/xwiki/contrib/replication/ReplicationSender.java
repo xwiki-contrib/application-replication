@@ -81,14 +81,13 @@ public interface ReplicationSender
     /**
      * Asynchronously send an answer to previously received question.
      * 
-     * @param questionId the identifier of the message which contained the question
-     * @param questionInstance the identifier of the instance which sent the question
+     * @param questionMessage the message containing the question
      * @param customMetadata the actual content of the answer
      * @return the new {@link CompletableFuture} providing the stored {@link ReplicationSenderMessage} before it's sent
      * @throws ReplicationException when failing to queue the replication message
      * @since 2.0.0
      */
-    CompletableFuture<ReplicationSenderMessage> answer(String questionId, String questionInstance,
+    CompletableFuture<ReplicationSenderMessage> answer(ReplicationMessage questionMessage,
         Map<String, Collection<String>> customMetadata) throws ReplicationException;
 
     /**

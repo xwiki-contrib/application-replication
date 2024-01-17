@@ -28,6 +28,7 @@ import java.util.Set;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.AbstractReplicationSenderMessage;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationMessage;
 
 /**
  * @version $Id$
@@ -43,12 +44,11 @@ public class ReplicationAnswerMessage extends AbstractReplicationSenderMessage
     }
 
     /**
-     * @param questionId the identifier of the message which contained the question
-     * @param questionInstance the identifier of the instance which sent the question
+     * @param questionMessage the message containing the question
      * @param customMetadata the actual content of the answer
      * @throws ReplicationException when failing to initialize the message
      */
-    public void initialize(String questionId, String questionInstance, Map<String, Collection<String>> customMetadata)
+    public void initialize(ReplicationMessage questionMessage, Map<String, Collection<String>> customMetadata)
         throws ReplicationException
     {
         super.initialize();
@@ -57,10 +57,10 @@ public class ReplicationAnswerMessage extends AbstractReplicationSenderMessage
         this.modifiableMetadata.putAll(customMetadata);
 
         // The answer is sent to the instance which asked the question
-        this.receivers = Set.of(questionInstance);
+        this.receivers = Set.of(questionMessage.getSource());
 
         // Indicate the identifier of the question this answer is about
-        putCustomMetadata(METADATA_ANSWER_QUESTION_ID, questionId);
+        putCustomMetadata(METADATA_ANSWER_QUESTION_ID, questionMessage.getId());
     }
 
     @Override
