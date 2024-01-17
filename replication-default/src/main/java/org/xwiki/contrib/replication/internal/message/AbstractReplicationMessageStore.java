@@ -303,7 +303,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
         configuration.setProperty(PROPERTY_DATE, ReplicationUtils.toString(message.getDate()));
         configuration.setProperty(PROPERTY_SOURCE, message.getSource());
         if (message.getReceivers() != null) {
-            configuration.setProperty(PROPERTY_RECEIVERS, message.getSource());
+            configuration.setProperty(PROPERTY_RECEIVERS, message.getReceivers());
         }
     }
 
