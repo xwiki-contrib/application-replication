@@ -25,9 +25,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
-import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -160,7 +160,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
             this.type = (String) metadata.getProperty(PROPERTY_TYPE);
             this.source = (String) metadata.getProperty(PROPERTY_SOURCE);
             if (metadata.containsKey(PROPERTY_RECEIVERS)) {
-                this.receivers = Set.of(metadata.getStringArray(PROPERTY_RECEIVERS));
+                this.receivers = List.of(metadata.getStringArray(PROPERTY_RECEIVERS));
             }
 
             String dateString = (String) metadata.getProperty(PROPERTY_DATE);
