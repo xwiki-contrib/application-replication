@@ -156,7 +156,7 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
                 this.nextTry = calendar.getTime();
 
                 this.logger.warn(
-                    "Failed to send replication message with id [{}] and instance [{}] to instance [{}],"
+                    "Failed to send replication message with id [{}] and type [{}] to instance [{}],"
                         + " retrying in [{}] minutes: {}",
                     message.getId(), message.getType(), this.instance.getURI(), this.wait,
                     ExceptionUtils.getRootCauseMessage(e));
