@@ -139,7 +139,7 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     public boolean receiveREFERENCEDocument(XWikiDocument document, ReplicationReceiverMessage message)
         throws ReplicationException
     {
-        return getController(document).receiveREFERENCEDocument(document, message);
+        return getController(message).receiveREFERENCEDocument(document, message);
     }
 
     @Override
