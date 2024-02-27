@@ -78,7 +78,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
     @Inject
     protected Logger logger;
 
-    private File home;
+    protected File home;
 
     protected abstract M createReplicationMessage(File messageFolder) throws ReplicationException;
 

@@ -188,6 +188,7 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
 
     /**
      * @param message the message to store and add to the queue
+     * @throws ReplicationException when failing to store the message
      */
     public void add(ReplicationReceiverMessage message) throws ReplicationException
     {

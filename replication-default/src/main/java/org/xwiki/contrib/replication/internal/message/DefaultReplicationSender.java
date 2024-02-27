@@ -23,13 +23,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -73,9 +71,6 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
     @Inject
     private ReplicationInstanceManager instances;
-
-    @Inject
-    private ReplicationSenderMessageStore store;
 
     @Inject
     private ExecutionContextManager executionContextManager;
@@ -135,25 +130,20 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
         this.storeThread.setPriority(Thread.NORM_PRIORITY - 1);
         this.storeThread.start();
 
-        // Load the queue from disk
-        Queue<ReplicationSenderMessage> messages = this.store.load();
-        for (ReplicationSenderMessage message : messages) {
-            FileReplicationSenderMessage fileMessage = (FileReplicationSenderMessage) message;
-
-            addSend(fileMessage, fileMessage.getTargets());
+        // Initialize queues
+        try {
+            for (ReplicationInstance instance : this.instances.getRegisteredInstances()) {
+                createSendQueue(instance);
+            }
+        } catch (ReplicationException e) {
+            throw new InitializationException("Failed to get registered instances", e);
         }
     }
 
-    private void addSend(ReplicationSenderMessage message, Iterable<ReplicationInstance> instances)
+    private FileReplicationSenderMessage addSend(ReplicationSenderMessage message, ReplicationInstance instance)
+        throws ReplicationException
     {
-        for (ReplicationInstance instance : instances) {
-            addSend(message, instance);
-        }
-    }
-
-    private void addSend(ReplicationSenderMessage message, ReplicationInstance instance)
-    {
-        getSendQueue(instance, true).add(message);
+        return getSendQueue(instance, true).add(message);
     }
 
     private ReplicationSenderMessageQueue getSendQueue(ReplicationInstance instance, boolean create)
@@ -243,36 +233,34 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
         // Stop there if there is no instance to send the message to
         if (!targets.isEmpty()) {
-            // Make sure an ExecutionContext is available
-            this.executionContextManager.pushContext(new ExecutionContext(), false);
+            for (ReplicationInstance target : targets) {
+                // Make sure an ExecutionContext is available
+                this.executionContextManager.pushContext(new ExecutionContext(), false);
 
-            try {
-                FileReplicationSenderMessage fileMessage = this.store.store(entry.message, targets);
+                try {
+                    FileReplicationSenderMessage storedMessage = addSend(entry.message, target);
 
-                // Log the message
-                this.logStore.saveAsync(fileMessage, (m, e) -> {
-                    Map<String, Object> custom = new HashMap<>(e.getCustom());
+                    // Log the message
+                    this.logStore.saveAsync(storedMessage, (m, e) -> {
+                        Map<String, Object> custom = new HashMap<>(e.getCustom());
 
-                    custom.put(ReplicationMessageEventQuery.KEY_STATUS,
-                        ReplicationMessageEventQuery.VALUE_STATUS_STORED);
-                    custom.put(ReplicationMessageEventQuery.KEY_TARGETS, fileMessage.getTargets().stream()
-                        .map(ReplicationInstance::getURI).collect(Collectors.toList()));
+                        custom.put(ReplicationMessageEventQuery.KEY_STATUS,
+                            ReplicationMessageEventQuery.VALUE_STATUS_STORED);
+                        custom.put(ReplicationMessageEventQuery.KEY_TARGET, target.getURI());
 
-                    e.setCustom(custom);
-                });
+                        e.setCustom(custom);
+                    });
 
-                // Notify that the message is stored
-                entry.future.complete(fileMessage);
+                    // Notify that the message is stored
+                    entry.future.complete(storedMessage);
+                } catch (Exception e) {
+                    this.logger.error("Failed to store the message [{}] on disk. It will be lost.", entry.message, e);
 
-                // Put the stored message in the sending queue
-                addSend(fileMessage, fileMessage.getTargets());
-            } catch (Exception e) {
-                this.logger.error("Failed to store the message [{}] on disk. It will be lost.", entry.message, e);
-
-                // Unlock those waiting for the future even if the message is not really stored
-                entry.future.completeExceptionally(e);
-            } finally {
-                this.executionContextManager.popContext();
+                    // Unlock those waiting for the future even if the message is not really stored
+                    entry.future.completeExceptionally(e);
+                } finally {
+                    this.executionContextManager.popContext();
+                }
             }
         } else {
             entry.future.complete(entry.message);

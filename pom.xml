@@ -207,6 +207,17 @@
               </differences>
             </revapi.differences>
             <revapi.differences>
+              <justification>The storage of message to send changed to have a dedicated storage for each target instance</justification>
+              <criticality>highlight</criticality>
+              <differences>
+                <item>
+                  <ignore>true</ignore>
+                  <code>java.field.removedWithConstant</code>
+                  <old>field org.xwiki.contrib.replication.log.ReplicationMessageEventQuery.KEY_TARGETS</old>
+                </item>
+              </differences>
+            </revapi.differences>
+            <revapi.differences>
               <justification>New question/answer API</justification>
               <criticality>highlight</criticality>
               <differences>

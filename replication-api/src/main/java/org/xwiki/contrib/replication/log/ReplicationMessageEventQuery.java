@@ -68,11 +68,6 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
     public static final String KEY_TARGET = "target";
 
     /**
-     * The instances to which the message is supposed to be sent.
-     */
-    public static final String KEY_TARGETS = "targets";
-
-    /**
      * The id of the message.
      */
     public static final String KEY_ID = "id";
@@ -108,8 +103,8 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
      * The mapping between the custom replication event properties and the corresponding store types.
      */
     public static final Map<String, Type> CUSTOM_TYPES =
-        Map.of(KEY_STATUS, String.class, KEY_TARGET, String.class, KEY_TARGETS, List.class, KEY_ID, String.class,
-            KEY_DATE, Date.class, KEY_SOURCE, String.class, KEY_RECEIVERS, List.class, KEY_TYPE, String.class);
+        Map.of(KEY_STATUS, String.class, KEY_TARGET, String.class, KEY_ID, String.class, KEY_DATE, Date.class,
+            KEY_SOURCE, String.class, KEY_RECEIVERS, List.class, KEY_TYPE, String.class);
 
     /**
      * Convert the {@link ReplicationMessage} custom metadata name to its {@link org.xwiki.eventstream.Event} version.

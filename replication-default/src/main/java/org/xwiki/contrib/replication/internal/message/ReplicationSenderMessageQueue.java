@@ -23,6 +23,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -37,6 +38,7 @@ import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
 import org.xwiki.contrib.replication.event.ReplicationMessageSendingEvent;
 import org.xwiki.contrib.replication.internal.ReplicationClient;
+import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageStore.FileReplicationSenderMessage;
 import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.observation.ObservationManager;
@@ -94,8 +96,13 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
     public void start(ReplicationInstance instance)
     {
         this.instance = instance;
+        this.store.initialize(instance);
 
         initializeQueue();
+
+        // Load the queue from disk
+        Queue<ReplicationSenderMessage> messages = this.store.load();
+        messages.forEach(this.queue::add);
     }
 
     @Override
@@ -197,15 +204,27 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
     @Override
     protected void removeFromStore(ReplicationSenderMessage message) throws ReplicationException
     {
-        this.store.removeTarget(message, this.instance);
+        this.store.delete(message);
     }
 
     /**
-     * @param message the message to send
+     * @param message the message to store and add to the queue
+     * @return the stored message
+     * @throws ReplicationException when failing to store the message
      */
-    public void add(ReplicationSenderMessage message)
+    public FileReplicationSenderMessage add(ReplicationSenderMessage message) throws ReplicationException
     {
-        this.queue.add(message);
+        // Serialize the data
+        FileReplicationSenderMessage storedMessage;
+        try {
+            storedMessage = this.store.store(message);
+        } catch (Exception e) {
+            throw new ReplicationException("Failed to store sender message with id [" + message.getId() + "]", e);
+        }
+
+        this.queue.add(storedMessage);
+
+        return storedMessage;
     }
 
     /**

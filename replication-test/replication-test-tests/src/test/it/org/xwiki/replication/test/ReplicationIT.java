@@ -468,10 +468,13 @@ public class ReplicationIT extends AbstractTest
         controller();
 
         // Full replication a page between the 2 registered instances
-        replicateFull();
+        replicateFULL();
 
         // Reference replication
-        replicateEmpty();
+        replicateREFERENCE();
+
+        // Both reference and full replication
+        replicateMIX();
 
         // Attachment replication
         replicateAttachments();
@@ -735,7 +738,7 @@ public class ReplicationIT extends AbstractTest
         replicationPageAdmin.save();
     }
 
-    private void replicateFull() throws Exception
+    private void replicateFULL() throws Exception
     {
         Page page = new Page();
         page.setSpace(REPLICATION_ALL.getParent().getName());
@@ -981,7 +984,7 @@ public class ReplicationIT extends AbstractTest
         assertFalse(replicationExtraPane.isReadonly());
     }
 
-    private void replicateEmpty() throws Exception
+    private void replicateREFERENCE() throws Exception
     {
         Page page = new Page();
         page.setSpace(REPLICATION_REFERENCE.getParent().getName());
@@ -1089,6 +1092,52 @@ public class ReplicationIT extends AbstractTest
         assertDoesNotExistWithTimeout(documentReference);
 
         // TODO: ASSERT) The deleted document has the expected id
+    }
+
+    private void replicateMIX() throws Exception
+    {
+        LocalDocumentReference documentReference = new LocalDocumentReference("ReplicationMIX", "WebHome");
+
+        // Configure replication
+        getUtil().switchExecutor(INSTANCE_1);
+        setConfiguration(documentReference, this.proxyURI0, DocumentReplicationLevel.ALL);
+        setConfiguration(documentReference, this.proxyURI2, DocumentReplicationLevel.REFERENCE);
+
+        Page page = new Page();
+        page.setSpace(documentReference.getParent().getName());
+        page.setName(documentReference.getName());
+
+        ////////////////////////////////////
+        // Page creation on XWiki 0
+        ////////////////////////////////////
+
+        // Create a page on XWiki 1
+        getUtil().switchExecutor(INSTANCE_1);
+        page.setContent("content");
+        getUtil().rest().save(page);
+        assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
+        ReplicationDocExtraPane replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals("Current instance", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
+
+        // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
+        getUtil().switchExecutor(INSTANCE_0);
+        assertEqualsContentWithTimeout(documentReference, "content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_1 + " (" + this.proxyURI1 + ")", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
+
+        // ASSERT) The page should exist but be empty on XWiki 2
+        getUtil().switchExecutor(INSTANCE_2);
+        assertEqualsContentWithTimeout(documentReference,
+            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_1 + " (" + this.proxyURI1 + ")", replicationExtraPane.getOwner());
+        assertTrue(replicationExtraPane.isReadonly());
     }
 
     private void replicateAttachments() throws Exception
