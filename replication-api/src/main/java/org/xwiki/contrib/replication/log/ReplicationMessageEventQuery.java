@@ -83,6 +83,13 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
     public static final String KEY_SOURCE = "source";
 
     /**
+     * The last instance which sent the message (received messages only).
+     * 
+     * @since 2.0.0
+     */
+    public static final String KEY_SENDER = "sender";
+
+    /**
      * The instances which should handle the message.
      * 
      * @since 1.1
@@ -104,7 +111,7 @@ public class ReplicationMessageEventQuery extends SimpleEventQuery
      */
     public static final Map<String, Type> CUSTOM_TYPES =
         Map.of(KEY_STATUS, String.class, KEY_TARGET, String.class, KEY_ID, String.class, KEY_DATE, Date.class,
-            KEY_SOURCE, String.class, KEY_RECEIVERS, List.class, KEY_TYPE, String.class);
+            KEY_SOURCE, String.class, KEY_SENDER, String.class, KEY_RECEIVERS, List.class, KEY_TYPE, String.class);
 
     /**
      * Convert the {@link ReplicationMessage} custom metadata name to its {@link org.xwiki.eventstream.Event} version.

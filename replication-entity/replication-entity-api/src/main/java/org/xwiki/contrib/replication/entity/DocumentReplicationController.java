@@ -45,7 +45,7 @@ public interface DocumentReplicationController
      * Indicate the list of registered instances this document should be replicated to.
      * 
      * @param entityReference the reference of the entity for which we want to know the replication configuration
-     * @return the registered instances on which to replicate the document
+     * @return the replication configuration
      * @throws ReplicationException when failing to get the configuration
      */
     List<DocumentReplicationControllerInstance> getReplicationConfiguration(EntityReference entityReference)
@@ -55,7 +55,7 @@ public interface DocumentReplicationController
      * Indicate the list of registered instances this document should be replicated to.
      * 
      * @param document the document for which we want to know the replication configuration
-     * @return the registered instances on which to replicate the document
+     * @return the replication configuration
      * @throws ReplicationException when failing to get the configuration
      * @since 2.0.0
      */
@@ -66,7 +66,7 @@ public interface DocumentReplicationController
      * Indicate the list of registered instances this message should be relayed to.
      * 
      * @param message the message to relay
-     * @return the registered instances on which to replicate the document
+     * @return the replication configuration
      * @throws ReplicationException when failing to get the configuration
      * @since 1.6.0
      */
@@ -77,11 +77,23 @@ public interface DocumentReplicationController
      * Indicate the replication configuration associated with this received message.
      * 
      * @param message the message to relay
-     * @return the registered instances on which to replicate the document
+     * @return the replication configuration
      * @throws ReplicationException when failing to get the configuration
      * @since 2.0.0
      */
     DocumentReplicationControllerInstance getReceiveConfiguration(ReplicationReceiverMessage message)
+        throws ReplicationException;
+
+    /**
+     * A user interface oriented report of the replication associated to the passed entity. It's generally a mix of
+     * direct and relayed replication configuration.
+     * 
+     * @param entityReference the reference of the entity for which we want to know the replication configuration
+     * @return the replication configuration
+     * @throws ReplicationException when failing to get the configuration
+     * @since 2.0.0
+     */
+    List<DocumentReplicationControllerInstance> getDisplayReplicationConfiguration(EntityReference entityReference)
         throws ReplicationException;
 
     // Events

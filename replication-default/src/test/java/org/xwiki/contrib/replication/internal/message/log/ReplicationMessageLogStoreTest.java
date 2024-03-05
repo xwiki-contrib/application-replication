@@ -33,8 +33,13 @@ import org.xwiki.component.internal.ContextComponentManagerProvider;
 import org.xwiki.component.internal.WikiDeletedListener;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.context.concurrent.ContextStoreManager;
+import org.xwiki.contrib.replication.DefaultReplicationReceiverMessage;
 import org.xwiki.contrib.replication.DefaultReplicationSenderMessage;
+import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
 import org.xwiki.environment.Environment;
 import org.xwiki.eventstream.Event;
 import org.xwiki.eventstream.EventStreamException;
@@ -65,6 +70,7 @@ import com.xpn.xwiki.test.reference.ReferenceComponentList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -89,6 +95,9 @@ class ReplicationMessageLogStoreTest
 
     @InjectMockComponents
     private ReplicationMessageLogStore logStore;
+
+    @MockComponent
+    private ReplicationInstanceManager instances;
 
     @MockComponent
     private DocumentAccessBridge bridge;
@@ -147,7 +156,7 @@ class ReplicationMessageLogStoreTest
     }
 
     @Test
-    void loadMessage() throws EventStreamException, InterruptedException
+    void loadSenderMessage() throws EventStreamException, InterruptedException
     {
         DefaultReplicationSenderMessage message = new DefaultReplicationSenderMessage.Builder().id("id").type("type")
             .source("source").receivers(Set.of("receiver1", "receiver2"))
@@ -167,6 +176,39 @@ class ReplicationMessageLogStoreTest
         loadedMessage = this.logStore.loadMessage(event.getId(), Set.of("receiver3", "receiver4"));
 
         assertEquals(message.getId(), loadedMessage.getId());
+        assertEquals(message.getCustomMetadata(), loadedMessage.getCustomMetadata());
+        assertEquals(message.getDate(), loadedMessage.getDate());
+        assertEquals(message.getSource(), loadedMessage.getSource());
+        assertEquals(message.getType(), loadedMessage.getType());
+        assertEquals(Set.of("receiver3", "receiver4"), Set.copyOf(loadedMessage.getReceivers()));
+    }
+
+    @Test
+    void loadReceiverMessage() throws EventStreamException, InterruptedException, ReplicationException
+    {
+        DefaultReplicationInstance instance = new DefaultReplicationInstance("name", "uri", null, null, null);
+
+        when(this.instances.getInstanceByURI("uri")).thenReturn(instance);
+
+        DefaultReplicationReceiverMessage message = new DefaultReplicationReceiverMessage.Builder().id("id")
+            .instance(instance).type("type").source("source").receivers(Set.of("receiver1", "receiver2"))
+            .customMetadata(Map.of("key1", List.of("value1"), "key2", List.of("value2"))).build();
+
+        Event event = this.logStore.saveSync(message, null);
+
+        ReplicationReceiverMessage loadedMessage = this.logStore.loadMessage(event.getId());
+
+        assertEquals(message.getId(), loadedMessage.getId());
+        assertEquals(message.getCustomMetadata(), loadedMessage.getCustomMetadata());
+        assertEquals(message.getDate(), loadedMessage.getDate());
+        assertEquals(message.getSource(), loadedMessage.getSource());
+        assertEquals(message.getType(), loadedMessage.getType());
+        assertEquals(Set.copyOf(message.getReceivers()), Set.copyOf(loadedMessage.getReceivers()));
+
+        loadedMessage = this.logStore.loadMessage(event.getId(), Set.of("receiver3", "receiver4"));
+
+        assertEquals(message.getId(), loadedMessage.getId());
+        assertSame(message.getInstance(), loadedMessage.getInstance());
         assertEquals(message.getCustomMetadata(), loadedMessage.getCustomMetadata());
         assertEquals(message.getDate(), loadedMessage.getDate());
         assertEquals(message.getSource(), loadedMessage.getSource());

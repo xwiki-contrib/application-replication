@@ -37,9 +37,13 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentManager;
 import org.xwiki.context.Execution;
 import org.xwiki.context.ExecutionContext;
+import org.xwiki.contrib.replication.DefaultReplicationReceiverMessage;
 import org.xwiki.contrib.replication.DefaultReplicationSenderMessage;
+import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationInstance;
+import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationMessage;
-import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.contrib.replication.message.log.ReplicationMessageEventInitializer;
 import org.xwiki.eventstream.Event;
@@ -69,6 +73,9 @@ public class ReplicationMessageLogStore
 
     @Inject
     private EventFactory eventFactory;
+
+    @Inject
+    private ReplicationInstanceManager instances;
 
     @Inject
     @Named("context")
@@ -199,6 +206,11 @@ public class ReplicationMessageLogStore
         }
         properties.put(ReplicationMessageEventQuery.KEY_TYPE, message.getType());
 
+        if (message instanceof ReplicationReceiverMessage) {
+            properties.put(ReplicationMessageEventQuery.KEY_SENDER,
+                ((ReplicationReceiverMessage) message).getInstance().getURI());
+        }
+
         // Add custom metadata
         for (Map.Entry<String, Collection<String>> entry : message.getCustomMetadata().entrySet()) {
             properties.put(ReplicationMessageEventQuery.customMetadataName(entry.getKey()), entry.getValue());
@@ -237,24 +249,27 @@ public class ReplicationMessageLogStore
     }
 
     /**
+     * @param <M> the exact type of message
      * @param id the identifier of the logged message
      * @return the message extracted from the log or null if none exist for this id
      * @throws EventStreamException when failing to load the event matching the id
      * @since 1.1
      */
-    public ReplicationSenderMessage loadMessage(String id) throws EventStreamException
+    public <M extends ReplicationMessage> M loadMessage(String id) throws EventStreamException
     {
         return loadMessage(id, null);
     }
 
     /**
+     * @param <M> the exact type of message
      * @param id the identifier of the logged message
      * @param receivers the instances which should handle the message
      * @return the message extracted from the log or null if none exist for this id
      * @throws EventStreamException when failing to load the event matching the id
-     * @since 1.3.0
+     * @since 2.0.0
      */
-    public ReplicationSenderMessage loadMessage(String id, Collection<String> receivers) throws EventStreamException
+    public <M extends ReplicationMessage> M loadMessage(String id, Collection<String> receivers)
+        throws EventStreamException
     {
         Optional<Event> eventOptional = this.store.getEvent(id);
 
@@ -279,8 +294,30 @@ public class ReplicationMessageLogStore
             }
         }
 
-        return new DefaultReplicationSenderMessage.Builder().id(messageId).date(messageDate).type(type).source(source)
-            .receivers(finalReceivers).customMetadata(metadata).build();
+        String sender = (String) event.getCustom().get(ReplicationMessageEventQuery.KEY_SENDER);
+
+        M replicationMessage;
+        if (sender != null) {
+            // If there is a sender it means it's a received message
+            ReplicationInstance instance;
+            try {
+                instance = this.instances.getInstanceByURI(sender);
+            } catch (ReplicationException e) {
+                this.logger.debug("Failed to get the instance with URI [{}]", sender, e);
+
+                // The instance does not seems to exist anymore (?), ignore it since there is no way to pass it to
+                // DefaultReplicationReceiverMessage
+                instance = null;
+            }
+            replicationMessage = (M) new DefaultReplicationReceiverMessage.Builder().id(messageId).instance(instance)
+                .date(messageDate).type(type).source(source).receivers(finalReceivers).customMetadata(metadata).build();
+        } else {
+            // If there is no sender it means it's a sent message
+            replicationMessage = (M) new DefaultReplicationSenderMessage.Builder().id(messageId).date(messageDate)
+                .type(type).source(source).receivers(finalReceivers).customMetadata(metadata).build();
+        }
+
+        return replicationMessage;
     }
 
     /**

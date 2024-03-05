@@ -112,6 +112,13 @@ public class DefaultDocumentReplicationController implements DocumentReplication
     }
 
     @Override
+    public List<DocumentReplicationControllerInstance> getDisplayReplicationConfiguration(
+        EntityReference entityReference) throws ReplicationException
+    {
+        return getController(entityReference).getDisplayReplicationConfiguration(entityReference);
+    }
+
+    @Override
     public void onDocumentCreated(XWikiDocument document) throws ReplicationException
     {
         getController(document).onDocumentCreated(document);

@@ -98,4 +98,11 @@ public class StandardDocumentReplicationController extends AbstractDocumentRepli
 
         return filteredConfigurations;
     }
+
+    @Override
+    public List<DocumentReplicationControllerInstance> getDisplayReplicationConfiguration(
+        EntityReference entityReference) throws ReplicationException
+    {
+        return getConfiguration(entityReference, true);
+    }
 }

@@ -79,6 +79,13 @@ public class MinimumDocumentReplicationController implements DocumentReplication
     }
 
     @Override
+    public List<DocumentReplicationControllerInstance> getDisplayReplicationConfiguration(
+        EntityReference entityReference) throws ReplicationException
+    {
+        return null;
+    }
+
+    @Override
     public void onDocumentCreated(XWikiDocument document) throws ReplicationException
     {
         // Do nothing

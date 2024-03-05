@@ -60,16 +60,6 @@ public class DocumentReplicationUtils
 
     /**
      * @param reference the reference of the entity
-     * @return true if the current instance is configured to directly replicate changes made to the passed document
-     * @throws ReplicationException when failing to get the configuration
-     */
-    public boolean isReplicated(EntityReference reference) throws ReplicationException
-    {
-        return !this.controller.getReplicationConfiguration(reference).isEmpty();
-    }
-
-    /**
-     * @param reference the reference of the entity
      * @param instance the instance for which we want the configuration
      * @return the configuration of the instance
      * @throws ReplicationException when failing to get replication configuration for the passed entity

@@ -86,7 +86,7 @@ public class DocumentReplicationScriptService implements ScriptService
     public List<DocumentReplicationControllerInstance> getDocumentInstances(DocumentReference documentReference)
         throws ReplicationException
     {
-        return this.controller.getReplicationConfiguration(documentReference);
+        return this.controller.getDisplayReplicationConfiguration(documentReference);
     }
 
     /**
