@@ -31,6 +31,7 @@ import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationMessageReader;
 import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.update.DocumentUpdateReplicationMessage;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.DocumentReferenceResolver;
@@ -114,5 +115,12 @@ public class DefaultDocumentReplicationMessageReader implements DocumentReplicat
     {
         return this.reader.getMetadata(message, AbstractEntityReplicationMessage.METADATA_ENTITY_CREATOR, false,
             UserReference.class);
+    }
+
+    @Override
+    public boolean isReadonly(ReplicationMessage message) throws InvalidReplicationMessageException
+    {
+        return this.reader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY, false,
+            false);
     }
 }

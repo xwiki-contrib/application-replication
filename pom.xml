@@ -260,6 +260,11 @@
                 </item>
                 <item>
                   <ignore>true</ignore>
+                  <code>java.method.addedToInterface</code>
+                  <new>method boolean org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader::isReadonly(org.xwiki.contrib.replication.ReplicationMessage) throws org.xwiki.contrib.replication.InvalidReplicationMessageException</new>
+                </item>
+                <item>
+                  <ignore>true</ignore>
                   <code>java.method.noLongerDefault</code>
                   <old>method org.xwiki.contrib.replication.ReplicationInstance org.xwiki.contrib.replication.ReplicationInstanceManager::getRegisteredInstanceByURI(java.lang.String) throws org.xwiki.contrib.replication.ReplicationException</old>
                   <new>method org.xwiki.contrib.replication.ReplicationInstance org.xwiki.contrib.replication.ReplicationInstanceManager::getRegisteredInstanceByURI(java.lang.String) throws org.xwiki.contrib.replication.ReplicationException</new>

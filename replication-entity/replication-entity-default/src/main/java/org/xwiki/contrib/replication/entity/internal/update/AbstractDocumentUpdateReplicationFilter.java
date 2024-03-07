@@ -21,11 +21,8 @@ package org.xwiki.contrib.replication.entity.internal.update;
 
 import java.util.List;
 
-import javax.inject.Inject;
-
 import org.xwiki.contrib.replication.DefaultReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationMessageReader;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
 import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
@@ -40,9 +37,6 @@ import org.xwiki.model.reference.DocumentReference;
  */
 public abstract class AbstractDocumentUpdateReplicationFilter extends AbstractDocumentReplicationReceiverMessageFilter
 {
-    @Inject
-    private ReplicationMessageReader messageReader;
-
     @Override
     protected ReplicationReceiverMessage filter(ReplicationReceiverMessage message, DocumentReference documentReference,
         DocumentReplicationControllerInstance configuration) throws ReplicationException
@@ -57,8 +51,8 @@ public abstract class AbstractDocumentUpdateReplicationFilter extends AbstractDo
         }
 
         // If the instance cannot receive back messages, make sure the received message is readonly
-        if (configuration.getDirection() == DocumentReplicationDirection.RECEIVE_ONLY && !this.messageReader
-            .getMetadata(filteredMessage, EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY, false, false)) {
+        if (configuration.getDirection() == DocumentReplicationDirection.RECEIVE_ONLY
+            && !this.documentMessageReader.isReadonly(filteredMessage)) {
             filteredMessage = new DefaultReplicationReceiverMessage.Builder().message(filteredMessage)
                 .customMetadata(EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY, List.of("true")).build();
         }

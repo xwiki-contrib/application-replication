@@ -87,8 +87,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             update(message, documentReference, replicationDocument, xcontext);
         }
 
-        boolean readonly = this.messageReader.getMetadata(message,
-            EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY, false, false);
+        boolean readonly = this.documentMessageReader.isReadonly(message);
         if (!this.replicationUtils.isOwner(documentReference)) {
             // Indicate if the document is readonly (it never is when the current instance is the owner)
             this.entityReplication.setReadonly(documentReference, readonly);

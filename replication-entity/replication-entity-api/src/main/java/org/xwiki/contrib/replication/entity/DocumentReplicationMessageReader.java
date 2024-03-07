@@ -92,4 +92,12 @@ public interface DocumentReplicationMessageReader
      * @since 2.0.0
      */
     UserReference getCreatorReference(ReplicationMessage message) throws InvalidReplicationMessageException;
+
+    /**
+     * @param message the message
+     * @return true if the message is readonly, false otherwise
+     * @throws InvalidReplicationMessageException when failing to parse the message
+     * @since 2.0.0
+     */
+    boolean isReadonly(ReplicationMessage message) throws InvalidReplicationMessageException;
 }

@@ -262,7 +262,8 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
         Collection<DocumentReplicationControllerInstance> configurations)
     {
         return configurations.stream()
-            .filter(c -> c.getLevel() == level && c.getDirection() != DocumentReplicationDirection.RECEIVE_ONLY
+            .filter(c -> (level == null || c.getLevel() == level)
+                && c.getDirection() != DocumentReplicationDirection.RECEIVE_ONLY
                 && (readonly == null || (readonly ? c.getDirection() == DocumentReplicationDirection.SEND_ONLY
                     : c.getDirection() == DocumentReplicationDirection.BOTH)))
             .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
@@ -324,13 +325,6 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
         return null;
     }
 
-    private List<ReplicationInstance> getInstances(DocumentReplicationLevel level,
-        Collection<DocumentReplicationControllerInstance> configurations)
-    {
-        return configurations.stream().filter(c -> c.getLevel() == level)
-            .map(DocumentReplicationControllerInstance::getInstance).collect(Collectors.toList());
-    }
-
     private List<ReplicationInstance> getRelayInstances(ReplicationReceiverMessage message,
         DocumentReplicationLevel minimumLevel) throws ReplicationException
     {
@@ -378,25 +372,87 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
     {
         List<DocumentReplicationControllerInstance> allInstances = getRelayConfiguration(message);
 
-        // Get instances allowed to receive updates
-        List<ReplicationInstance> fullInstances = getInstances(DocumentReplicationLevel.ALL, allInstances);
+        CompletableFuture<ReplicationSenderMessage> future;
 
-        // Send the message as is for instances allowed to receive complete updates
-        CompletableFuture<ReplicationSenderMessage> future = this.relay.relay(message, fullInstances);
+        // Full updates
+        if (this.documentMessageReader.isReadonly(message)) {
+            // No need to make a difference between instances allowed to send back updates and others
+            future = relayDocumentUpdateALL(message, allInstances);
+        } else {
+            // Need to make a difference between instances allowed to send back updates and others
+            future = relayDocumentUpdateALLBOTH(message, allInstances);
 
-        // Get instances only allowed to receive references
-        List<ReplicationInstance> referenceInstances =
-            this.relay.getRelayedInstances(message, getInstances(DocumentReplicationLevel.REFERENCE, allInstances));
+            CompletableFuture<ReplicationSenderMessage> fullSENDFuture =
+                relayDocumentUpdateToALLSENDONLY(message, allInstances);
 
-        if (!referenceInstances.isEmpty()) {
-            // Convert the message to a reference message and send it to instances not allowed to receive updates
-            DocumentReplicationSenderMessageBuilder builder =
-                this.builders.documentReferenceMessageBuilder(message);
-            ReplicationSenderMessage sendMessage = builder.build(DocumentReplicationLevel.REFERENCE, true, null);
+            if (fullSENDFuture != null) {
+                future = fullSENDFuture;
+            }
+        }
 
-            future = this.sender.send(sendMessage, referenceInstances);
+        // Reference updates
+        CompletableFuture<ReplicationSenderMessage> referenceFuture =
+            relayDocumentUpdateToREFERENCE(message, allInstances);
+        if (referenceFuture != null) {
+            future = referenceFuture;
         }
 
         return future;
+    }
+
+    private CompletableFuture<ReplicationSenderMessage> relayDocumentUpdateALL(ReplicationReceiverMessage message,
+        List<DocumentReplicationControllerInstance> allInstances) throws ReplicationException
+    {
+        List<ReplicationInstance> sendInstances =
+            this.relay.getRelayedInstances(message, getInstances(DocumentReplicationLevel.ALL, null, allInstances));
+
+        // Relay the message as is
+        return this.relay.relay(message, sendInstances);
+    }
+
+    private CompletableFuture<ReplicationSenderMessage> relayDocumentUpdateALLBOTH(ReplicationReceiverMessage message,
+        List<DocumentReplicationControllerInstance> allInstances) throws ReplicationException
+    {
+        List<ReplicationInstance> sendInstances =
+            this.relay.getRelayedInstances(message, getInstances(DocumentReplicationLevel.ALL, false, allInstances));
+
+        // Relay the message as is
+        return this.relay.relay(message, sendInstances);
+    }
+
+    private CompletableFuture<ReplicationSenderMessage> relayDocumentUpdateToALLSENDONLY(
+        ReplicationReceiverMessage message, List<DocumentReplicationControllerInstance> allInstances)
+        throws ReplicationException
+    {
+        List<ReplicationInstance> sendInstances =
+            this.relay.getRelayedInstances(message, getInstances(DocumentReplicationLevel.ALL, true, allInstances));
+
+        if (!sendInstances.isEmpty()) {
+            // Relay a readonly version of the message
+            DocumentReplicationSenderMessageBuilder builder = this.builders.documentReferenceMessageBuilder(message);
+            ReplicationSenderMessage sendMessage = builder.build(DocumentReplicationLevel.ALL, true, null);
+
+            return this.sender.send(sendMessage, sendInstances);
+        }
+
+        return null;
+    }
+
+    private CompletableFuture<ReplicationSenderMessage> relayDocumentUpdateToREFERENCE(
+        ReplicationReceiverMessage message, List<DocumentReplicationControllerInstance> allInstances)
+        throws ReplicationException
+    {
+        List<ReplicationInstance> sendInstances = this.relay.getRelayedInstances(message,
+            getInstances(DocumentReplicationLevel.REFERENCE, null, allInstances));
+
+        if (!sendInstances.isEmpty()) {
+            // Relay a reference version of the message
+            DocumentReplicationSenderMessageBuilder builder = this.builders.documentReferenceMessageBuilder(message);
+            ReplicationSenderMessage sendMessage = builder.build(DocumentReplicationLevel.REFERENCE, true, null);
+
+            return this.sender.send(sendMessage, sendInstances);
+        }
+
+        return null;
     }
 }
