@@ -34,6 +34,7 @@ import javax.inject.Provider;
 import org.xwiki.component.descriptor.ComponentDescriptor;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.component.manager.ComponentManager;
+import org.xwiki.contrib.replication.DefaultReplicationSenderMessage;
 import org.xwiki.contrib.replication.RelayReplicationSender;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
@@ -429,8 +430,8 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
 
         if (!sendInstances.isEmpty()) {
             // Relay a readonly version of the message
-            DocumentReplicationSenderMessageBuilder builder = this.builders.documentReferenceMessageBuilder(message);
-            ReplicationSenderMessage sendMessage = builder.build(DocumentReplicationLevel.ALL, true, null);
+            ReplicationSenderMessage sendMessage = new DefaultReplicationSenderMessage.Builder().message(message)
+                .customMetadata(EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY, List.of("true")).build();
 
             return this.sender.send(sendMessage, sendInstances);
         }

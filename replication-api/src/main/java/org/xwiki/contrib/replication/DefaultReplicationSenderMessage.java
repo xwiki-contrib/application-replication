@@ -133,6 +133,18 @@ public class DefaultReplicationSenderMessage extends AbstractReplicationMessage 
         }
 
         /**
+         * @param key the name of the metadata
+         * @param value the value of the metadata
+         * @return this builder
+         */
+        public Builder customMetadata(String key, Collection<String> value)
+        {
+            this.message.modifiableMetadata.put(key, value);
+
+            return this;
+        }
+
+        /**
          * @param message the message to copy
          * @return this builder
          */
