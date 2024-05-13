@@ -81,11 +81,12 @@ public abstract class AbstractDocumentReplicationReceiverMessageFilter
     {
         DocumentReplicationControllerInstance configuration = this.controller.getReceiveConfiguration(message);
 
+        ReplicationReceiverMessage filteredMessage = message;
         if (configuration != null) {
-            filter(message, documentReference, configuration);
+            filteredMessage = filter(filteredMessage, documentReference, configuration);
         }
 
-        return message;
+        return filteredMessage;
     }
 
     protected ReplicationReceiverMessage filter(ReplicationReceiverMessage message, DocumentReference documentReference,
