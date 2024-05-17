@@ -106,8 +106,8 @@ public class WikiReplicationAdministrationSectionPage extends AdministrationSect
 
     private List<WebElement> getInstances(String buttonName)
     {
-        return getDriver()
-            .findElementsWithoutWaiting(By.xpath("//li[.//button[contains(@name, '" + buttonName + "')]]"));
+        return getDriver().findElementsWithoutWaiting(By
+            .xpath("//div[contains(@class, 'instance-container')][.//button[contains(@name, '" + buttonName + "')]]"));
     }
 
     public List<RequestedInstancePane> getRequestedInstances()

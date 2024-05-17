@@ -215,6 +215,24 @@ public class ReplicationScriptService implements ScriptService
     }
 
     /**
+     * Remove from the queue of the passed instance from any waiting message to send.
+     * 
+     * @param instance the instance
+     * @throws AccessDeniedException when the current author is not allowed to use this API
+     * @since 2.0.0
+     * @since 1.12.14
+     */
+    public void purgeQueue(ReplicationInstance instance) throws AccessDeniedException
+    {
+        this.authorization.checkAccess(Right.PROGRAM);
+
+        ReplicationSenderMessageQueue queue = getQueue(instance);
+        if (queue != null) {
+            queue.purge();
+        }        
+    }
+
+    /**
      * @param instance the instance to send data to
      * @return the fingerprint of the public key used to validate signatures sent to the passed instance
      * @throws IOException when failing to calculate the fingerprint

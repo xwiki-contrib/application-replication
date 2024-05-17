@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.inject.Inject;
 
@@ -44,6 +45,8 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
     protected Thread thread;
 
     protected Thread errorThread;
+
+    protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     protected final BlockingQueue<M> queue = new LinkedBlockingQueue<>(10000);
 
@@ -123,12 +126,15 @@ public abstract class AbstractReplicationMessageQueue<M extends ReplicationMessa
                 // Handle the message
                 handle(this.currentMessage);
 
-                // Remove the message from the store
-                // TODO: put the remove in an async queue
-                removeFromStore(this.currentMessage);
+                // Make sure the current message has been purged
+                if (this.currentMessage != null) {
+                    // Remove the message from the store
+                    // TODO: put the remove in an async queue
+                    removeFromStore(this.currentMessage);
 
-                // Reset the current message
-                this.currentMessage = null;
+                    // Reset the current message
+                    this.currentMessage = null;
+                }
             } catch (InterruptedException e) {
                 this.logger.warn("The replication sending thread has been interrupted");
 

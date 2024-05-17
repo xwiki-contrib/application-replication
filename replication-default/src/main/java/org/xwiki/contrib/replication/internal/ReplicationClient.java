@@ -37,7 +37,10 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.io.entity.EntityTemplate;
 import org.apache.hc.core5.net.URIBuilder;
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
+import org.xwiki.component.manager.ComponentLifecycleException;
+import org.xwiki.component.phase.Disposable;
 import org.xwiki.component.phase.Initializable;
 import org.xwiki.component.phase.InitializationException;
 import org.xwiki.contrib.replication.ReplicationException;
@@ -62,7 +65,7 @@ import org.xwiki.crypto.pkix.params.CertifiedPublicKey;
  */
 @Component(roles = ReplicationClient.class)
 @Singleton
-public class ReplicationClient implements Initializable
+public class ReplicationClient implements Initializable, Disposable
 {
     private static final String UNKNWON_ERROR = "Unknown server error";
 
@@ -74,6 +77,9 @@ public class ReplicationClient implements Initializable
 
     @Inject
     private CertifiedKeyPairStore signatureStore;
+
+    @Inject
+    private Logger logger;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -121,6 +127,18 @@ public class ReplicationClient implements Initializable
     public void initialize() throws InitializationException
     {
         this.client = HttpClients.createSystem();
+    }
+
+    @Override
+    public void dispose() throws ComponentLifecycleException
+    {
+        if (this.client != null) {
+            try {
+                this.client.close();
+            } catch (IOException e) {
+                this.logger.error("Failed to close the replication HTTP client", e);
+            }
+        }
     }
 
     private URIBuilder createURIBuilder(String uri, String endpoint) throws URISyntaxException, ReplicationException

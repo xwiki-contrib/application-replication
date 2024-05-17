@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.inject.Inject;
@@ -73,6 +74,8 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
      * Condition for waiting answer.
      */
     private final Condition pingCondition = this.pingLock.newCondition();
+
+    private final Lock lock = new ReentrantLock();
 
     private ReplicationInstance instance;
 
@@ -175,6 +178,11 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
                 } finally {
                     this.pingLock.unlock();
                 }
+
+                // Make sure the current message is still the same (might have been purged while waiting)
+                if (this.currentMessage != message) {
+                    return;
+                }
             }
         }
 
@@ -243,6 +251,47 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
             this.pingCondition.signal();
         } finally {
             this.pingLock.unlock();
+        }
+    }
+
+    /**
+     * Remove from the queue any waiting message to send.
+     * 
+     * @since 2.0.0
+     * @since 1.12.13
+     */
+    public void purge()
+    {
+        // Remove messages from the queue
+        for (ReplicationSenderMessage message = this.queue.poll(); message != null; message = this.queue.poll()) {
+            // Remove the message from the store
+            removeFromStoreIgnoreException(message);
+        }
+
+        // Remember current message
+        ReplicationSenderMessage message = this.currentMessage;
+
+        if (message != null) {
+            // Reset the current message if any
+            this.currentMessage = null;
+
+            // Remove the current message from the store
+            removeFromStoreIgnoreException(message);
+
+            // And reset the corresponding error if any
+            this.lastError = null;
+
+            // Make sure the queue is not waiting
+            wakeUp();
+        }
+    }
+
+    private void removeFromStoreIgnoreException(ReplicationSenderMessage message)
+    {
+        try {
+            removeFromStore(message);
+        } catch (ReplicationException e) {
+            this.logger.error("Failed to remove the message from the fielsystem", e);
         }
     }
 }
