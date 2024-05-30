@@ -54,6 +54,8 @@
     <xwiki.store.file.directory>${xwiki.instance.directory}/data/store/file</xwiki.store.file.directory>
 
     <xwiki.jacoco.instructionRatio>0.00</xwiki.jacoco.instructionRatio>
+
+    <replication.version>${project.version}</replication.version>
   </properties>
   <dependencies>
     <dependency>
@@ -271,6 +273,12 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables combine.children="append">
+            <!-- Indicate the test which is the version of the replication extension -->
+            <replication.version>${project.version}</replication.version>
+          </systemPropertyVariables>
+        </configuration>
       </plugin>
     </plugins>
   </build>

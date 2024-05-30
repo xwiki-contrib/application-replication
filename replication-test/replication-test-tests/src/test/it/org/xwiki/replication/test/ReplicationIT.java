@@ -439,7 +439,8 @@ public class ReplicationIT extends AbstractTest
         InstallRequest installRequest = new InstallRequest();
         installRequest.setInteractive(false);
         installRequest.addNamespace("wiki:" + wiki);
-        installRequest.addExtension(new ExtensionId("org.xwiki.contrib.replication:replication-ui", "2.0.0-SNAPSHOT"));
+        installRequest.addExtension(new ExtensionId("org.xwiki.contrib.replication:replication-ui",
+            System.getProperties().getProperty("replication.version")));
         installRequest.setProperty("user.reference", new DocumentReference("xwiki", "XWiki", "superadmin"));
 
         JobExecutor jobExecutor = new JobExecutor();
