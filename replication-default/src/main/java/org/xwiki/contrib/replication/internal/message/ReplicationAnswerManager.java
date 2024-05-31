@@ -31,7 +31,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationAnswer;
@@ -49,9 +48,6 @@ public class ReplicationAnswerManager
 {
     @Inject
     private ReplicationMessageReader messageReader;
-
-    @Inject
-    private Logger logger;
 
     private final class ReplicationAnswerEntry
     {
@@ -75,7 +71,7 @@ public class ReplicationAnswerManager
         }
     }
 
-    private class DefaultReplicationAnswer implements ReplicationAnswer
+    private final class DefaultReplicationAnswer implements ReplicationAnswer
     {
         private final List<ReplicationReceiverMessage> answers = new CopyOnWriteArrayList<>();
 
