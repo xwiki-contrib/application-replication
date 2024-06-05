@@ -38,6 +38,7 @@ import org.xwiki.crypto.password.internal.DefaultPrivateKeyPasswordBasedEncrypto
 import org.xwiki.crypto.pkix.internal.BcX509CertificateFactory;
 import org.xwiki.crypto.pkix.internal.BcX509CertificateGeneratorFactory;
 import org.xwiki.crypto.pkix.internal.extension.DefaultX509ExtensionBuilder;
+import org.xwiki.crypto.pkix.params.CertifiedPublicKey;
 import org.xwiki.crypto.signer.internal.factory.BcSHA256withRsaSignerFactory;
 import org.xwiki.crypto.signer.internal.factory.DefaultSignerFactory;
 import org.xwiki.crypto.store.filesystem.internal.X509KeyFileSystemStore;
@@ -59,7 +60,7 @@ import static org.mockito.Mockito.when;
  * @version $Id$
  */
 @ComponentTest
-@ComponentList({CertifiedKeyPairStore.class, ReplicationFileStore.class, TestEnvironment.class,
+@ComponentList({ReplicationCertifiedKeyPairStore.class, ReplicationFileStore.class, TestEnvironment.class,
     BcRSAKeyPairGenerator.class, BcX509CertificateGeneratorFactory.class, DefaultSignerFactory.class,
     BcRSAKeyFactory.class, BcSHA256withRsaSignerFactory.class, X509KeyFileSystemStore.class,
     DefaultPrivateKeyPasswordBasedEncryptor.class, DefaultKeyFactory.class, Base64BinaryStringEncoder.class,
@@ -90,6 +91,10 @@ class SignatureManagerTest
         DefaultReplicationInstance instance2 =
             new DefaultReplicationInstance("name2", "uri2", Status.REGISTERED, null, null);
 
+        // Create keys
+        CertifiedPublicKey key1 = this.signatureManager.getSendKey(instance1, true);
+        CertifiedPublicKey key2 = this.signatureManager.getSendKey(instance2, true);
+
         String signature1 = this.signatureManager.sign(instance1, "content");
         assertNotEquals("content", signature1);
         String signature2 = this.signatureManager.sign(instance2, "content");
@@ -102,8 +107,8 @@ class SignatureManagerTest
         assertTrue(this.signatureManager.verify(instance2, "content", signature2));
 
         // Set public keys
-        instance1.setReceiveKey(this.signatureManager.getSendKey(instance1));
-        instance2.setReceiveKey(this.signatureManager.getSendKey(instance2));
+        instance1.setReceiveKey(key1);
+        instance2.setReceiveKey(key2);
 
         assertTrue(this.signatureManager.verify(instance1, "content", signature1));
         assertFalse(this.signatureManager.verify(instance1, "othercontent", signature1));

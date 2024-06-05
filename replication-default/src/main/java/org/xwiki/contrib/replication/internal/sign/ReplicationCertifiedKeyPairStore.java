@@ -21,13 +21,19 @@ package org.xwiki.contrib.replication.internal.sign;
 
 import java.io.File;
 import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.util.Date;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.internal.ReplicationFileStore;
 import org.xwiki.contrib.replication.internal.instance.DefaultReplicationInstance;
 import org.xwiki.crypto.pkix.params.CertifiedKeyPair;
@@ -39,13 +45,14 @@ import org.xwiki.observation.ObservationManager;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Generate and provide {@link CertifiedKeyPair}.
+ * Generate and provide {@link ReplicationCertifiedKeyPair}.
  * 
  * @version $Id$
+ * @since 2.1.0
  */
-@Component(roles = CertifiedKeyPairStore.class)
+@Component(roles = ReplicationCertifiedKeyPairStore.class)
 @Singleton
-public class CertifiedKeyPairStore
+public class ReplicationCertifiedKeyPairStore
 {
     @Inject
     private CryptTools cryptTools;
@@ -60,26 +67,41 @@ public class CertifiedKeyPairStore
     @Inject
     private ObservationManager observation;
 
+    @Inject
+    private Logger logger;
+
     /**
      * @param instance the instance for which to get the {@link CertifiedKeyPair}
+     * @param create if true and no key already exist, create a new one
      * @return the new {@link CertifiedKeyPair} associated with the passed instance or a new one if it's the first time
      *         this method is called
      * @throws ReplicationException when failing to get or create the {@link CertifiedKeyPair}
+     * @since 2.1.0
      */
-    public CertifiedKeyPair getCertifiedKeyPair(String instance) throws ReplicationException
+    public ReplicationCertifiedKeyPair getCertifiedKeyPair(String instance, boolean create) throws ReplicationException
     {
-        CertifiedKeyPair stored;
-        try {
-            stored = this.keyStore.retrieve(buildFileStoreReference(instance));
-        } catch (KeyStoreException e) {
-            stored = null;
+        FileStoreReference file = buildFileStoreReference(instance);
+
+        if (file.getFile().exists()) {
+            ReplicationCertifiedKeyPair stored = null;
+            try {
+                BasicFileAttributes attr = Files.readAttributes(file.getFile().toPath(), BasicFileAttributes.class);
+                FileTime fileTime = attr.lastModifiedTime();
+                stored = new ReplicationCertifiedKeyPair(this.keyStore.retrieve(file), new Date(fileTime.toMillis()));
+            } catch (Exception e) {
+                if (create) {
+                    this.logger.error("Failed to read the stored certified key pair. Trying to create a new one.", e);
+                } else {
+                    throw new ReplicationException("Failed to read the stored certified key pair", e);
+                }
+            }
+
+            if (stored != null) {
+                return stored;
+            }
         }
 
-        if (stored != null) {
-            return stored;
-        }
-
-        return createCertifiedKeyPair(instance);
+        return create ? createCertifiedKeyPair(instance) : null;
     }
 
     /**
@@ -88,16 +110,17 @@ public class CertifiedKeyPairStore
      *         this method is called
      * @throws ReplicationException when failing to get or create the {@link CertifiedKeyPair}
      */
-    public CertifiedKeyPair createCertifiedKeyPair(String instance) throws ReplicationException
+    public ReplicationCertifiedKeyPair createCertifiedKeyPair(String instance) throws ReplicationException
     {
         try {
-            CertifiedKeyPair keyPair = cryptTools.createCertifiedKeyPair();
+            ReplicationCertifiedKeyPair keyPair =
+                new ReplicationCertifiedKeyPair(this.cryptTools.createCertifiedKeyPair());
 
             // Store the key pair
-            storeCertifiedKeyPair(instance, keyPair);
+            storeCertifiedKeyPair(instance, keyPair.getKey());
 
             // Notify about the new key
-            this.observation.notify(new CertifiedKeyPairCreatedEvent(instance), keyPair);
+            this.observation.notify(new ReplicationCertifiedKeyPairCreatedEvent(instance), keyPair);
 
             return keyPair;
         } catch (Exception e) {
@@ -109,7 +132,6 @@ public class CertifiedKeyPairStore
      * @param instance the instance associated with the {@link CertifiedKeyPair} to store
      * @param keyPair the {@link CertifiedKeyPair} associated with the passed instance
      * @throws KeyStoreException when failing to store the {@link CertifiedKeyPair}
-     * @since 1.4.0
      */
     public void storeCertifiedKeyPair(String instance, CertifiedKeyPair keyPair) throws KeyStoreException
     {
@@ -125,5 +147,16 @@ public class CertifiedKeyPairStore
             String.format("%s.key", URLEncoder.encode(DefaultReplicationInstance.cleanURI(instance), UTF_8)));
 
         return new FileStoreReference(file);
+    }
+
+    /**
+     * @param instance the instance for which to refresh the key
+     * @throws ReplicationException when failing to get the current key pair
+     */
+    public void refresh(ReplicationInstance instance) throws ReplicationException
+    {
+        ReplicationCertifiedKeyPair keyPair = getCertifiedKeyPair(instance.getURI(), false);
+
+        this.observation.notify(new ReplicationCertifiedKeyPairRefreshEvent(instance.getURI()), keyPair);
     }
 }

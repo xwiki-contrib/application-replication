@@ -36,6 +36,7 @@ import org.xwiki.contrib.replication.event.ReplicationInstanceRegisteredEvent;
 import org.xwiki.contrib.replication.event.ReplicationInstanceUnregisteredEvent;
 import org.xwiki.contrib.replication.internal.message.ReplicationInstanceMessageSender;
 import org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageQueue;
+import org.xwiki.contrib.replication.internal.sign.ReplicationCertifiedKeyPairStore;
 import org.xwiki.model.reference.EntityReference;
 import org.xwiki.observation.AbstractEventListener;
 import org.xwiki.observation.ObservationManager;
@@ -87,6 +88,9 @@ public class ReplicationInstanceListener extends AbstractEventListener
 
     @Inject
     private RemoteObservationManagerContext remoteContext;
+
+    @Inject
+    private ReplicationCertifiedKeyPairStore keyStore;
 
     @Inject
     private Logger logger;
@@ -188,6 +192,19 @@ public class ReplicationInstanceListener extends AbstractEventListener
 
     private void initialize()
     {
+        // Refresh the keys on cluster members
+        try {
+            for (ReplicationInstance instance : this.instanceProvider.get().getRegisteredInstances()) {
+                try {
+                    this.keyStore.refresh(instance);
+                } catch (ReplicationException e) {
+                    this.logger.error("Failed to refresh the key for instance [{}]", instance, e);
+                }
+            }
+        } catch (ReplicationException e) {
+            this.logger.error("Failed to get the registered instances", e);
+        }
+
         // Initialize the sender
         this.senderProvider.get();
 

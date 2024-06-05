@@ -41,7 +41,7 @@ import org.xwiki.crypto.pkix.params.CertifiedPublicKey;
 public class SignatureManager
 {
     @Inject
-    private CertifiedKeyPairStore store;
+    private ReplicationCertifiedKeyPairStore store;
 
     @Inject
     private CryptTools cryptTools;
@@ -55,12 +55,18 @@ public class SignatureManager
     public String sign(ReplicationInstance instance, String content) throws ReplicationException
     {
         try {
-            PrivateKeyParameters pk = this.store.getCertifiedKeyPair(instance.getURI()).getPrivateKey();
+            ReplicationCertifiedKeyPair keyPair = this.store.getCertifiedKeyPair(instance.getURI(), false);
 
-            return sign(pk, content);
+            if (keyPair != null) {
+                PrivateKeyParameters pk = keyPair.getKey().getPrivateKey();
+
+                return sign(pk, content);
+            }
         } catch (Exception e) {
             throw new ReplicationException(String.format("Error while signing [%s] for [%s]", content, instance), e);
         }
+
+        return null;
     }
 
     /**
@@ -89,22 +95,28 @@ public class SignatureManager
 
     /**
      * @param instance the instance associated to the public key
+     * @param create if true and no key already exist, create a new one
      * @return the public key used to verify the signature of messages sent by this instance
      * @throws ReplicationException when failing to get the public key of the instance
+     * @since 2.1.0
      */
-    public CertifiedPublicKey getSendKey(ReplicationInstance instance) throws ReplicationException
+    public CertifiedPublicKey getSendKey(ReplicationInstance instance, boolean create) throws ReplicationException
     {
-        return getSendKey(instance.getURI());
+        return getSendKey(instance.getURI(), create);
     }
 
     /**
      * @param instance the instance associated to the public key
+     * @param create if true and no key already exist, create a new one
      * @return the public key used to verify the signature of messages sent by this instance
      * @throws ReplicationException when failing to get the public key of the instance
+     * @since 2.1.0
      */
-    public CertifiedPublicKey getSendKey(String instance) throws ReplicationException
+    public CertifiedPublicKey getSendKey(String instance, boolean create) throws ReplicationException
     {
-        return this.store.getCertifiedKeyPair(instance).getCertificate();
+        ReplicationCertifiedKeyPair keyPair = this.store.getCertifiedKeyPair(instance, create);
+
+        return keyPair != null ? keyPair.getKey().getCertificate() : null;
     }
 
     /**

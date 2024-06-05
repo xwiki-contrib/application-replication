@@ -22,6 +22,7 @@ package org.xwiki.contrib.replication.internal.sign;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -42,23 +43,24 @@ import org.xwiki.observation.remote.RemoteEventData;
 import org.xwiki.observation.remote.converter.AbstractEventConverter;
 
 /**
- * Convert all mail entity events to remote events and back to local events.
+ * Convert {@link ReplicationCertifiedKeyPairEventConverter} events to remote events and back to local events.
  *
  * @version $Id: c3a4828f079a4a41b66f1d29d54765d7407c1e5a $
- * @since 1.4.0
+ * @since 2.1.0
  */
 @Component
 @Singleton
 @Named("replication.CertifiedKeyPair")
-// TODO: move to XWiki Standard
-public class CertifiedKeyPairEventConverter extends AbstractEventConverter
+public class ReplicationCertifiedKeyPairEventConverter extends AbstractEventConverter
 {
-    private static final Set<Class<? extends Event>> EVENTS =
-        new HashSet<>(Arrays.asList(CertifiedKeyPairCreatedEvent.class));
+    private static final Set<Class<? extends Event>> EVENTS = new HashSet<>(
+        Arrays.asList(ReplicationCertifiedKeyPairCreatedEvent.class, ReplicationCertifiedKeyPairRefreshEvent.class));
 
     private static final String PROP_PUBLIC = "public";
 
     private static final String PROP_PRIVATE = "private";
+
+    private static final String PROP_DATE = "date";
 
     @Inject
     private CryptTools cryptTools;
@@ -72,7 +74,7 @@ public class CertifiedKeyPairEventConverter extends AbstractEventConverter
         if (EVENTS.contains(localEvent.getEvent().getClass())) {
             try {
                 remoteEvent.setEvent((Serializable) localEvent.getEvent());
-                remoteEvent.setSource(serializeEntityEvent((CertifiedKeyPair) localEvent.getSource()));
+                remoteEvent.setSource(serializeEntityEvent((ReplicationCertifiedKeyPair) localEvent.getSource()));
 
                 return true;
             } catch (Exception e) {
@@ -83,19 +85,23 @@ public class CertifiedKeyPairEventConverter extends AbstractEventConverter
         return false;
     }
 
-    private Serializable serializeEntityEvent(CertifiedKeyPair keyPair) throws IOException
+    private Serializable serializeEntityEvent(ReplicationCertifiedKeyPair keyPair) throws IOException
     {
         Serializable remote = null;
 
         if (keyPair != null) {
             Map<String, Object> map = new HashMap<>();
 
-            if (keyPair.getCertificate() != null) {
-                map.put(PROP_PUBLIC, this.cryptTools.serializePublicKey(keyPair.getCertificate()));
+            if (keyPair.getKey().getCertificate() != null) {
+                map.put(PROP_PUBLIC, this.cryptTools.serializePublicKey(keyPair.getKey().getCertificate()));
             }
 
-            if (keyPair.getPrivateKey() != null) {
-                map.put(PROP_PRIVATE, this.cryptTools.serializePrivateKey(keyPair.getPrivateKey()));
+            if (keyPair.getKey().getPrivateKey() != null) {
+                map.put(PROP_PRIVATE, this.cryptTools.serializePrivateKey(keyPair.getKey().getPrivateKey()));
+            }
+
+            if (keyPair.getDate() != null) {
+                map.put(PROP_DATE, keyPair.getDate());
             }
 
             remote = (Serializable) map;
@@ -138,7 +144,9 @@ public class CertifiedKeyPairEventConverter extends AbstractEventConverter
                 privateKey = this.cryptTools.unserializePrivateKey(privateKeyBytes);
             }
 
-            return new CertifiedKeyPair(privateKey, publicKey);
+            Date date = (Date) map.get(PROP_DATE);
+
+            return new ReplicationCertifiedKeyPair(new CertifiedKeyPair(privateKey, publicKey), date);
         }
 
         return null;

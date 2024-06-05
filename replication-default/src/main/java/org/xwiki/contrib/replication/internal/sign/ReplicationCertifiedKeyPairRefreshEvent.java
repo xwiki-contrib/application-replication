@@ -19,51 +19,40 @@
  */
 package org.xwiki.contrib.replication.internal.sign;
 
-import java.io.Serializable;
-
-import org.xwiki.observation.event.Event;
-
 /**
- * An event sent when a new replication {@link org.xwiki.crypto.pkix.params.CertifiedKeyPair.CertifiedKeyPair} is
- * created.
+ * An event sent to communicate a {@link ReplicationCertifiedKeyPair} to other cluster members.
+ * <p>
+ * The event also send the following parameters:
+ * </p>
+ * <ul>
+ * <li>source: the {@link ReplicationCertifiedKeyPair}</li>
+ * </ul>
  * 
  * @version $Id$
- * @since 1.4.0
+ * @since 2.1.0
  */
-public class CertifiedKeyPairCreatedEvent implements Event, Serializable
+public class ReplicationCertifiedKeyPairRefreshEvent extends AbstractReplicationCertifiedKeyPairEvent
 {
     private static final long serialVersionUID = 1L;
-
-    private final String instance;
 
     /**
      * The default constructor.
      */
-    public CertifiedKeyPairCreatedEvent()
+    public ReplicationCertifiedKeyPairRefreshEvent()
     {
-        this.instance = null;
     }
 
     /**
-     * @param instance the instance associated to the
-     *            {@link org.xwiki.crypto.pkix.params.CertifiedKeyPair.CertifiedKeyPair}
+     * @param instance the instance associated to the {@link org.xwiki.crypto.pkix.params.CertifiedKeyPair}
      */
-    public CertifiedKeyPairCreatedEvent(String instance)
+    public ReplicationCertifiedKeyPairRefreshEvent(String instance)
     {
-        this.instance = instance;
-    }
-
-    /**
-     * @return the instance associated to the {@link org.xwiki.crypto.pkix.params.CertifiedKeyPair.CertifiedKeyPair}.
-     */
-    public String getInstance()
-    {
-        return this.instance;
+        super(instance);
     }
 
     @Override
     public boolean matches(Object otherEvent)
     {
-        return otherEvent instanceof CertifiedKeyPairCreatedEvent;
+        return otherEvent instanceof ReplicationCertifiedKeyPairRefreshEvent;
     }
 }

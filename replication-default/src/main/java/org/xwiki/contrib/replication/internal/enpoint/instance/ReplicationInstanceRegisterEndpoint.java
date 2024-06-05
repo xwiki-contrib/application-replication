@@ -83,7 +83,7 @@ public class ReplicationInstanceRegisterEndpoint extends AbstractReplicationEndp
             } else if (instance.getStatus() == Status.REQUESTED) {
                 // Make sure the instance was requested
                 if (!requestKey
-                    .equals(this.signatureManager.serializeKey(this.signatureManager.getSendKey(instance)))) {
+                    .equals(this.signatureManager.serializeKey(this.signatureManager.getSendKey(instance, false)))) {
                     throw new UnauthorizedReplicationInstanceException("The instance was not requested");
                 }
 

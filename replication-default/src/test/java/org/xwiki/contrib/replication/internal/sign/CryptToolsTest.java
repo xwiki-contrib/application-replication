@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
  * @version $Id$
  */
 @ComponentTest
-@ComponentList({CertifiedKeyPairStore.class, ReplicationFileStore.class, TestEnvironment.class,
+@ComponentList({ReplicationCertifiedKeyPairStore.class, ReplicationFileStore.class, TestEnvironment.class,
     BcRSAKeyPairGenerator.class, BcX509CertificateGeneratorFactory.class, DefaultSignerFactory.class,
     BcRSAKeyFactory.class, BcSHA256withRsaSignerFactory.class, X509KeyFileSystemStore.class,
     DefaultPrivateKeyPasswordBasedEncryptor.class, DefaultKeyFactory.class, Base64BinaryStringEncoder.class,

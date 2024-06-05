@@ -434,8 +434,6 @@ public class ReplicationIT extends AbstractTest
 
     private void installReplication(String wiki) throws XWikiRestException, ComponentLookupException, Exception
     {
-        System.out.println(System.getProperties());
-
         InstallRequest installRequest = new InstallRequest();
         installRequest.setInteractive(false);
         installRequest.addNamespace("wiki:" + wiki);

@@ -240,7 +240,7 @@ public class ReplicationScriptService implements ScriptService
      */
     public String getSendFingerprint(ReplicationInstance instance) throws IOException, ReplicationException
     {
-        return this.signatureManager.getFingerprint(this.signatureManager.getSendKey(instance));
+        return this.signatureManager.getFingerprint(this.signatureManager.getSendKey(instance, false));
     }
 
     /**

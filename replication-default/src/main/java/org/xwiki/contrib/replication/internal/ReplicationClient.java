@@ -55,9 +55,9 @@ import org.xwiki.contrib.replication.internal.enpoint.instance.ReplicationInstan
 import org.xwiki.contrib.replication.internal.enpoint.message.HttpServletRequestReplicationReceiverMessage;
 import org.xwiki.contrib.replication.internal.enpoint.message.ReplicationMessageEndpoint;
 import org.xwiki.contrib.replication.internal.instance.ReplicationInstanceStore;
-import org.xwiki.contrib.replication.internal.sign.CertifiedKeyPairStore;
+import org.xwiki.contrib.replication.internal.sign.ReplicationCertifiedKeyPair;
+import org.xwiki.contrib.replication.internal.sign.ReplicationCertifiedKeyPairStore;
 import org.xwiki.contrib.replication.internal.sign.SignatureManager;
-import org.xwiki.crypto.pkix.params.CertifiedKeyPair;
 import org.xwiki.crypto.pkix.params.CertifiedPublicKey;
 
 /**
@@ -76,7 +76,7 @@ public class ReplicationClient implements Initializable, Disposable
     private SignatureManager signatureManager;
 
     @Inject
-    private CertifiedKeyPairStore signatureStore;
+    private ReplicationCertifiedKeyPairStore signatureStore;
 
     @Inject
     private Logger logger;
@@ -165,8 +165,11 @@ public class ReplicationClient implements Initializable, Disposable
         URIBuilder builder = createURIBuilder(target.getURI(), endpoint);
 
         builder.setParameter(ReplicationInstancePingEndpoint.PARAMETER_KEY, key);
-        builder.setParameter(ReplicationInstancePingEndpoint.PARAMETER_SIGNEDKEY,
-            this.signatureManager.sign(target, key));
+
+        String signedKey = this.signatureManager.sign(target, key);
+        if (signedKey != null) {
+            builder.setParameter(ReplicationInstancePingEndpoint.PARAMETER_SIGNEDKEY, signedKey);
+        }
 
         return builder;
     }
@@ -310,7 +313,7 @@ public class ReplicationClient implements Initializable, Disposable
 
         // Indicate the key that will be used to send messages to the target instance
         builder.setParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_RECEIVEKEY,
-            this.signatureManager.serializeKey(this.signatureManager.getSendKey(uri)));
+            this.signatureManager.serializeKey(this.signatureManager.getSendKey(uri, true)));
 
         HttpPut httpPut = new HttpPut(builder.build());
 
@@ -348,7 +351,7 @@ public class ReplicationClient implements Initializable, Disposable
 
             // Indicate the key that will be used to send messages to the target instance
             builder.setParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_RECEIVEKEY,
-                this.signatureManager.serializeKey(this.signatureManager.getSendKey(instance)));
+                this.signatureManager.serializeKey(this.signatureManager.getSendKey(instance, true)));
 
             // Send the receive key as a key to prove it was requested in the first place
             builder.setParameter(ReplicationInstanceRegisterEndpoint.PARAMETER_REQUESTKEY,
@@ -392,32 +395,34 @@ public class ReplicationClient implements Initializable, Disposable
 
         try {
             // Get the previous key
-            CertifiedKeyPair oldKey = this.signatureStore.getCertifiedKeyPair(instance.getURI());
+            ReplicationCertifiedKeyPair oldKey = this.signatureStore.getCertifiedKeyPair(instance.getURI(), false);
 
             // Generate the new key
-            CertifiedKeyPair newKey = this.signatureStore.createCertifiedKeyPair(instance.getURI());
+            ReplicationCertifiedKeyPair newKey = this.signatureStore.createCertifiedKeyPair(instance.getURI());
 
             // Notify the instance about the change
-            sendKey(instance, oldKey, newKey);
+            sendNewKey(instance, oldKey, newKey);
         } finally {
             this.lock.writeLock().unlock();
         }
     }
 
-    private void sendKey(ReplicationInstance instance, CertifiedKeyPair oldKey, CertifiedKeyPair newKey)
-        throws URISyntaxException, ReplicationException, IOException
+    private void sendNewKey(ReplicationInstance instance, ReplicationCertifiedKeyPair oldKey,
+        ReplicationCertifiedKeyPair newKey) throws URISyntaxException, ReplicationException, IOException
     {
         URIBuilder builder = createURIBuilder(instance.getURI(), ReplicationInstanceUpdateKeyEndpoint.PATH);
 
         // The target instance expect the old key
         String key = String.valueOf(new Date().getTime());
         builder.setParameter(ReplicationInstancePingEndpoint.PARAMETER_KEY, key);
-        builder.setParameter(ReplicationInstancePingEndpoint.PARAMETER_SIGNEDKEY,
-            this.signatureManager.sign(oldKey.getPrivateKey(), key));
+        if (oldKey != null) {
+            builder.setParameter(ReplicationInstancePingEndpoint.PARAMETER_SIGNEDKEY,
+                this.signatureManager.sign(oldKey.getKey().getPrivateKey(), key));
+        }
 
         // Indicate the new key
         builder.setParameter(ReplicationInstanceUpdateKeyEndpoint.PARAMETER_NEWRECEIVEKEY,
-            this.signatureManager.serializeKey(newKey.getCertificate()));
+            this.signatureManager.serializeKey(newKey.getKey().getCertificate()));
 
         HttpPost httpPost = new HttpPost(builder.build());
 
