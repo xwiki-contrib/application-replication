@@ -162,6 +162,7 @@ public class DefaultReplicationReceiverMessage extends AbstractReplicationMessag
          */
         public Builder message(ReplicationReceiverMessage message)
         {
+            instance(message.getInstance());
             id(message.getId());
             date(message.getDate());
             type(message.getType());
