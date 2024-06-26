@@ -1529,6 +1529,7 @@ public class ReplicationIT extends AbstractTest
         throws Exception
     {
         // Block the proxy
+        this.proxy1.removeStub(this.proxyStubBuilder1);
         this.proxy1.stubFor(this.proxyFailingBuilder);
 
         // Create a new page on XWIKI 0
@@ -1563,6 +1564,7 @@ public class ReplicationIT extends AbstractTest
         Thread.sleep(1000);
 
         // Proxy is back
+        this.proxy1.removeStub(this.proxyFailingBuilder);
         this.proxy1.stubFor(this.proxyStubBuilder1);
 
         // Force pushing waiting messages
@@ -1601,6 +1603,8 @@ public class ReplicationIT extends AbstractTest
         assertEqualsHistorySizeWithTimeout(documentReference, 1);
 
         // Block network 0 <-> 1
+        this.proxy0.removeStub(this.proxyStubBuilder0);
+        this.proxy1.removeStub(this.proxyStubBuilder1);
         this.proxy0.stubFor(this.proxyFailingBuilder);
         this.proxy1.stubFor(this.proxyFailingBuilder);
 
@@ -1623,6 +1627,8 @@ public class ReplicationIT extends AbstractTest
         assertEqualsHistorySizeWithTimeout(documentReference, 2);
 
         // Enabled back network
+        this.proxy0.removeStub(this.proxyFailingBuilder);
+        this.proxy1.removeStub(this.proxyFailingBuilder);
         this.proxy0.stubFor(this.proxyStubBuilder0);
         this.proxy1.stubFor(this.proxyStubBuilder1);
 
