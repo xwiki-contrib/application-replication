@@ -26,6 +26,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.component.manager.ComponentManager;
@@ -66,6 +67,9 @@ public class ReplicationResourceReferenceHandler extends AbstractResourceReferen
     @Inject
     private Container container;
 
+    @Inject
+    private Logger logger;
+
     @Override
     public List<ResourceType> getSupportedResourceReferences()
     {
@@ -94,7 +98,9 @@ public class ReplicationResourceReferenceHandler extends AbstractResourceReferen
                 enpoint.handle(servletRequest.getHttpServletRequest(), servletResponse.getHttpServletResponse(),
                     reference);
             } catch (Exception e) {
-                throw new ResourceReferenceHandlerException("Could not handle the replication data", e);
+                this.logger.debug("The Replication request [{}] failed", reference, e);
+
+                throw new ResourceReferenceHandlerException("The Replication request failed", e);
             }
         }
 

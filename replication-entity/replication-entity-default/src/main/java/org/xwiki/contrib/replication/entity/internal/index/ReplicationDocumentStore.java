@@ -30,6 +30,7 @@ import javax.inject.Singleton;
 import org.hibernate.Session;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
+import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStoreCache.ReplicationDocumentStoreCacheEntry;
@@ -86,12 +87,17 @@ public class ReplicationDocumentStore
     @Inject
     private Provider<XWikiContext> xcontextProvider;
 
+    @Inject
+    private Logger logger;
+
     /**
      * @param document the reference of the document
      * @throws ReplicationException when failing to delete the document entry
      */
     public void remove(DocumentReference document) throws ReplicationException
     {
+        this.logger.debug("Removing owning instance for document [{}]", document, new Exception("#remove caller"));
+
         long id = toDocumentId(document);
 
         executeWrite(session -> deleteHibernateReplicationDocument(id, session), document.getWikiReference());
@@ -106,6 +112,9 @@ public class ReplicationDocumentStore
      */
     public void setOwner(DocumentReference document, String owner) throws ReplicationException
     {
+        this.logger.debug("Setting owner instance [{}] for document [{}]", owner, document,
+            new Exception("#setOwner caller"));
+
         long id = toDocumentId(document);
 
         executeWrite(session -> saveHibernateReplicationDocument(id, owner, session), document.getWikiReference());
