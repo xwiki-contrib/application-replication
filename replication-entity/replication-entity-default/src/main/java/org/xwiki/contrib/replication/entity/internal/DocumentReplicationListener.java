@@ -114,7 +114,7 @@ public class DocumentReplicationListener extends AbstractEventListener
             }
         } catch (ReplicationException e) {
             this.logger.error("Failed to send a replication message for document [{}] in version [{}]",
-                document.getDocumentReferenceWithLocale(), document.getVersion());
+                document.getDocumentReferenceWithLocale(), document.getVersion(), e);
         }
     }
 }
