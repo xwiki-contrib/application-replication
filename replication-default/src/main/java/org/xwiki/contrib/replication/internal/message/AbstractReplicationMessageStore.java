@@ -237,7 +237,9 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
         File messageFolder = getMessageFolder(message.getId());
 
         if (messageFolder.exists()) {
-            throw new ReplicationException("The message with id [" + message.getId() + "] already exist in the store");
+            // Get rid of any date already there before storing the message (could be some previous partially failed
+            // message store for which the cleanup also failed for some reason)
+            delete(messageFolder);
         }
 
         boolean clean = true;
@@ -317,12 +319,17 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
     {
         File messageFolder = getMessageFolder(message.getId());
 
+        delete(messageFolder);
+    }
+
+    private void delete(File messageFolder) throws ReplicationException
+    {
         if (messageFolder.exists()) {
             try {
                 FileUtils.deleteDirectory(messageFolder);
             } catch (IOException e) {
                 throw new ReplicationException(
-                    "Failed to delete message with id [" + message.getId() + "] from the filesystem", e);
+                    "Failed to delete message folder [" + messageFolder + "] from the filesystem", e);
             }
         }
     }
