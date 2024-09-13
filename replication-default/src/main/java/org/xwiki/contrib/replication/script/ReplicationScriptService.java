@@ -220,7 +220,6 @@ public class ReplicationScriptService implements ScriptService
      * @param instance the instance
      * @throws AccessDeniedException when the current author is not allowed to use this API
      * @since 2.0.0
-     * @since 1.12.14
      */
     public void purgeQueue(ReplicationInstance instance) throws AccessDeniedException
     {

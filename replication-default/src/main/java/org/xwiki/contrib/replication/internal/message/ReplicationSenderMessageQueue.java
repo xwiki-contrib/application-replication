@@ -258,7 +258,6 @@ public class ReplicationSenderMessageQueue extends AbstractReplicationMessageQue
      * Remove from the queue any waiting message to send.
      * 
      * @since 2.0.0
-     * @since 1.12.13
      */
     public void purge()
     {

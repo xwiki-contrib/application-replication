@@ -38,7 +38,7 @@ import org.xwiki.observation.event.Event;
 
 /**
  * @version $Id$
- * @since 1.12.13
+ * @since 2.0.0
  */
 @Component
 @Named(CleanupInstanceListener.NAME)
