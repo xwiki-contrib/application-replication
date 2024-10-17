@@ -23,7 +23,6 @@ import javax.inject.Inject;
 
 import org.xwiki.contrib.replication.InvalidReplicationMessageException;
 import org.xwiki.contrib.replication.ReplicationException;
-import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
@@ -150,19 +149,14 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
         DocumentReference documentReference, DocumentReplicationControllerInstance currentConfiguration)
         throws ReplicationException
     {
-        if (!this.replicationUtils.isOwner(documentReference)) {
+        if (this.replicationUtils.isOwner(documentReference)) {
+            // If the current instance is the owner then this message is invalid by definition
+            throw new InvalidReplicationMessageException("It's forbidden to send messages of type [" + message.getType()
+                + "] messages to the owner instance of document [" + documentReference + "]");
+        } else {
             String owner = this.entityReplication.getOwner(documentReference);
             if (owner != null) {
-                ReplicationInstance ownerInstance = this.instances.getInstanceByURI(owner);
-
-                // Check if the current instance is the owner
-                if (ownerInstance.getStatus() == null) {
-                    throw new InvalidReplicationMessageException(
-                        "It's forbidden to send messages of type [" + message.getType()
-                            + "] messages to the owner instance of document [" + documentReference + "]");
-                }
-
-                // Check of the source if the owner
+                // Check of the source is the owner
                 String sourceInstance = message.getSource();
 
                 if (!owner.equals(sourceInstance)) {
