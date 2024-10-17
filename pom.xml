@@ -45,6 +45,7 @@
     <module>replication-default</module>
     <module>replication-entity</module>
     <module>replication-ui</module>
+    <module>replication-xip</module>
   </modules>
 
   <profiles>
