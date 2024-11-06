@@ -169,9 +169,6 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
         } finally {
             this.executionContextManager.popContext();
         }
-
-        // Delete it from disk
-        this.store.delete(message);
     }
 
     private void logInvalidMessage(ReplicationReceiverMessage message, InvalidReplicationMessageException e)
