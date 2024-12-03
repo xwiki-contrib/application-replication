@@ -19,12 +19,15 @@
  */
 package org.xwiki.contrib.replication.entity.internal;
 
+import java.util.Map;
+
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.configuration.ConfigurationSource;
+import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 
 /**
  * @version $Id$
@@ -35,9 +38,38 @@ import org.xwiki.configuration.ConfigurationSource;
 public class EntityReplicationConfiguration
 {
     /**
+     * Indicate who is allowed to do something.
+     * 
+     * @version $Id$
+     * @since 2.2.0
+     */
+    public enum Who
+    {
+        /**
+         * Noone.
+         */
+        NOONE,
+
+        /**
+         * Only the owner.
+         */
+        OWNER,
+
+        /**
+         * Everyone.
+         */
+        EVERYONE
+    }
+
+    /**
      * The prefix of replication entity related configurations.
      */
     public static final String PREFIX = "replication.entity.";
+
+    // Limit unrecoverable changes to the owner
+    private static final Map<String, Who> DEFAULT_TYPE_MAPPING =
+        Map.of(EntityReplicationMessage.TYPE_DOCUMENT_UNREPLICATE, Who.OWNER,
+            EntityReplicationMessage.TYPE_DOCUMENT_HISTORYDELETE, Who.OWNER);
 
     @Inject
     @Named("xwikiproperties")
@@ -49,5 +81,20 @@ public class EntityReplicationConfiguration
     public int getDocumentAncestorMaxCount()
     {
         return this.configuration.getProperty(PREFIX + "ancestorMaxCount", 50);
+    }
+
+    /**
+     * @param type the message type
+     * @return who is allowed to do send this type of messages
+     * @since 2.2.0
+     */
+    public Who getMessageTypeAllowed(String type)
+    {
+        Who defaultWho = DEFAULT_TYPE_MAPPING.get(type);
+        if (defaultWho == null) {
+            defaultWho = Who.EVERYONE;
+        }
+
+        return this.configuration.getProperty(PREFIX + "who." + type, defaultWho);
     }
 }

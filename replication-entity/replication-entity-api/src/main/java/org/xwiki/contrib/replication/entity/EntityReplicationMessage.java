@@ -122,7 +122,7 @@ public interface EntityReplicationMessage extends ReplicationMessage
     /**
      * The message type for these messages.
      */
-    String TYPE_DOCUMENT_HISTORYDELETE = PREFIX_TYPE_ENTITY + "_history";
+    String TYPE_DOCUMENT_HISTORYDELETE = PREFIX_TYPE_ENTITY + "history";
 
     /**
      * The prefix in front of all entity metadata properties.

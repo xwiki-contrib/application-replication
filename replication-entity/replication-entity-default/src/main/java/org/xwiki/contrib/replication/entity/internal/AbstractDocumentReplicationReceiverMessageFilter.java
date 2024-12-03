@@ -31,6 +31,7 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationMessageReader;
 import org.xwiki.contrib.replication.entity.DocumentReplicationReceiverMessageFilter;
 import org.xwiki.contrib.replication.entity.EntityReplication;
+import org.xwiki.contrib.replication.entity.internal.EntityReplicationConfiguration.Who;
 import org.xwiki.model.reference.DocumentReference;
 
 /**
@@ -57,13 +58,22 @@ public abstract class AbstractDocumentReplicationReceiverMessageFilter
     @Inject
     protected ReplicationInstanceManager instances;
 
-    protected boolean ownerOnly;
+    @Inject
+    protected EntityReplicationConfiguration configuration;
 
     protected boolean writeMessage = true;
 
     @Override
     public ReplicationReceiverMessage filter(ReplicationReceiverMessage message) throws ReplicationException
     {
+        Who who = this.configuration.getMessageTypeAllowed(message.getType());
+
+        if (who == Who.NOONE) {
+            // If the current instance is the owner then this message is invalid by definition
+            throw new InvalidReplicationMessageException(
+                "No instance is allowed to send message of type [" + message.getType() + "]");
+        }
+
         return filter(message, this.documentMessageReader.getDocumentReference(message));
     }
 
@@ -78,11 +88,11 @@ public abstract class AbstractDocumentReplicationReceiverMessageFilter
     protected ReplicationReceiverMessage filter(ReplicationReceiverMessage message, DocumentReference documentReference)
         throws ReplicationException
     {
-        DocumentReplicationControllerInstance configuration = this.controller.getReceiveConfiguration(message);
+        DocumentReplicationControllerInstance receiveConfiguration = this.controller.getReceiveConfiguration(message);
 
         ReplicationReceiverMessage filteredMessage = message;
-        if (configuration != null) {
-            filteredMessage = filter(filteredMessage, documentReference, configuration);
+        if (receiveConfiguration != null) {
+            filteredMessage = filter(filteredMessage, documentReference, receiveConfiguration);
         }
 
         return filteredMessage;
@@ -97,7 +107,9 @@ public abstract class AbstractDocumentReplicationReceiverMessageFilter
                 + "] is not allowed to send messages for document [" + documentReference + "]");
         }
 
-        if (this.ownerOnly) {
+        Who who = this.configuration.getMessageTypeAllowed(message.getType());
+
+        if (who == Who.OWNER) {
             // Only the owner is allowed to send this type of messages
             checkOwnerOnlyMessageInstance(message, documentReference);
         }

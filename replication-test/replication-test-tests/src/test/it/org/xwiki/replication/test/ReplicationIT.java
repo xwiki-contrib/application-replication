@@ -894,11 +894,11 @@ public class ReplicationIT extends AbstractTest
         assertEquals("1.1", historySummary.getVersion());
 
         ////////////////////////////////////
-        // Delete current version on XWiki 1
+        // Delete current version on XWiki 0
         ////////////////////////////////////
 
-        // Delete a page history version on XWiki 1
-        getUtil().switchExecutor(INSTANCE_1);
+        // Delete a page history version on XWiki 0
+        getUtil().switchExecutor(INSTANCE_0);
         getUtil().gotoPage(page.getSpace(), page.getName());
         getUtil().recacheSecretToken();
         getUtil().deleteVersion(page.getSpace(), page.getName(), "3.1");
@@ -910,8 +910,8 @@ public class ReplicationIT extends AbstractTest
         historySummary = history.getHistorySummaries().get(1);
         assertEquals("1.1", historySummary.getVersion());
 
-        // ASSERT) The history in XWiki 0 should be the one set in XWiki 1
-        getUtil().switchExecutor(INSTANCE_0);
+        // ASSERT) The history in XWiki 1 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_1);
         assertEqualsHistorySizeWithTimeout(documentReference, 2);
         assertEquals("modified content", getUtil().rest().<Page>get(documentReference).getContent());
         history = getHistory(documentReference);
