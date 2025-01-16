@@ -620,6 +620,10 @@
 .replication-configuration-container label {
   font-weight: normal;
   margin-right: 5px;
+}
+
+.replication-configuration-container label.direction-label::before {
+  content: " - "
 }</code>
     </property>
     <property>
