@@ -26,7 +26,7 @@
       ## TODO: add support for the direction in the UI
       #set ($configuration = [{
               "level" : $request.get("${namePrefix}_replication_instance_level"),
-              "direction" : 'BOTH'
+              "direction" : $request.get("${namePrefix}_replication_instance_direction")
             }])
     #elseif ($replicationType == 'single')
       #set ($configuration = [])
@@ -36,12 +36,12 @@
           #set ($instanceURI = $request.getParameter($parameterName))
           #set ($instanceIndex = $parameterName.substring($parameterPrefix.length()))
           #set ($instanceLevel = $request.getParameter("${namePrefix}_replication_instance_level_$instanceIndex"))
+          #set ($instanceDirection = $request.getParameter("${namePrefix}_replication_instance_direction_$instanceIndex"))
           #if ($!instanceLevel != '')
-            ## TODO: add support for the direction in the UI
             #set ($void = $configuration.add({
               "instance" : $instanceURI,
               "level" : $instanceLevel,
-              "direction" : 'BOTH'
+              "direction" : $instanceDirection
             }))
           #end
         #end
@@ -82,7 +82,8 @@
 #end
 
 #macro(selectLevel $currentLevel, $inputId)
-  <select id="$inputId" name="$inputId">
+  <label>$escapetool.xml($services.localization.render('replication.entity.level'))</label>
+  <select id="$inputId" name="$inputId" class="replication-level-select">
     <option value="">$escapetool.xml($services.localization.render('replication.admin.page.notreplicated'))</option>
     <optgroup label="$escapetool.xml($services.localization.render('replication.admin.page.replicated'))">
       <option value="ALL"
@@ -96,6 +97,23 @@
         $escapetool.xml($services.localization.render('replication.entity.level.REFERENCE'))
       </option>
      </optgroup>
+  </select>
+#end
+
+#macro(selectDirection $currentDirection, $inputId, $showDirectionSelect)
+  #set ($cssClass = '')
+  #if (!$showDirectionSelect)
+    #set ($cssClass = 'hidden')
+  #end
+  <label class="direction-label $cssClass">$escapetool.xml($services.localization.render('replication.entity.direction'))</label>
+  <select id="$inputId" name="$inputId" class="direction-select $cssClass">
+    #foreach($direction in ['BOTH', 'SEND_ONLY', 'RECEIVE_ONLY'])
+      <option value="$escapetool.xml($direction)"
+        #if($currentDirection == $direction)selected#end
+        title="$escapetool.xml($services.localization.render("replication.entity.direction.${direction}.description"))">
+        $escapetool.xml($services.localization.render("replication.entity.direction.${direction}"))
+      </option>
+    #end
   </select>
 #end
 
@@ -131,8 +149,14 @@
     <input type="radio" id="$inputId" name="${namePrefix}_replication_instance_type" value="all" #if($replicationType == 'all')checked#end>
     <label for="$inputId">$escapetool.xml($services.localization.render('replication.admin.page.type.all'))</label>
 
-    #set ($inputId = "${namePrefix}_replication_instance_level")
-    #selectLevel($replicationInstanceMap.get($instance.uRI).level.name(), $inputId)
+    #set ($levelInputId = "${namePrefix}_replication_instance_level")
+    #set ($currentLevel = $replicationInstanceMap.get($instance.uRI).level.name())
+    #set ($directionInputId = "${namePrefix}_replication_instance_direction")
+    #set ($showDirectionSelect = "$!currentLevel" != '')
+    <div class="replication-configuration-container">
+      #selectLevel($currentLevel, $levelInputId)
+      #selectDirection($replicationInstanceMap.get($instance.uRI).direction.name(), $directionInputId, $showDirectionSelect)
+    </div>
 
     <br/>
     #set ($inputId = "${namePrefix}_replication_instance_type_single")
@@ -141,11 +165,17 @@
 
     <dl>
       #foreach($instance in $instances)
-        #set ($inputId = "${namePrefix}_replication_instance_level_$foreach.index")
+        #set ($levelInputId = "${namePrefix}_replication_instance_level_$foreach.index")
+        #set ($currentLevel = $replicationInstanceMap.get($instance.uRI).level.name())
+        #set ($directionInputId = "${namePrefix}_replication_instance_direction_$foreach.index")
+        #set ($showDirectionSelect = "$!currentLevel" != '')
         <dt><label for="$inputId">$instance.name (<a href="$instance.uRI">$instance.uRI</a>)</label></dt>
         <dd>
           <input type="hidden" name="${namePrefix}_replication_instance_uri_$foreach.index" value="$escapetool.xml($instance.uRI)"/>
-          #selectLevel($replicationInstanceMap.get($instance.uRI).level.name(), $inputId)
+          <div class="replication-configuration-container">
+            #selectLevel($currentLevel, $levelInputId)
+            #selectDirection($replicationInstanceMap.get($instance.uRI).direction.name(), $directionInputId, $showDirectionSelect)
+          </div>
         </dd>
       #end
     </dl>
