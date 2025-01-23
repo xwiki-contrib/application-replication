@@ -29,6 +29,7 @@ import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
@@ -137,7 +138,7 @@ public class EntityReplicationConfigurationUpdater
         this.store.storeHibernateEntityReplication(reference, configurations);
 
         // If the document is not replicated at all anymore, remove the document from the replication index
-        if (!documentsToUpdate.isEmpty() && configurations.isEmpty()) {
+        if (!documentsToUpdate.isEmpty() && CollectionUtils.isEmpty(configurations)) {
             for (DocumentReference documentToUpdate : documentsToUpdate) {
                 this.entityReplication.remove(documentToUpdate);
             }
