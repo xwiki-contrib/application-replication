@@ -34,18 +34,7 @@
       </key-property>
     </composite-id>
 
-    <property name="level" column="XWR_LEVEL">
-      <type name="org.hibernate.type.EnumType">
-        <param name="enumClass">org.xwiki.contrib.replication.entity.DocumentReplicationLevel</param>
-        <param name="useNamed">true</param>
-      </type>
-    </property>
-
-    <property name="direction" column="XWR_DIRECTION">
-      <type name="org.hibernate.type.EnumType">
-        <param name="enumClass">org.xwiki.contrib.replication.entity.DocumentReplicationDirection</param>
-        <param name="useNamed">true</param>
-      </type>
-    </property>
+    <property name="level" column="XWR_LEVEL" type="string" length="255" />
+    <property name="direction" column="XWR_DIRECTION" type="string" length="255" />
   </class>
 </hibernate-mapping>

@@ -30,6 +30,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.hibernate.Session;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
@@ -59,7 +60,13 @@ import com.xpn.xwiki.store.XWikiStoreInterface;
 @Singleton
 public class EntityReplicationStoreHibernate
 {
-    private static final String ENTITY = "entity";
+    private static final String PROP_ENTITY = "entity";
+
+    private static final String PROP_INSTANCE = "instance";
+
+    private static final String PROP_LEVEL = "level";
+
+    private static final String PROP_DIRECTION = "direction";
 
     @Inject
     @Named(XWikiHibernateBaseStore.HINT)
@@ -98,14 +105,31 @@ public class EntityReplicationStoreHibernate
         // Add new instances
         if (instances != null) {
             if (instances.isEmpty()) {
-                session.save(new HibernateEntityReplicationInstance(entityId,
-                    new DocumentReplicationControllerInstance(null, null, null)));
+                insert(new HibernateEntityReplicationInstance(entityId,
+                    new DocumentReplicationControllerInstance(null, null, null)), session);
             } else {
                 for (DocumentReplicationControllerInstance instance : instances) {
-                    session.save(new HibernateEntityReplicationInstance(entityId, instance));
+                    insert(new HibernateEntityReplicationInstance(entityId, instance), session);
                 }
             }
         }
+
+        return null;
+    }
+
+    private Void insert(HibernateEntityReplicationInstance instance, Session session)
+    {
+        // Not using the Hibernate session entity API to avoid classloader problems
+        // Using native query since it's impossible to insert values with HQL
+        NativeQuery<?> query = session.createNativeQuery(
+            "INSERT INTO replication_entity_instances (XWR_ENTITY, XWR_INSTANCE, XWR_LEVEL, XWR_DIRECTION)"
+                + " VALUES (:entity, :instance, :level, :direction)");
+        query.setParameter(PROP_ENTITY, instance.getEntity());
+        query.setParameter(PROP_INSTANCE, instance.getInstance());
+        query.setParameter(PROP_LEVEL, instance.getLevel() != null ? instance.getLevel().name() : null);
+        query.setParameter(PROP_DIRECTION, instance.getDirection().name());
+
+        query.executeUpdate();
 
         return null;
     }
@@ -115,7 +139,7 @@ public class EntityReplicationStoreHibernate
         // Delete existing instances
         Query<?> query = session
             .createQuery("DELETE FROM HibernateEntityReplicationInstance AS instance where instance.entity = :entity");
-        query.setParameter(ENTITY, entityId);
+        query.setParameter(PROP_ENTITY, entityId);
         query.executeUpdate();
 
         return null;
@@ -126,14 +150,14 @@ public class EntityReplicationStoreHibernate
         // Delete existing instances
         Query<?> query = session.createQuery(
             "DELETE FROM HibernateEntityReplicationInstance AS instance where instance.instance = :instance");
-        query.setParameter("instance", uri);
+        query.setParameter(PROP_INSTANCE, uri);
         query.executeUpdate();
 
         return null;
     }
 
     /**
-     * @param wiki the wiki where to write
+     * @param wiki the wiki where to search
      * @param entityId the id of the entity
      * @return the instances directly configured at this entity level
      * @throws XWikiException when failing to get the instances
@@ -142,46 +166,53 @@ public class EntityReplicationStoreHibernate
         throws XWikiException
     {
         XWikiContext xcontext = this.xcontextProvider.get();
-        XWikiHibernateStore store = (XWikiHibernateStore) this.hibernateStore;
 
         String currentWiki = xcontext.getWikiId();
         try {
             xcontext.setWikiId(wiki);
 
-            return store.executeRead(xcontext, session -> getHibernateEntityReplication(entityId, session));
+            return getHibernateEntityReplication(entityId, xcontext);
         } finally {
             xcontext.setWikiId(currentWiki);
         }
     }
 
+    private Collection<DocumentReplicationControllerInstance> getHibernateEntityReplication(long entityId,
+        XWikiContext xcontext) throws XWikiException
+    {
+        XWikiHibernateStore store = (XWikiHibernateStore) this.hibernateStore;
+
+        return store.executeRead(xcontext, session -> getHibernateEntityReplication(entityId, session));
+    }
+
     private DocumentReplicationLevel toDocumentReplicationLevel(Object value)
     {
+        DocumentReplicationLevel level = null;
+
         if (value != null) {
             if (value instanceof DocumentReplicationLevel) {
-                return (DocumentReplicationLevel) value;
-            } else if (value.getClass().isEnum()) {
-                // Supports DocumentReplicationLevel coming from a different classloader
-                Enum<?> enumConstant = (Enum<?>) value;
-                return DocumentReplicationLevel.valueOf(enumConstant.name());
+                level = (DocumentReplicationLevel) value;
+            } else {
+                level = DocumentReplicationLevel.valueOf(value.toString());
             }
         }
 
-        return null;
+        return level;
     }
 
     private DocumentReplicationDirection toDocumentReplicationDirection(Object value)
     {
+        DocumentReplicationDirection direction = null;
+
         if (value != null) {
             if (value instanceof DocumentReplicationDirection) {
-                return (DocumentReplicationDirection) value;
-            } else if (value.getClass().isEnum()) {
-                // Supports DocumentReplicationLevel coming from a different classloader
-                Enum<?> enumConstant = (Enum<?>) value;
-                return DocumentReplicationDirection.valueOf(enumConstant.name());
+                direction = (DocumentReplicationDirection) value;
+            } else {
+                direction = DocumentReplicationDirection.valueOf(value.toString());
             }
         }
 
-        return null;
+        return direction;
     }
 
     private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(long entityId, Session session)
@@ -191,7 +222,7 @@ public class EntityReplicationStoreHibernate
             "SELECT instance.entity, instance.instance, instance.level, instance.direction"
                 + " FROM HibernateEntityReplicationInstance AS instance WHERE instance.entity = :entity",
             Object[].class);
-        query.setParameter(ENTITY, entityId);
+        query.setParameter(PROP_ENTITY, entityId);
 
         List<HibernateEntityReplicationInstance> hibernateInstances = query.list().stream().map(i -> {
             // Avoid classloader reloading related issue by asking for the values instead of the a
