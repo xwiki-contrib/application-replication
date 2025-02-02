@@ -74,7 +74,7 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
             levelElement = getDriver().findElement(By.id(scope + "_replication_instance_level"));
         } else {
             levelElement = getDriver().findElement(By.xpath("//fieldset[input[@id=\"" + getOptionId(scope, instance != null)
-                + "\"]]//dd[input[@value=\"" + instance + "\"]]/select"));
+                + "\"]]//dd[input[@value=\"" + instance + "\"]]/div[@class='replication-configuration-container']/select"));
         }
         return new Select(levelElement);
     }
