@@ -694,7 +694,7 @@ public class ReplicationIT extends AbstractTest
         // Full replication a page between the registered instances
         replicateFULL();
 
-        // Full replication a page between the registered instances
+        // Full replication, but readonly a page between the registered instances
         replicateFULLSendOnly();
 
         // Reference replication
