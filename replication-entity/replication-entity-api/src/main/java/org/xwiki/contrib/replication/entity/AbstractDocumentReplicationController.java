@@ -22,6 +22,7 @@ package org.xwiki.contrib.replication.entity;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -34,7 +35,6 @@ import javax.inject.Provider;
 import org.xwiki.component.descriptor.ComponentDescriptor;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.component.manager.ComponentManager;
-import org.xwiki.contrib.replication.DefaultReplicationSenderMessage;
 import org.xwiki.contrib.replication.RelayReplicationSender;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
@@ -429,11 +429,11 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
             this.relay.getRelayedInstances(message, getInstances(DocumentReplicationLevel.ALL, true, allInstances));
 
         if (!sendInstances.isEmpty()) {
-            // Relay a readonly version of the message
-            ReplicationSenderMessage sendMessage = new DefaultReplicationSenderMessage.Builder().message(message)
-                .customMetadata(EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY, List.of("true")).build();
+            // We need to make the message readonly
+            Map<String, Collection<String>> metadata = new HashMap<>(message.getCustomMetadata());
+            metadata.put(EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY, List.of("true"));
 
-            return this.sender.send(sendMessage, sendInstances);
+            return this.relay.relay(message, metadata, sendInstances);
         }
 
         return null;
