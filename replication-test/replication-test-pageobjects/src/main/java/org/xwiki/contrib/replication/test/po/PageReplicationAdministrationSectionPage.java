@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.xwiki.administration.test.po.AdministrationSectionPage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.model.EntityType;
 import org.xwiki.model.reference.EntityReference;
@@ -35,6 +36,10 @@ import org.xwiki.test.ui.po.Select;
  */
 public class PageReplicationAdministrationSectionPage extends AdministrationSectionPage
 {
+    private static final String SCOPE_SPACE = "space";
+
+    private static final String SCOPE_DOCUMENT = "document";
+
     public PageReplicationAdministrationSectionPage()
     {
         super("Replication");
@@ -54,12 +59,22 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
 
     public DocumentReplicationLevel getSpaceLevel()
     {
-        return getLevel("space", null);
+        return getLevel(SCOPE_SPACE, null);
+    }
+
+    public DocumentReplicationDirection getSpaceDirection()
+    {
+        return getDirection(SCOPE_SPACE, null);
     }
 
     public DocumentReplicationLevel getDocumentLevel()
     {
-        return getLevel("document", null);
+        return getLevel(SCOPE_DOCUMENT, null);
+    }
+
+    public DocumentReplicationDirection getDocumentDirection()
+    {
+        return getDirection(SCOPE_DOCUMENT, null);
     }
 
     private String getOptionId(String scope, boolean single)
@@ -73,18 +88,40 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         if (instance == null) {
             levelElement = getDriver().findElement(By.id(scope + "_replication_instance_level"));
         } else {
-            levelElement = getDriver().findElement(By.xpath("//fieldset[input[@id=\"" + getOptionId(scope, instance != null)
-                + "\"]]//dd[input[@value=\"" + instance + "\"]]/div[@class='replication-configuration-container']/select"));
+            levelElement =
+                getDriver().findElement(By.xpath("//fieldset[input[@id=\"" + getOptionId(scope, instance != null)
+                    + "\"]]//dd[input[@value=\"" + instance + "\"]]//select[@class='replication-level-select']"));
         }
+
+        return new Select(levelElement);
+    }
+
+    private Select getDirectionSelect(String scope, String instance)
+    {
+        WebElement levelElement;
+        if (instance == null) {
+            levelElement = getDriver().findElement(By.id(scope + "_replication_instance_direction"));
+        } else {
+            levelElement =
+                getDriver().findElement(By.xpath("//fieldset[input[@id=\"" + getOptionId(scope, instance != null)
+                    + "\"]]//dd[input[@value=\"" + instance + "\"]]//select[@class='replication-level-direction']"));
+        }
+
         return new Select(levelElement);
     }
 
     private DocumentReplicationLevel getLevel(String scope, String instance)
     {
-        // Set the level
-        Select levelSelect = getLevelSelect(scope, instance);
-        String value = levelSelect.getFirstSelectedOption().getAttribute("value");
+        Select select = getLevelSelect(scope, instance);
+        String value = select.getFirstSelectedOption().getAttribute("value");
         return StringUtils.isEmpty(value) ? null : DocumentReplicationLevel.valueOf(value);
+    }
+
+    private DocumentReplicationDirection getDirection(String scope, String instance)
+    {
+        Select select = getDirectionSelect(scope, instance);
+        String value = select.getFirstSelectedOption().getAttribute("value");
+        return StringUtils.isEmpty(value) ? null : DocumentReplicationDirection.valueOf(value);
     }
 
     public String getMode(String scope)
@@ -109,32 +146,67 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
 
     public void setSpaceLevel(DocumentReplicationLevel level)
     {
-        setLevel("space", null, level);
+        setLevel(SCOPE_SPACE, null, level);
+    }
+
+    public void setSpaceDirection(DocumentReplicationDirection direction)
+    {
+        setDirection(SCOPE_SPACE, null, direction);
     }
 
     public void setDocumentLevel(DocumentReplicationLevel level)
     {
-        setLevel("document", null, level);
+        setLevel(SCOPE_DOCUMENT, null, level);
+    }
+
+    public void setDocumentDirection(DocumentReplicationDirection direction)
+    {
+        setDirection(SCOPE_DOCUMENT, null, direction);
     }
 
     public void setSpaceLevel(String instance, DocumentReplicationLevel level)
     {
-        setLevel("space", instance, level);
+        setLevel(SCOPE_SPACE, instance, level);
+    }
+
+    public void setSpaceDirection(String instance, DocumentReplicationDirection direction)
+    {
+        setDirection(SCOPE_SPACE, instance, direction);
     }
 
     public void setDocumentLevel(String instance, DocumentReplicationLevel level)
     {
-        setLevel("document", instance, level);
+        setLevel(SCOPE_DOCUMENT, instance, level);
+    }
+
+    public void setDocumentDirection(String instance, DocumentReplicationDirection direction)
+    {
+        setDirection(SCOPE_DOCUMENT, instance, direction);
+    }
+
+    private void clickOption(String scope, String instance)
+    {
+        getDriver().findElement(By.id(getOptionId(scope, instance != null))).click();
     }
 
     private void setLevel(String scope, String instance, DocumentReplicationLevel level)
     {
         // Make sure the right option is selected
-        getDriver().findElement(By.id(getOptionId(scope, instance != null))).click();
+        clickOption(scope, instance);
 
         // Set the level
         Select levelSelect = getLevelSelect(scope, instance);
         levelSelect.selectByValue(level != null ? StringUtils.capitalize(level.name()) : "");
+    }
+
+    private void setDirection(String scope, String instance, DocumentReplicationDirection direction)
+    {
+        // Make sure the right option is selected
+        clickOption(scope, instance);
+
+        // Set the level
+        Select select = getDirectionSelect(scope, instance);
+        select.selectByValue(direction != null ? StringUtils.capitalize(direction.name()) : "");
     }
 
     public void save()

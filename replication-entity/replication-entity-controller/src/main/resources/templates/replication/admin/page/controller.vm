@@ -105,8 +105,8 @@
   #if (!$showDirectionSelect)
     #set ($cssClass = 'hidden')
   #end
-  <label class="direction-label $cssClass">$escapetool.xml($services.localization.render('replication.entity.direction'))</label>
-  <select id="$inputId" name="$inputId" class="direction-select $cssClass">
+  <label class="replication-direction-label $cssClass">$escapetool.xml($services.localization.render('replication.entity.direction'))</label>
+  <select id="$inputId" name="$inputId" class="replication-direction-select $cssClass">
     #foreach($direction in ['BOTH', 'SEND_ONLY', 'RECEIVE_ONLY'])
       <option value="$escapetool.xml($direction)"
         #if($currentDirection == $direction)selected#end

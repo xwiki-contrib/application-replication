@@ -481,8 +481,8 @@
   $( ".replication-configuration-container .replication-level-select" )
   .on( "change", function() {
     let configurationContainer = $(this).closest('.replication-configuration-container');
-    let directionLabel = $('.direction-label', configurationContainer);
-    let directionSelect = $('.direction-select', configurationContainer);
+    let directionLabel = $('.replication-direction-label', configurationContainer);
+    let directionSelect = $('.replication-direction-select', configurationContainer);
     if ($(this).val() == '') {
       directionLabel.addClass('hidden');
       directionSelect.addClass('hidden');
@@ -622,7 +622,7 @@
   margin-right: 5px;
 }
 
-.replication-configuration-container label.direction-label::before {
+.replication-configuration-container label.replication-direction-label::before {
   content: " - "
 }</code>
     </property>

@@ -105,6 +105,9 @@ public class ReplicationIT extends AbstractTest
     private static final LocalDocumentReference REPLICATION_ALL =
         new LocalDocumentReference("ReplicationALL", "WebHome");
 
+    private static final LocalDocumentReference REPLICATION_ALLSendOnly =
+        new LocalDocumentReference("ReplicationALLSendOnly", "WebHome");
+
     private static final LocalDocumentReference REPLICATION_REFERENCE =
         new LocalDocumentReference("ReplicationREFERENCE", "WebHome");
 
@@ -691,6 +694,9 @@ public class ReplicationIT extends AbstractTest
         // Full replication a page between the registered instances
         replicateFULL();
 
+        // Full replication a page between the registered instances
+        replicateFULLSendOnly();
+
         // Reference replication
         replicateREFERENCE();
 
@@ -739,6 +745,16 @@ public class ReplicationIT extends AbstractTest
         getUtil().switchExecutor(INSTANCE_2);
         replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL.getParent(), "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
+
+        ////////////////////////
+        // FULL SendOnly replication
+
+        // Configure ReplicationALL space replication on instance0
+        getUtil().switchExecutor(INSTANCE_0);
+        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_ALLSendOnly);
+        replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.ALL);
+        // Save replication configuration
+        replicationPageAdmin.save();
 
         ////////////////////////
         // REFERENCE replication
@@ -995,6 +1011,89 @@ public class ReplicationIT extends AbstractTest
         replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
         assertEquals("Current instance", replicationExtraPane.getOwner());
         assertFalse(replicationExtraPane.isReadonly());
+    }
+
+    private void replicateFULLSendOnly() throws Exception
+    {
+        Page page = new Page();
+        page.setSpace(REPLICATION_ALLSendOnly.getParent().getName());
+        page.setName("ReplicatedPage");
+
+        LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
+
+        ////////////////////////////////////
+        // Page creation on XWiki 0
+        ////////////////////////////////////
+
+        // Create a page on XWiki 0
+        getUtil().switchExecutor(INSTANCE_0);
+        page.setContent("content");
+        getUtil().rest().save(page);
+        assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
+        ReplicationDocExtraPane replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals("Current instance", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
+
+        // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_1);
+        assertEqualsContentWithTimeout(documentReference, "content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + proxyURI0 + ")", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
+
+        // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_2);
+        assertEqualsContentWithTimeout(documentReference, "content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + proxyURI0 + ")", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
+
+        ////////////////////////////////////
+        // Minor edit on XWiki 0
+        ////////////////////////////////////
+
+        // Edit a page on XWiki 0
+        getUtil().switchExecutor(INSTANCE_0);
+        page.setContent("minor content");
+        saveMinor(page);
+        assertEquals("minor content", getUtil().rest().<Page>get(documentReference).getContent());
+
+        // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_1);
+        assertEqualsContentWithTimeout(documentReference, "minor content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.2", page.getVersion());
+
+        // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_2);
+        assertEqualsContentWithTimeout(documentReference, "minor content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.2", page.getVersion());
+
+        ////////////////////////////////////
+        // Delete document on XWiki 0
+        ////////////////////////////////////
+
+        getUtil().switchExecutor(INSTANCE_0);
+        getUtil().rest().delete(documentReference);
+
+        // TODO: ASSERT) Get the deleted document id
+
+        // ASSERT) The document should not exist anymore on XWiki 1
+        getUtil().switchExecutor(INSTANCE_1);
+        // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
+        assertDoesNotExistWithTimeout(documentReference);
+
+        // TODO: ASSERT) The deleted document has the expected id
+
+        // ASSERT) The document should not exist anymore on XWiki 2
+        getUtil().switchExecutor(INSTANCE_2);
+        // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
+        assertDoesNotExistWithTimeout(documentReference);
     }
 
     private void replicateREFERENCE() throws Exception
