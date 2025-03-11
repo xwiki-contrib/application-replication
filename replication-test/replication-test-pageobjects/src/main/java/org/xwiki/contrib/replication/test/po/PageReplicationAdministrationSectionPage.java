@@ -62,9 +62,19 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         return getLevel(SCOPE_SPACE, null);
     }
 
+    public DocumentReplicationLevel getSpaceLevel(String instance)
+    {
+        return getLevel(SCOPE_SPACE, instance);
+    }
+
     public DocumentReplicationDirection getSpaceDirection()
     {
         return getDirection(SCOPE_SPACE, null);
+    }
+
+    public DocumentReplicationDirection getSpaceDirection(String instance)
+    {
+        return getDirection(SCOPE_SPACE, instance);
     }
 
     public DocumentReplicationLevel getDocumentLevel()
@@ -72,9 +82,19 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         return getLevel(SCOPE_DOCUMENT, null);
     }
 
+    public DocumentReplicationLevel getDocumentLevel(String instance)
+    {
+        return getLevel(SCOPE_DOCUMENT, instance);
+    }
+
     public DocumentReplicationDirection getDocumentDirection()
     {
         return getDirection(SCOPE_DOCUMENT, null);
+    }
+
+    public DocumentReplicationDirection getDocumentDirection(String instance)
+    {
+        return getDirection(SCOPE_DOCUMENT, instance);
     }
 
     private String getOptionId(String scope, boolean single)
@@ -90,7 +110,7 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         } else {
             levelElement =
                 getDriver().findElement(By.xpath("//fieldset[input[@id=\"" + getOptionId(scope, instance != null)
-                    + "\"]]//dd[input[@value=\"" + instance + "\"]]//select[@class='replication-level-select']"));
+                    + "\"]]//dd[input[@value=\"" + instance + "\"]]//select[contains(@class, 'replication-level-select')]"));
         }
 
         return new Select(levelElement);
@@ -104,7 +124,7 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         } else {
             levelElement =
                 getDriver().findElement(By.xpath("//fieldset[input[@id=\"" + getOptionId(scope, instance != null)
-                    + "\"]]//dd[input[@value=\"" + instance + "\"]]//select[@class='replication-level-direction']"));
+                    + "\"]]//dd[input[@value=\"" + instance + "\"]]//select[contains(@class, 'replication-direction-select')]"));
         }
 
         return new Select(levelElement);

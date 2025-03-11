@@ -87,6 +87,10 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             update(message, documentReference, replicationDocument, xcontext);
         }
 
+        // Owner
+        handlerOwner(message, documentReference);
+
+        // Readonly
         boolean readonly = this.documentMessageReader.isReadonly(message);
         if (!this.replicationUtils.isOwner(documentReference)) {
             // Indicate if the document is readonly (it never is when the current instance is the owner)
@@ -98,9 +102,6 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
 
             // We don't reject the entire message since it's still coming from an instance allowed to send updates
         }
-
-        // Owner
-        handlerOwner(message, documentReference);
 
         // Conflict
         boolean conflict =

@@ -37,6 +37,7 @@ import org.junit.Test;
 import org.xwiki.component.embed.EmbeddableComponentManager;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.component.manager.ComponentManager;
+import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
 import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.internal.instance.ReplicationInstanceStore;
 import org.xwiki.contrib.replication.internal.instance.StandardReplicationInstanceClassInitializer;
@@ -89,6 +90,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0_2;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0_2_ENABLED;
@@ -102,10 +104,10 @@ import static org.xwiki.replication.test.AllITs.INSTANCE_2;
  */
 public class ReplicationIT extends AbstractTest
 {
-    private static final LocalDocumentReference REPLICATION_ALL =
+    private static final LocalDocumentReference REPLICATION_ALL_BOTH =
         new LocalDocumentReference("ReplicationALL", "WebHome");
 
-    private static final LocalDocumentReference REPLICATION_ALLSendOnly =
+    private static final LocalDocumentReference REPLICATION_ALL_SEND_ONLY =
         new LocalDocumentReference("ReplicationALLSendOnly", "WebHome");
 
     private static final LocalDocumentReference REPLICATION_REFERENCE =
@@ -724,37 +726,55 @@ public class ReplicationIT extends AbstractTest
         // Configure ReplicationALL space replication on instance0
         getUtil().switchExecutor(INSTANCE_0);
         PageReplicationAdministrationSectionPage replicationPageAdmin =
-            PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_ALL);
+            PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_ALL_BOTH);
         replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.ALL);
+        replicationPageAdmin.setSpaceDirection(DocumentReplicationDirection.BOTH);
         // Save replication configuration
         replicationPageAdmin.save();
 
         // Make sure the other cluster member have the changes
         if (INSTANCE_0_2_ENABLED) {
             getUtil().switchExecutor(INSTANCE_0_2);
-            replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL.getParent(), "all");
+            replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL_BOTH.getParent(), "all");
             assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
+            assertSame(DocumentReplicationDirection.BOTH, replicationPageAdmin.getSpaceDirection());
         }
 
-        // Make sure the configuration is replicated on instance1
+        // Make sure the configuration is replicated as expected on instance1
         getUtil().switchExecutor(INSTANCE_1);
-        replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL.getParent(), "all");
+        replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL_BOTH.getParent(), "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
+        assertSame(DocumentReplicationDirection.BOTH, replicationPageAdmin.getSpaceDirection());
 
-        // Make sure the configuration is replicated on instance2
+        // Make sure the configuration is replicated as expected on instance2
         getUtil().switchExecutor(INSTANCE_2);
-        replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL.getParent(), "all");
+        replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL_BOTH.getParent(), "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
+        assertSame(DocumentReplicationDirection.BOTH, replicationPageAdmin.getSpaceDirection());
 
         ////////////////////////
         // FULL SendOnly replication
 
         // Configure ReplicationALL space replication on instance0
         getUtil().switchExecutor(INSTANCE_0);
-        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_ALLSendOnly);
+        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_ALL_SEND_ONLY);
         replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.ALL);
+        replicationPageAdmin.setSpaceDirection(DocumentReplicationDirection.SEND_ONLY);
         // Save replication configuration
         replicationPageAdmin.save();
+
+        // Make sure the configuration is replicated as expected on instance1
+        getUtil().switchExecutor(INSTANCE_1);
+        replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL_SEND_ONLY.getParent(), "single");
+        assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel(proxyURI0));
+        assertSame(DocumentReplicationDirection.RECEIVE_ONLY, replicationPageAdmin.getSpaceDirection(proxyURI0));
+        assertNull(replicationPageAdmin.getSpaceLevel(proxyURI2));
+
+        // Make sure the configuration is replicated as expected on instance2
+        getUtil().switchExecutor(INSTANCE_2);
+        replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL_SEND_ONLY.getParent(), "all");
+        assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
+        assertSame(DocumentReplicationDirection.RECEIVE_ONLY, replicationPageAdmin.getSpaceDirection());
 
         ////////////////////////
         // REFERENCE replication
@@ -770,7 +790,7 @@ public class ReplicationIT extends AbstractTest
     private void replicateFULL() throws Exception
     {
         Page page = new Page();
-        page.setSpace(REPLICATION_ALL.getParent().getName());
+        page.setSpace(REPLICATION_ALL_BOTH.getParent().getName());
         page.setName("ReplicatedPage");
 
         LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
@@ -1016,7 +1036,7 @@ public class ReplicationIT extends AbstractTest
     private void replicateFULLSendOnly() throws Exception
     {
         Page page = new Page();
-        page.setSpace(REPLICATION_ALLSendOnly.getParent().getName());
+        page.setSpace(REPLICATION_ALL_SEND_ONLY.getParent().getName());
         page.setName("ReplicatedPage");
 
         LocalDocumentReference documentReference = new LocalDocumentReference(page.getSpace(), page.getName());
@@ -1041,7 +1061,7 @@ public class ReplicationIT extends AbstractTest
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
         replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
         assertEquals(INSTANCE_NAME_0 + " (" + proxyURI0 + ")", replicationExtraPane.getOwner());
-        assertFalse(replicationExtraPane.isReadonly());
+        assertTrue(replicationExtraPane.isReadonly());
 
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
         getUtil().switchExecutor(INSTANCE_2);
@@ -1050,7 +1070,7 @@ public class ReplicationIT extends AbstractTest
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
         replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
         assertEquals(INSTANCE_NAME_0 + " (" + proxyURI0 + ")", replicationExtraPane.getOwner());
-        assertFalse(replicationExtraPane.isReadonly());
+        assertTrue(replicationExtraPane.isReadonly());
 
         ////////////////////////////////////
         // Minor edit on XWiki 0

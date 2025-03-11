@@ -117,7 +117,7 @@ public class ReplicationDocumentStore
 
         long id = toDocumentId(document);
 
-        executeWrite(session -> saveHibernateReplicationDocument(id, owner, session), document.getWikiReference());
+        executeWrite(session -> saveOwner(id, owner, session), document.getWikiReference());
 
         this.observation.notify(new DocumentOwnerUpdatedEvent(document, owner), null);
     }
@@ -131,9 +131,23 @@ public class ReplicationDocumentStore
     {
         long id = toDocumentId(document);
 
-        executeWrite(session -> update(id, PROP_CONFLICT, conflict, session), document.getWikiReference());
+        executeWrite(session -> saveConflict(id, conflict, session), document.getWikiReference());
 
         this.observation.notify(new DocumentConflictUpdatedEvent(document, conflict), null);
+    }
+
+    private Void saveConflict(long docId, boolean conflict, Session session) throws XWikiException
+    {
+        XWikiContext xcontext = this.xcontextProvider.get();
+
+        if (get(docId, PROP_DOCID, Long.class, xcontext) != null) {
+            update(docId, PROP_CONFLICT, conflict, session);
+        } else {
+            throw new XWikiException(
+                "Cannot update the conflict flag since not entry exist yet for docId [" + docId + "]", null);
+        }
+
+        return null;
     }
 
     /**
@@ -146,12 +160,26 @@ public class ReplicationDocumentStore
     {
         long id = toDocumentId(document);
 
-        executeWrite(session -> update(id, PROP_READONLY, readonly, session), document.getWikiReference());
+        executeWrite(session -> saveReadonly(id, readonly, session), document.getWikiReference());
 
         this.observation.notify(new DocumentReadonlyUpdatedEvent(document, readonly), null);
     }
 
-    private Void saveHibernateReplicationDocument(long docId, String owner, Session session) throws XWikiException
+    private Void saveReadonly(long docId, boolean readonly, Session session) throws XWikiException
+    {
+        XWikiContext xcontext = this.xcontextProvider.get();
+
+        if (get(docId, PROP_DOCID, Long.class, xcontext) != null) {
+            update(docId, PROP_READONLY, readonly, session);
+        } else {
+            throw new XWikiException(
+                "Cannot update the readonly flag since not entry exist yet for docId [" + docId + "]", null);
+        }
+
+        return null;
+    }
+
+    private Void saveOwner(long docId, String owner, Session session) throws XWikiException
     {
         XWikiContext xcontext = this.xcontextProvider.get();
 
