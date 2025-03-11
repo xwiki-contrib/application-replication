@@ -223,17 +223,11 @@ public abstract class AbstractDocumentReplicationController implements DocumentR
 
             Map<String, Collection<String>> extraMetadata = getMetadata(document);
 
-            if (messageBuilder.getMinimumLevel() == DocumentReplicationLevel.REFERENCE) {
-                // If the minimum requirement is REFERENCE then, we don't really care about read only
-                // The message to send to instances allowed to receive full document
-                send(messageBuilder, DocumentReplicationLevel.ALL, null, extraMetadata, configurations);
-            } else {
-                // The message to send to instances allowed to receive full document and send it back
-                send(messageBuilder, DocumentReplicationLevel.ALL, true, extraMetadata, configurations);
+            // The message to send to instances allowed to receive full document and send it back
+            send(messageBuilder, DocumentReplicationLevel.ALL, true, extraMetadata, configurations);
 
-                // The message to send to instances allowed to receive full document but not to send it back
-                send(messageBuilder, DocumentReplicationLevel.ALL, false, extraMetadata, configurations);
-            }
+            // The message to send to instances allowed to receive full document but not to send it back
+            send(messageBuilder, DocumentReplicationLevel.ALL, false, extraMetadata, configurations);
 
             // The message to send to instances allowed to receive only the reference
             send(messageBuilder, DocumentReplicationLevel.REFERENCE, null, extraMetadata, configurations);
