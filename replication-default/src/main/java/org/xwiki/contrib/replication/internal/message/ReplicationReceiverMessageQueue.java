@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -99,12 +100,15 @@ public class ReplicationReceiverMessageQueue extends AbstractReplicationMessageQ
         // Notify the other instances that we are ready to receive messages
         try {
             for (ReplicationInstance instance : this.instances.getRegisteredInstances()) {
-                try {
-                    this.client.ping(instance);
-                } catch (Exception e) {
-                    this.logger.warn("Failed to send a ping to instance [{}]: {}", instance.getURI(),
-                        ExceptionUtils.getRootCauseMessage(e));
-                }
+                // Run the ping asynchronously to avoid blocking the initialization
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        this.client.ping(instance);
+                    } catch (Exception e) {
+                        this.logger.warn("Failed to send a ping to instance [{}]: {}", instance.getURI(),
+                            ExceptionUtils.getRootCauseMessage(e));
+                    }
+                });
             }
         } catch (ReplicationException e) {
             throw new InitializationException("Failed to get registered istances", e);
