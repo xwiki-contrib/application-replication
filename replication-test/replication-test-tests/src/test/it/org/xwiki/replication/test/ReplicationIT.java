@@ -90,7 +90,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.Assert.assertNull;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0_2;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0_2_ENABLED;
