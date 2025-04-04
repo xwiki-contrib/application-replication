@@ -232,6 +232,9 @@ public class ReplicationMessageLogStore
             this.logger.error("Failed to execute event initializers for message with id [{}]", message.getId(), e);
         }
 
+        // Debug log of the message
+        this.logger.debug("Message (){}: {}", event.getCustom().get(ReplicationMessageEventQuery.KEY_STATUS), message);
+
         // Save the event asynchronously
         return this.store.saveEvent(event);
     }
