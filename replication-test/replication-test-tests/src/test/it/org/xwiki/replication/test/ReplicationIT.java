@@ -87,10 +87,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNull;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0_2;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0_2_ENABLED;
@@ -753,11 +753,22 @@ public class ReplicationIT extends AbstractTest
         assertSame(DocumentReplicationDirection.BOTH, replicationPageAdmin.getSpaceDirection());
 
         ////////////////////////
-        // FULL SendOnly replication
+        // REFERENCE replication
 
-        // Configure ReplicationALL space replication on instance0
+        // Configure ReplicationREFERENCE space replication on instance0
         getUtil().switchExecutor(INSTANCE_0);
-        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_ALL_SEND_ONLY);
+        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_REFERENCE);
+        replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.REFERENCE);
+        // Save replication configuration
+        replicationPageAdmin.save();
+    }
+
+    private void startReplicationFullSendOnly() throws Exception
+    {
+        // Configure space replication on instance0
+        getUtil().switchExecutor(INSTANCE_0);
+        PageReplicationAdministrationSectionPage replicationPageAdmin =
+            PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_ALL_SEND_ONLY);
         replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.ALL);
         replicationPageAdmin.setSpaceDirection(DocumentReplicationDirection.SEND_ONLY);
         // Save replication configuration
@@ -775,16 +786,25 @@ public class ReplicationIT extends AbstractTest
         replicationPageAdmin = assertReplicationModeWithTimeout(REPLICATION_ALL_SEND_ONLY.getParent(), "all");
         assertSame(DocumentReplicationLevel.ALL, replicationPageAdmin.getSpaceLevel());
         assertSame(DocumentReplicationDirection.RECEIVE_ONLY, replicationPageAdmin.getSpaceDirection());
+    }
 
-        ////////////////////////
-        // REFERENCE replication
-
-        // Configure ReplicationREFERENCE space replication on instance0
+    private void stopReplication(LocalDocumentReference reference) throws Exception
+    {
+        // Configure space replication on instance0
         getUtil().switchExecutor(INSTANCE_0);
-        replicationPageAdmin = PageReplicationAdministrationSectionPage.gotoPage(REPLICATION_REFERENCE);
-        replicationPageAdmin.setSpaceLevel(DocumentReplicationLevel.REFERENCE);
+        PageReplicationAdministrationSectionPage replicationPageAdmin =
+            PageReplicationAdministrationSectionPage.gotoPage(reference);
+        replicationPageAdmin.setSpaceDefaultMode();
         // Save replication configuration
         replicationPageAdmin.save();
+
+        // Make sure the configuration is replicated as expected on instance1
+        getUtil().switchExecutor(INSTANCE_1);
+        assertReplicationModeWithTimeout(reference.getParent(), "default");
+
+        // Make sure the configuration is replicated as expected on instance2
+        getUtil().switchExecutor(INSTANCE_2);
+        assertReplicationModeWithTimeout(reference.getParent(), "default");
     }
 
     private void replicateFULL() throws Exception
@@ -1035,6 +1055,16 @@ public class ReplicationIT extends AbstractTest
 
     private void replicateFULLSendOnly() throws Exception
     {
+        ////////////////////////////////////
+        // Replication setup
+        ////////////////////////////////////
+
+        startReplicationFullSendOnly();
+
+        ////////////////////////////////////
+        // Replication
+        ////////////////////////////////////
+
         Page page = new Page();
         page.setSpace(REPLICATION_ALL_SEND_ONLY.getParent().getName());
         page.setName("ReplicatedPage");
@@ -1109,6 +1139,53 @@ public class ReplicationIT extends AbstractTest
         assertDoesNotExistWithTimeout(documentReference);
 
         // TODO: ASSERT) The deleted document has the expected id
+
+        // ASSERT) The document should not exist anymore on XWiki 2
+        getUtil().switchExecutor(INSTANCE_2);
+        // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
+        assertDoesNotExistWithTimeout(documentReference);
+
+        ////////////////////////////////////
+        // Page creation on XWiki 0
+        ////////////////////////////////////
+
+        // Create a page on XWiki 0
+        getUtil().switchExecutor(INSTANCE_0);
+        page.setContent("content");
+        getUtil().rest().save(page);
+        assertEquals("content", getUtil().rest().<Page>get(documentReference).getContent());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals("Current instance", replicationExtraPane.getOwner());
+        assertFalse(replicationExtraPane.isReadonly());
+
+        // ASSERT) The content in XWiki 1 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_1);
+        assertEqualsContentWithTimeout(documentReference, "content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + proxyURI0 + ")", replicationExtraPane.getOwner());
+        assertTrue(replicationExtraPane.isReadonly());
+
+        // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
+        getUtil().switchExecutor(INSTANCE_2);
+        assertEqualsContentWithTimeout(documentReference, "content");
+        page = getUtil().rest().<Page>get(documentReference);
+        assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
+        replicationExtraPane = gotoPage(documentReference).openReplicationDocExtraPane();
+        assertEquals(INSTANCE_NAME_0 + " (" + proxyURI0 + ")", replicationExtraPane.getOwner());
+        assertTrue(replicationExtraPane.isReadonly());
+
+        ////////////////////////////////////
+        // Stop replication on XWiki 0
+        ////////////////////////////////////
+
+        stopReplication(REPLICATION_ALL_SEND_ONLY);
+
+        // ASSERT) The document should not exist anymore on XWiki 1
+        getUtil().switchExecutor(INSTANCE_1);
+        // Since it can take time for the replication to propagate the change, we need to wait and set up a timeout.
+        assertDoesNotExistWithTimeout(documentReference);
 
         // ASSERT) The document should not exist anymore on XWiki 2
         getUtil().switchExecutor(INSTANCE_2);

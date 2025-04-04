@@ -144,6 +144,11 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         return StringUtils.isEmpty(value) ? null : DocumentReplicationDirection.valueOf(value);
     }
 
+    public String getSpaceMode()
+    {
+        return getMode(SCOPE_SPACE);
+    }
+
     public String getMode(String scope)
     {
         WebElement element = getDriver().findElement(By.id(scope + "_replication_instance_type_default"));
@@ -162,6 +167,21 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         }
 
         return null;
+    }
+
+    public void setSpaceDefaultMode()
+    {
+        setDefaultMode(SCOPE_SPACE);
+    }
+
+    public void setDefaultMode(String scope)
+    {
+        getDriver().findElement(By.id(scope + "_replication_instance_type_default")).click();
+    }
+
+    private void clickMode(String scope, String instance)
+    {
+        getDriver().findElement(By.id(getOptionId(scope, instance != null))).click();
     }
 
     public void setSpaceLevel(DocumentReplicationLevel level)
@@ -204,15 +224,10 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         setDirection(SCOPE_DOCUMENT, instance, direction);
     }
 
-    private void clickOption(String scope, String instance)
-    {
-        getDriver().findElement(By.id(getOptionId(scope, instance != null))).click();
-    }
-
     private void setLevel(String scope, String instance, DocumentReplicationLevel level)
     {
         // Make sure the right option is selected
-        clickOption(scope, instance);
+        clickMode(scope, instance);
 
         // Set the level
         Select levelSelect = getLevelSelect(scope, instance);
@@ -222,7 +237,7 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
     private void setDirection(String scope, String instance, DocumentReplicationDirection direction)
     {
         // Make sure the right option is selected
-        clickOption(scope, instance);
+        clickMode(scope, instance);
 
         // Set the level
         Select select = getDirectionSelect(scope, instance);
