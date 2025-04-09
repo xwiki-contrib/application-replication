@@ -19,6 +19,7 @@
  */
 package org.xwiki.contrib.replication;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -45,6 +46,18 @@ public class ReplicationReceiverMessageInputSource extends AbstractInputStreamIn
     @Override
     protected InputStream openStream() throws IOException
     {
-        return this.message.open();
+        // Workaround for https://jira.xwiki.org/browse/XCOMMONS-3310
+        // TODO: remove when moving to XWiki 16.10.6+ or 17.3.0+
+        return new FilterInputStream(this.message.open())
+        {
+            @Override
+            public void close() throws IOException
+            {
+                super.close();
+
+                // Since the stream was closed, we need the InputStreamInputSourceto know about it
+                inputStream = null;
+            }
+        };
     }
 }
