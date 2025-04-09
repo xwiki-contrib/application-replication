@@ -36,15 +36,46 @@ import org.xwiki.test.ui.po.Select;
  */
 public class PageReplicationAdministrationSectionPage extends AdministrationSectionPage
 {
-    private static final String SCOPE_SPACE = "space";
+    /**
+     * @since 2.2.5
+     */
+    public static final String MODE_DEFAULT = "default";
 
-    private static final String SCOPE_DOCUMENT = "document";
+    /**
+     * @since 2.2.5
+     */
+    public static final String MODE_SINGLE = "single";
+
+    /**
+     * @since 2.2.5
+     */
+    public static final String MODE_ALL = "all";
+
+    /**
+     * @since 2.2.5
+     */
+    public static final String SCOPE_SPACE = "space";
+
+    /**
+     * @since 2.2.5
+     */
+    public static final String SCOPE_DOCUMENT = "document";
 
     public PageReplicationAdministrationSectionPage()
     {
         super("Replication");
 
         waitUntilActionButtonIsLoaded();
+    }
+
+    /**
+     * @param instance the target instance or null for all
+     * @return the mode to use for the given instance
+     * @since 2.2.5
+     */
+    public static String toMode(String instance)
+    {
+        return instance != null ? MODE_SINGLE : MODE_ALL;
     }
 
     public static PageReplicationAdministrationSectionPage gotoPage(EntityReference reference)
@@ -97,9 +128,9 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         return getDirection(SCOPE_DOCUMENT, instance);
     }
 
-    private String getOptionId(String scope, boolean single)
+    private String getOptionId(String scope, String mode)
     {
-        return scope + "_replication_instance_type_" + (single ? "single" : "all");
+        return scope + "_replication_instance_type_" + mode;
     }
 
     private Select getLevelSelect(String scope, String instance)
@@ -108,9 +139,9 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         if (instance == null) {
             levelElement = getDriver().findElement(By.id(scope + "_replication_instance_level"));
         } else {
-            levelElement =
-                getDriver().findElement(By.xpath("//fieldset[input[@id=\"" + getOptionId(scope, instance != null)
-                    + "\"]]//dd[input[@value=\"" + instance + "\"]]//select[contains(@class, 'replication-level-select')]"));
+            levelElement = getDriver().findElement(
+                By.xpath("//fieldset[input[@id=\"" + getOptionId(scope, toMode(instance)) + "\"]]//dd[input[@value=\""
+                    + instance + "\"]]//select[contains(@class, 'replication-level-select')]"));
         }
 
         return new Select(levelElement);
@@ -122,9 +153,9 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
         if (instance == null) {
             levelElement = getDriver().findElement(By.id(scope + "_replication_instance_direction"));
         } else {
-            levelElement =
-                getDriver().findElement(By.xpath("//fieldset[input[@id=\"" + getOptionId(scope, instance != null)
-                    + "\"]]//dd[input[@value=\"" + instance + "\"]]//select[contains(@class, 'replication-direction-select')]"));
+            levelElement = getDriver().findElement(
+                By.xpath("//fieldset[input[@id=\"" + getOptionId(scope, toMode(instance)) + "\"]]//dd[input[@value=\""
+                    + instance + "\"]]//select[contains(@class, 'replication-direction-select')]"));
         }
 
         return new Select(levelElement);
@@ -153,17 +184,17 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
     {
         WebElement element = getDriver().findElement(By.id(scope + "_replication_instance_type_default"));
         if (element.isSelected()) {
-            return "default";
+            return MODE_DEFAULT;
         }
 
-        element = getDriver().findElement(By.id(getOptionId(scope, false)));
+        element = getDriver().findElement(By.id(getOptionId(scope, MODE_ALL)));
         if (element.isSelected()) {
-            return "all";
+            return MODE_ALL;
         }
 
-        element = getDriver().findElement(By.id(getOptionId(scope, true)));
+        element = getDriver().findElement(By.id(getOptionId(scope, MODE_SINGLE)));
         if (element.isSelected()) {
-            return "single";
+            return MODE_SINGLE;
         }
 
         return null;
@@ -181,7 +212,7 @@ public class PageReplicationAdministrationSectionPage extends AdministrationSect
 
     private void clickMode(String scope, String instance)
     {
-        getDriver().findElement(By.id(getOptionId(scope, instance != null))).click();
+        getDriver().findElement(By.id(getOptionId(scope, toMode(instance)))).click();
     }
 
     public void setSpaceLevel(DocumentReplicationLevel level)

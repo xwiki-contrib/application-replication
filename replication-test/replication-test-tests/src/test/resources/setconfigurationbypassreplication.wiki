@@ -1,0 +1,38 @@
+{{groovy wiki=false}}
+  import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+  import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+  import org.xwiki.contrib.replication.entity.DocumentReplicationDirection;
+  import org.xwiki.model.reference.EntityReferenceResolver;
+
+  referenceString = request.reference
+  instanceURI=request.instanceURI
+  instanceLevel=request.instanceLevel
+  instanceDirection=request.instanceDirection
+
+  boolean modified = false;
+
+  if (referenceString && instanceURI) {
+    reference = services.component.getInstance(EntityReferenceResolver.TYPE_STRING, "current").resolve(referenceString, null)
+    replicationCache = services.component.getInstance(org.xwiki.contrib.replication.entity.internal.EntityReplicationCache.class)
+    store = services.component.getInstance(org.xwiki.contrib.replication.entity.internal.EntityReplicationStore.class)
+    configurations = store.getHibernateEntityReplication(reference)
+    newConfigurations = []
+    for (DocumentReplicationControllerInstance configuration : configurations) {
+      if (configuration.instance.getURI().equals(instanceURI)) {
+        level = instanceLevel ?  DocumentReplicationLevel.valueOf(instanceLevel) : configuration.level
+        direction = instanceDirection ? DocumentReplicationDirection.valueOf(instanceDirection) : configuration.direction
+        configuration = new DocumentReplicationControllerInstance(configuration.instance, level, direction)
+        modified = true
+      }
+      newConfigurations.add(configuration)
+    }
+    services.logging.getLogger('org.xwiki.contrib.replication.test').info('Updated replication configuration for reference [{}]: {}', referenceString, newConfigurations)
+    store.storeHibernateEntityReplication(reference, newConfigurations)
+  }
+
+  if (modified) {
+    println 'MODIFIED'
+  } else {
+    println 'NONE'
+  }
+{{/groovy}}

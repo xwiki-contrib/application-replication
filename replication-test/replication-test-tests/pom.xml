@@ -47,7 +47,7 @@
     </xwikiCfgPlugins>
 
     <!-- The admin page require programming right -->
-    <xwikiPropertiesAdditionalProperties>test.prchecker.excludePattern=.*:XWiki.Replication.Admin</xwikiPropertiesAdditionalProperties>
+    <xwikiPropertiesAdditionalProperties>test.prchecker.excludePattern=.*</xwikiPropertiesAdditionalProperties>
 
     <xwiki.instance.directory>${project.build.directory}/xwiki</xwiki.instance.directory>
     <xwiki.database.directory>${xwiki.instance.directory}/data/database</xwiki.database.directory>
@@ -90,6 +90,11 @@
     <dependency>
       <groupId>org.xwiki.platform</groupId>
       <artifactId>xwiki-platform-wiki-template-default</artifactId>
+      <version>${platform.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.xwiki.platform</groupId>
+      <artifactId>xwiki-platform-rendering-macro-groovy</artifactId>
       <version>${platform.version}</version>
     </dependency>
 

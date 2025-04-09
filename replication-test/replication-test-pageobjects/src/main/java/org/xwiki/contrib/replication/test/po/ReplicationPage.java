@@ -20,6 +20,7 @@
 package org.xwiki.contrib.replication.test.po;
 
 import org.openqa.selenium.By;
+import org.xwiki.model.reference.EntityReference;
 import org.xwiki.test.ui.po.ViewPage;
 
 /**
@@ -29,6 +30,16 @@ import org.xwiki.test.ui.po.ViewPage;
  */
 public class ReplicationPage extends ViewPage
 {
+    /**
+     * @since 2.2.5
+     */
+    public static ReplicationPage gotoPage(EntityReference reference)
+    {
+        getUtil().gotoPage(reference);
+
+        return new ReplicationPage();
+    }
+
     public ReplicationDocExtraPane openReplicationDocExtraPane()
     {
         getDriver().findElement(By.id("replication.docextralink")).click();
