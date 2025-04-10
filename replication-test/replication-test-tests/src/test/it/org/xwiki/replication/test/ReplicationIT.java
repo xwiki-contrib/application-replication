@@ -728,7 +728,7 @@ public class ReplicationIT extends AbstractTest
         getUtil().setCurrentWiki(SUB_WIKI);
 
         // Execute tests
-        //all();
+        all();
     }
 
     private void all() throws Exception
