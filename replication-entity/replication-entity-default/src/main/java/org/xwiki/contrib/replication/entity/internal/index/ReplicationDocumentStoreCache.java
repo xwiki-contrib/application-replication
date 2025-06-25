@@ -31,6 +31,7 @@ import org.xwiki.component.manager.ComponentLifecycleException;
 import org.xwiki.component.phase.Disposable;
 import org.xwiki.component.phase.Initializable;
 import org.xwiki.component.phase.InitializationException;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 
 /**
  * @version $Id$
@@ -57,6 +58,8 @@ public class ReplicationDocumentStoreCache implements Initializable, Disposable
         private Boolean conflict;
 
         private Boolean readonly;
+
+        private DocumentReplicationLevel level;
 
         /**
          * @return the owner
@@ -106,6 +109,24 @@ public class ReplicationDocumentStoreCache implements Initializable, Disposable
         public void setReadonly(boolean readonly)
         {
             this.readonly = readonly;
+        }
+
+        /**
+         * @return the replication level
+         * @since 2.3.0
+         */
+        public DocumentReplicationLevel getLevel()
+        {
+            return this.level;
+        }
+
+        /**
+         * @param level the replication level
+         * @since 2.3.0
+         */
+        public void setLevel(DocumentReplicationLevel level)
+        {
+            this.level = level;
         }
     }
 

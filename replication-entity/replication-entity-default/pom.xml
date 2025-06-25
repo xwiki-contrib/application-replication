@@ -69,6 +69,7 @@
         <configuration>
           <excludes>
               org/xwiki/contrib/replication/entity/internal/DefaultEntityReplicationBuilders.java,
+              org/xwiki/contrib/replication/entity/internal/index/ReplicationDocumentStore.java,
               org/xwiki/contrib/replication/entity/internal/update/DocumentUpdateConflictResolver.java
           </excludes>
         </configuration>

@@ -30,12 +30,9 @@
       <column name="XWD_ID" not-null="true" />
       <generator class="assigned" />
     </id>
-    <property name="owner" column="XWRD_OWNER" type="string" length="768" not-null="true" />
-    <property name="conflict" type="boolean">
-      <column name="XWRD_CONFLICT" />
-    </property>
-    <property name="readonly" type="boolean">
-      <column name="XWRD_READONLY" />
-    </property>
+    <property name="owner" column="XWRD_OWNER" type="string" length="768" not-null="true" index="DOCUMENT_OWNER"/>
+    <property name="conflict" column="XWRD_CONFLICT" type="boolean" index="DOCUMENT_CONFLICT"/>
+    <property name="readonly" column="XWRD_READONLY" type="boolean" index="DOCUMENT_READONLY"/>
+    <property name="level" column="XWRD_LEVEL" type="string" length="255" index="DOCUMENT_LEVEL" />
   </class>
 </hibernate-mapping>

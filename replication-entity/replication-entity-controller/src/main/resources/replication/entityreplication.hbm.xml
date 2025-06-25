@@ -34,7 +34,7 @@
       </key-property>
     </composite-id>
 
-    <property name="level" column="XWR_LEVEL" type="string" length="255" />
-    <property name="direction" column="XWR_DIRECTION" type="string" length="255" />
+    <property name="level" column="XWR_LEVEL" type="string" length="255" index="CONFIGURATION_LEVEL"/>
+    <property name="direction" column="XWR_DIRECTION" type="string" length="255" index="CONFIGURATION_DIRECTION"/>
   </class>
 </hibernate-mapping>

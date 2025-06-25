@@ -47,9 +47,6 @@ import com.xpn.xwiki.doc.XWikiDocument;
 @Named(EntityReplicationMessage.TYPE_DOCUMENT_REFERENCE)
 public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplicationReceiver
 {
-    private static final String REFERENCE_CONTENT =
-        "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}";
-
     @Override
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
@@ -62,7 +59,8 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
             } catch (XWikiException e) {
                 throw new ReplicationException("Failed to access existing document", e);
             }
-            if (!existingDocument.isNew() && !REFERENCE_CONTENT.equals(existingDocument.getContent())) {
+            if (!existingDocument.isNew()
+                && this.documentStore.getLevel(documentReference) != DocumentReplicationLevel.REFERENCE) {
                 unreplicate(existingDocument, xcontext);
             }
         }
@@ -81,9 +79,6 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
         document.setHidden(true);
         // Set a message explaining what this document is
         document.setSyntax(Syntax.XWIKI_2_1);
-        document.setContent(
-            // TODO: go through an xobject and a sheet instead to keep an empty document content (less impacting)
-            REFERENCE_CONTENT);
 
         // Ask the controller for modification before save
         this.controller.receiveREFERENCEDocument(document, message);
@@ -95,8 +90,8 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
             throw new ReplicationException("Failed to save the document", e);
         }
 
-        // Owner
-        handlerOwner(message, documentReference);
+        // Owner and level
+        handlerOwnerAndLevel(message, documentReference, DocumentReplicationLevel.REFERENCE);
 
         // REFERENCE documents are readonly by definition
         this.entityReplication.setReadonly(documentReference, true);

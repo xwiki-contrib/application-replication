@@ -34,6 +34,7 @@ import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.ReplicationSenderMessage;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.EntityReplicationBuilders;
 import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
@@ -87,8 +88,8 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             update(message, documentReference, replicationDocument, xcontext);
         }
 
-        // Owner
-        handlerOwner(message, documentReference);
+        // Owner and level
+        handlerOwnerAndLevel(message, documentReference, DocumentReplicationLevel.ALL);
 
         // Readonly
         boolean readonly = this.documentMessageReader.isReadonly(message);

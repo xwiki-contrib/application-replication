@@ -91,7 +91,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0;
 import static org.xwiki.replication.test.AllITs.INSTANCE_0_2;
@@ -378,14 +377,13 @@ public class ReplicationIT extends AbstractTest
     private static void assertDocumentREFERENCEWithTimeout(LocalDocumentReference documentReference, Integer owner)
         throws Exception
     {
-        assertEqualsContentWithTimeout(documentReference,
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+        assertEqualsContentWithTimeout(documentReference, "");
         Page page = getUtil().rest().<Page>get(documentReference);
         assertEquals("Wrong version in the replicated document", "1.1", page.getVersion());
         ReplicationDocExtraPane replicationExtraPane =
             ReplicationPage.gotoPage(documentReference).openReplicationDocExtraPane();
         assertEquals(getOwnerDisplayName(owner), replicationExtraPane.getOwner());
-        assertTrue(replicationExtraPane.isReadonly());
+        assertSame(DocumentReplicationLevel.REFERENCE, replicationExtraPane.getLevel());
     }
 
     private String getAttachmentContent(EntityReference attachmentReference) throws Exception
@@ -1544,13 +1542,11 @@ public class ReplicationIT extends AbstractTest
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
         getUtil().switchExecutor(INSTANCE_0);
-        assertEqualsContentWithTimeout(page1_1,
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+        assertDocumentREFERENCEWithTimeout(page1_1, 1);
         assertDoesNotExistWithTimeout(page1_1_1);
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
         getUtil().switchExecutor(INSTANCE_2);
-        assertEqualsContentWithTimeout(page1_1,
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+        assertDocumentREFERENCEWithTimeout(page1_1, 1);
         assertDoesNotExistWithTimeout(page1_1_1);
 
         ////////////////////////////////////
@@ -1601,22 +1597,16 @@ public class ReplicationIT extends AbstractTest
 
         // ASSERT) The content in XWiki 0 should be the one set in XWiki 1
         getUtil().switchExecutor(INSTANCE_0);
-        assertEqualsContentWithTimeout(page1,
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+        assertDocumentREFERENCEWithTimeout(page1, 1);
         assertDoesNotExistWithTimeout(page1_1);
-        assertEqualsContentWithTimeout(page1_1_1,
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
-        assertEqualsContentWithTimeout(page1_2,
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+        assertDocumentREFERENCEWithTimeout(page1_1_1, 1);
+        assertDocumentREFERENCEWithTimeout(page1_2, 1);
         // ASSERT) The content in XWiki 2 should be the one set in XWiki 0
         getUtil().switchExecutor(INSTANCE_2);
-        assertEqualsContentWithTimeout(page1,
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+        assertDocumentREFERENCEWithTimeout(page1, 1);
         assertDoesNotExistWithTimeout(page1_1);
-        assertEqualsContentWithTimeout(page1_1_1,
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
-        assertEqualsContentWithTimeout(page1_2,
-            "{{warning}}{{translation key=\"replication.entity.level.REFERENCE.placeholder\"/}}{{/warning}}");
+        assertDocumentREFERENCEWithTimeout(page1_1_1, 1);
+        assertDocumentREFERENCEWithTimeout(page1_2, 1);
 
         ////////////////////////////////////
         // Stop replication of space "page1"

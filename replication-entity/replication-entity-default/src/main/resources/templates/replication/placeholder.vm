@@ -17,9 +17,8 @@
 ## Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 ## 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 ## ---------------------------------------------------------------------------
-## Placeholder document already get a dedicate warning so there is no point showing both
-#if ($services.replication.document.isReadonly($tdoc.documentReferenceWithLocale) && $services.replication.document.getLevel($tdoc.documentReferenceWithLocale).name() != 'REFERENCE')
-  <div class="box warningmessage" id="replication_readonly">
-    $escapetool.xml($services.localization.render("replication.entity.readonly.message"))
+#if ($services.replication.document.getLevel($tdoc.documentReferenceWithLocale).name() == 'REFERENCE')
+  <div class="box warningmessage" id="replication_placeholder">
+    $escapetool.xml($services.localization.render('replication.entity.level.REFERENCE.placeholder'))
   </div>
 #end

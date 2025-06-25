@@ -36,6 +36,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerConfiguration;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.EntityReplication;
 import org.xwiki.contrib.replication.entity.internal.controller.DocumentReplicationControllerConfigurationStore;
 import org.xwiki.model.reference.DocumentReference;
@@ -184,7 +185,7 @@ public class DocumentReplicationScriptService implements ScriptService
     /**
      * @param documentReference the reference of the document
      * @return true if the document is readonly
-     * @throws ReplicationException when failing to get the owner
+     * @throws ReplicationException when failing to get the readonly status
      * @since 2.0.0
      */
     public boolean isReadonly(DocumentReference documentReference) throws ReplicationException
@@ -194,8 +195,19 @@ public class DocumentReplicationScriptService implements ScriptService
 
     /**
      * @param documentReference the reference of the document
+     * @return true if the document is placeholder
+     * @throws ReplicationException when failing to get the level
+     * @since 2.3.0
+     */
+    public DocumentReplicationLevel getLevel(DocumentReference documentReference) throws ReplicationException
+    {
+        return this.entityReplication.getLevel(documentReference);
+    }
+
+    /**
+     * @param documentReference the reference of the document
      * @return true if the document has a replication conflict
-     * @throws ReplicationException when failing to get the owner
+     * @throws ReplicationException when failing to get the conflict status
      */
     public boolean getConflict(DocumentReference documentReference) throws ReplicationException
     {

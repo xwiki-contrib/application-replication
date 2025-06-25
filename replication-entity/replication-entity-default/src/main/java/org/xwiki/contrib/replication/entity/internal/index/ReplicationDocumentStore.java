@@ -33,6 +33,8 @@ import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+import org.xwiki.contrib.replication.entity.internal.EntityReplicationUtils;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStoreCache.ReplicationDocumentStoreCacheEntry;
 import org.xwiki.model.reference.DocumentReference;
 import org.xwiki.model.reference.EntityReferenceSerializer;
@@ -41,7 +43,6 @@ import org.xwiki.observation.ObservationManager;
 
 import com.xpn.xwiki.XWikiContext;
 import com.xpn.xwiki.XWikiException;
-import com.xpn.xwiki.store.XWikiHibernateBaseStore;
 import com.xpn.xwiki.store.XWikiHibernateBaseStore.HibernateCallback;
 import com.xpn.xwiki.store.XWikiHibernateStore;
 import com.xpn.xwiki.store.XWikiStoreInterface;
@@ -62,6 +63,8 @@ public class ReplicationDocumentStore
 
     private static final String PROP_READONLY = "readonly";
 
+    private static final String PROP_LEVEL = "level";
+
     private static final String PROP_NATIVE_DOCID = "XWD_ID";
 
     private static final String PROP_NATIVE_OWNER = "XWRD_OWNER";
@@ -70,8 +73,10 @@ public class ReplicationDocumentStore
 
     private static final String PROP_NATIVE_READONLY = "XWRD_READONLY";
 
+    private static final String PROP_NATIVE_LEVEL = "XWRD_LEVEL";
+
     @Inject
-    @Named(XWikiHibernateBaseStore.HINT)
+    @Named(XWikiHibernateStore.HINT)
     private XWikiStoreInterface hibernateStore;
 
     @Inject
@@ -108,18 +113,51 @@ public class ReplicationDocumentStore
     /**
      * @param document the identifier of the document
      * @param owner the owner instance of the document
+     * @param level how much of the document is replicated
      * @throws ReplicationException when failing to update the owner
      */
-    public void setOwner(DocumentReference document, String owner) throws ReplicationException
+    public void setOwnerAndLevel(DocumentReference document, String owner, DocumentReplicationLevel level)
+        throws ReplicationException
     {
         this.logger.debug("Setting owner instance [{}] for document [{}]", owner, document,
             new Exception("#setOwner caller"));
 
         long id = toDocumentId(document);
 
-        executeWrite(session -> saveOwner(id, owner, session), document.getWikiReference());
+        executeWrite(session -> saveOwner(id, owner, level, session), document.getWikiReference());
 
         this.observation.notify(new DocumentOwnerUpdatedEvent(document, owner), null);
+    }
+
+    /**
+     * @param document the identifier of the document
+     * @param level how much of the document is replicated
+     * @throws ReplicationException when failing to update the owner
+     */
+    public void setLevel(DocumentReference document, DocumentReplicationLevel level) throws ReplicationException
+    {
+        this.logger.debug("Setting replication level [{}] for document [{}]", level, document,
+            new Exception("#setLevel caller"));
+
+        long id = toDocumentId(document);
+
+        executeWrite(session -> saveLevel(id, level, session), document.getWikiReference());
+
+        this.observation.notify(new DocumentLevelUpdatedEvent(document, level), null);
+    }
+
+    private Void saveLevel(long docId, DocumentReplicationLevel level, Session session) throws XWikiException
+    {
+        XWikiContext xcontext = this.xcontextProvider.get();
+
+        if (get(docId, PROP_DOCID, Long.class, xcontext) != null) {
+            update(docId, PROP_LEVEL, level.name(), session);
+        } else {
+            throw new XWikiException(
+                "Cannot update the replication level since not entry exist yet for docId [" + docId + "]", null);
+        }
+
+        return null;
     }
 
     /**
@@ -179,14 +217,15 @@ public class ReplicationDocumentStore
         return null;
     }
 
-    private Void saveOwner(long docId, String owner, Session session) throws XWikiException
+    private Void saveOwner(long docId, String owner, DocumentReplicationLevel level, Session session)
+        throws XWikiException
     {
         XWikiContext xcontext = this.xcontextProvider.get();
 
         if (get(docId, PROP_DOCID, Long.class, xcontext) != null) {
-            update(docId, PROP_OWNER, owner, session);
+            update(docId, owner, level, session);
         } else {
-            insert(docId, owner, false, false, session);
+            insert(docId, owner, false, false, level, session);
         }
 
         return null;
@@ -215,18 +254,34 @@ public class ReplicationDocumentStore
         return query.uniqueResult();
     }
 
-    private Void insert(long docId, String owner, boolean conflict, boolean readonly, Session session)
+    private Void update(long docId, String owner, DocumentReplicationLevel level, Session session)
+    {
+        // Not using the Hibernate session entity API to avoid classloader problems
+        Query<?> query = session
+            .createQuery("UPDATE HibernateReplicationDocument SET owner = :owner, level = :level WHERE docId = :docId");
+        query.setParameter(PROP_DOCID, docId);
+        query.setParameter(PROP_OWNER, owner);
+        query.setParameter(PROP_LEVEL, level != null ? level.name() : null);
+
+        query.executeUpdate();
+
+        return null;
+    }
+
+    private Void insert(long docId, String owner, boolean conflict, boolean readonly, DocumentReplicationLevel level,
+        Session session)
     {
         // Not using the Hibernate session entity API to avoid classloader problems
         // Using native query since it's impossible to insert values with HQL
         NativeQuery<?> query = session.createNativeQuery(
-            String.format("INSERT INTO replication_document (%s, %s, %s, %s) VALUES (:%s, :%s, :%s, :%s)",
-                PROP_NATIVE_DOCID, PROP_NATIVE_OWNER, PROP_NATIVE_CONFLICT, PROP_NATIVE_READONLY, PROP_DOCID,
-                PROP_OWNER, PROP_CONFLICT, PROP_READONLY));
+            String.format("INSERT INTO replication_document (%s, %s, %s, %s, %s) VALUES (:%s, :%s, :%s, :%s, :%s)",
+                PROP_NATIVE_DOCID, PROP_NATIVE_OWNER, PROP_NATIVE_CONFLICT, PROP_NATIVE_READONLY, PROP_NATIVE_LEVEL,
+                PROP_DOCID, PROP_OWNER, PROP_CONFLICT, PROP_READONLY, PROP_LEVEL));
         query.setParameter(PROP_DOCID, docId);
         query.setParameter(PROP_OWNER, owner);
         query.setParameter(PROP_CONFLICT, conflict);
         query.setParameter(PROP_READONLY, readonly);
+        query.setParameter(PROP_LEVEL, level != null ? level.name() : null);
 
         query.executeUpdate();
 
@@ -345,6 +400,29 @@ public class ReplicationDocumentStore
         cacheEntry.setReadonly(readonly);
 
         return readonly;
+    }
+
+    /**
+     * @param documentReference the reference of the document
+     * @return true if the replication level of the document
+     * @throws ReplicationException when failing to access the owner
+     */
+    public DocumentReplicationLevel getLevel(DocumentReference documentReference) throws ReplicationException
+    {
+        long docId = toDocumentId(documentReference);
+
+        ReplicationDocumentStoreCacheEntry cacheEntry = this.cache.getEntry(String.valueOf(docId), true);
+
+        if (cacheEntry.getLevel() != null) {
+            return cacheEntry.getLevel();
+        }
+
+        DocumentReplicationLevel level =
+            EntityReplicationUtils.toDocumentReplicationLevel(get(documentReference, docId, PROP_LEVEL, String.class));
+
+        cacheEntry.setLevel(level);
+
+        return level;
     }
 
     private void executeWrite(HibernateCallback<Void> callback, WikiReference wiki) throws ReplicationException

@@ -19,6 +19,8 @@
  */
 package org.xwiki.contrib.replication.entity.internal.index;
 
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
+
 /**
  * @version $Id$
  */
@@ -31,6 +33,8 @@ public class HibernateReplicationDocument
     private boolean conflict;
 
     private boolean readonly;
+
+    private DocumentReplicationLevel level;
 
     HibernateReplicationDocument()
     {
@@ -45,12 +49,14 @@ public class HibernateReplicationDocument
     /**
      * @param docId the identifier of the document
      * @param owner the owner instance of the document
+     * @param level how much of the document should is replicated
      */
-    public HibernateReplicationDocument(long docId, String owner)
+    public HibernateReplicationDocument(long docId, String owner, DocumentReplicationLevel level)
     {
         this(docId);
 
         this.owner = owner;
+        this.level = level;
     }
 
     /**
@@ -118,4 +124,23 @@ public class HibernateReplicationDocument
     {
         this.readonly = readonly;
     }
+
+    /**
+     * @return how much of the document should be replicated
+     * @since 2.3.0
+     */
+    public DocumentReplicationLevel getLevel()
+    {
+        return this.level;
+    }
+
+    /**
+     * @param level how much of the document should be replicated
+     * @since 2.3.0
+     */
+    public void setLevel(DocumentReplicationLevel level)
+    {
+        this.level = level;
+    }
+
 }

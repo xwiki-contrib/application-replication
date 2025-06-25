@@ -25,6 +25,7 @@ import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstanceManager;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.entity.DocumentReplicationController;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.EntityReplication;
 import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
@@ -66,26 +67,34 @@ public abstract class AbstractDocumentReplicationReceiver extends AbstractEntity
     /**
      * @param message the received message
      * @param documentReference the reference of the document associated with the message
+     * @param level how much of the document is replicated
      * @throws ReplicationException
      */
-    protected void handlerOwner(ReplicationReceiverMessage message, DocumentReference documentReference)
-        throws ReplicationException
+    protected void handlerOwnerAndLevel(ReplicationReceiverMessage message, DocumentReference documentReference,
+        DocumentReplicationLevel level) throws ReplicationException
     {
         // Owner
-        // There is no owner yet so try to find one
-        String owner = this.entityReplication.getOwner(documentReference);
-        if (owner == null) {
+        String currentOwner = this.entityReplication.getOwner(documentReference);
+        if (currentOwner == null) {
+            // There is no owner yet so try to find one
             // Check if one is explicitly provided
-            owner =
+            currentOwner =
                 this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_OWNER, false);
 
             // Fallback on the source
-            if (owner == null) {
-                owner = message.getSource();
+            if (currentOwner == null) {
+                currentOwner = message.getSource();
             }
 
             // Set the document owner
-            this.documentStore.setOwner(documentReference, owner);
+            this.documentStore.setOwnerAndLevel(documentReference, currentOwner, level);
+        } else {
+            DocumentReplicationLevel currentLevel = this.entityReplication.getLevel(documentReference);
+
+            if (currentLevel != level) {
+                // Update the document replication level
+                this.documentStore.setLevel(documentReference, level);
+            }
         }
     }
 

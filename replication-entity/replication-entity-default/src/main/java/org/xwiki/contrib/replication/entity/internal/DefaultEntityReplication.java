@@ -26,6 +26,7 @@ import javax.inject.Singleton;
 
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
+import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.EntityReplication;
 import org.xwiki.contrib.replication.entity.internal.index.ReplicationDocumentStore;
 import org.xwiki.model.reference.DocumentReference;
@@ -77,6 +78,12 @@ public class DefaultEntityReplication implements EntityReplication
     public boolean isReadonly(DocumentReference documentReference) throws ReplicationException
     {
         return this.documentStore.isReadonly(documentReference);
+    }
+
+    @Override
+    public DocumentReplicationLevel getLevel(DocumentReference documentReference) throws ReplicationException
+    {
+        return this.documentStore.getLevel(documentReference);
     }
 
     @Override

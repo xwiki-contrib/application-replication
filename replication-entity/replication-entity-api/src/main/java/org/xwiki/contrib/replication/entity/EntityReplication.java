@@ -48,7 +48,7 @@ public interface EntityReplication
     /**
      * @param documentReference the reference of the document
      * @return true if the document has a replication conflict
-     * @throws ReplicationException when failing to get the owner
+     * @throws ReplicationException when failing to get the conflict status
      */
     boolean getConflict(DocumentReference documentReference) throws ReplicationException;
 
@@ -68,6 +68,17 @@ public interface EntityReplication
     default boolean isReadonly(DocumentReference documentReference) throws ReplicationException
     {
         return false;
+    }
+
+    /**
+     * @param documentReference the reference of the document
+     * @return true if the document is a placeholder
+     * @throws ReplicationException when failing to get the level
+     * @since 2.3.0
+     */
+    default DocumentReplicationLevel getLevel(DocumentReference documentReference) throws ReplicationException
+    {
+        return null;
     }
 
     /**

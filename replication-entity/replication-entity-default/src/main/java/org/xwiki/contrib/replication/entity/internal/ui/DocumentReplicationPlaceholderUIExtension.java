@@ -32,19 +32,20 @@ import org.xwiki.template.TemplateManager;
 import org.xwiki.uiextension.UIExtension;
 
 /**
- * Injected above each document to warn about consequences of modifying a readonly document.
+ * Injected above each placeholder document to explain what it is.
  * 
  * @version $Id$
+ * @since 2.3.0
  */
 @Component
-@Named(DocumentReplicationReadonlyUIExtension.ID)
+@Named(DocumentReplicationPlaceholderUIExtension.ID)
 @Singleton
-public class DocumentReplicationReadonlyUIExtension implements UIExtension
+public class DocumentReplicationPlaceholderUIExtension implements UIExtension
 {
     /**
      * The id of the UI extension.
      */
-    public static final String ID = "replication.readonly";
+    public static final String ID = "replication.placeholder";
 
     @Inject
     private TemplateManager templates;
@@ -70,6 +71,6 @@ public class DocumentReplicationReadonlyUIExtension implements UIExtension
     @Override
     public Block execute()
     {
-        return this.templates.executeNoException("replication/readonly.vm");
+        return this.templates.executeNoException("replication/placeholder.vm");
     }
 }

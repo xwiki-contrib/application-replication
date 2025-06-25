@@ -185,36 +185,6 @@ public class EntityReplicationStoreHibernate
         return store.executeRead(xcontext, session -> getHibernateEntityReplication(entityId, session));
     }
 
-    private DocumentReplicationLevel toDocumentReplicationLevel(Object value)
-    {
-        DocumentReplicationLevel level = null;
-
-        if (value != null) {
-            if (value instanceof DocumentReplicationLevel) {
-                level = (DocumentReplicationLevel) value;
-            } else {
-                level = DocumentReplicationLevel.valueOf(value.toString());
-            }
-        }
-
-        return level;
-    }
-
-    private DocumentReplicationDirection toDocumentReplicationDirection(Object value)
-    {
-        DocumentReplicationDirection direction = null;
-
-        if (value != null) {
-            if (value instanceof DocumentReplicationDirection) {
-                direction = (DocumentReplicationDirection) value;
-            } else {
-                direction = DocumentReplicationDirection.valueOf(value.toString());
-            }
-        }
-
-        return direction;
-    }
-
     private List<DocumentReplicationControllerInstance> getHibernateEntityReplication(long entityId, Session session)
         throws XWikiException
     {
@@ -229,8 +199,8 @@ public class EntityReplicationStoreHibernate
             // HibernateEntityReplicationInstance instance directly
             long entity = ((Number) i[0]).longValue();
             String instance = (String) i[1];
-            DocumentReplicationLevel level = toDocumentReplicationLevel(i[2]);
-            DocumentReplicationDirection direction = toDocumentReplicationDirection(i[3]);
+            DocumentReplicationLevel level = EntityReplicationUtils.toDocumentReplicationLevel(i[2]);
+            DocumentReplicationDirection direction = EntityReplicationUtils.toDocumentReplicationDirection(i[3]);
 
             return new HibernateEntityReplicationInstance(entity, instance, level, direction);
         }).collect(Collectors.toList());

@@ -225,7 +225,8 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
                 // Register as owner of the document the instance which created that document
                 // But only if there is not already a owner (might be a create after a delete)
                 if (this.documentStore.getOwner(document.getDocumentReference()) == null) {
-                    this.documentStore.setOwner(document.getDocumentReference(), builder.getOwner());
+                    this.documentStore.setOwnerAndLevel(document.getDocumentReference(), builder.getOwner(),
+                        DocumentReplicationLevel.ALL);
                 }
             }
 
