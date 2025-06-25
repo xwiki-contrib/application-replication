@@ -19,8 +19,6 @@
  */
 package org.xwiki.contrib.replication.entity.internal.repair;
 
-import java.util.concurrent.CompletableFuture;
-
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -28,8 +26,6 @@ import javax.inject.Singleton;
 import org.xwiki.component.annotation.Component;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.contrib.replication.ReplicationSenderMessage;
-import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.DocumentReplicationSenderMessageBuilder;
 import org.xwiki.contrib.replication.entity.EntityReplicationBuilders;
 import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
@@ -78,12 +74,5 @@ public class DocumentRepairRequestReplicationReceiver extends AbstractDocumentRe
             // Send the message
             this.controller.send(builder);
         }
-    }
-
-    @Override
-    public CompletableFuture<ReplicationSenderMessage> relay(ReplicationReceiverMessage message)
-        throws ReplicationException
-    {
-        return this.controller.relay(message, DocumentReplicationLevel.REFERENCE);
     }
 }
