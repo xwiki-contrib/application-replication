@@ -78,7 +78,7 @@ public class EntityReplicationControllerReceiver extends AbstractEntityReplicati
         }
 
         // TOTO 1.13.0: Update the readonly status of the document if the configuration changed
-        //this.entityReplication.updateDocumentReadonly(documentReference);
+        // this.entityReplication.updateDocumentReadonly(documentReference);
     }
 
     private Map<String, DocumentReplicationControllerInstance> optimizeConfiguration(ReplicationReceiverMessage message)
@@ -111,32 +111,13 @@ public class EntityReplicationControllerReceiver extends AbstractEntityReplicati
 
         // Add current instance if not already there
         DocumentReplicationControllerInstance currentConfiguration =
-            configurations.get(this.instances.getCurrentInstance().getURI());
+            optimizeCurrentInstanceConfiguration(configurations, allConfiguration, optimizedConfigurations);
         if (currentConfiguration == null) {
-            if (allConfiguration == null) {
-                // The entity is not replicated at all with the current instance
-                return Collections.emptyMap();
-            }
-
-            ReplicationInstance currentInstance = this.instances.getCurrentInstance();
-
-            currentConfiguration = new DocumentReplicationControllerInstance(currentInstance,
-                allConfiguration.getLevel(), allConfiguration.getDirection());
-
-            optimizedConfigurations.put(currentInstance.getURI(), currentConfiguration);
+            return Collections.emptyMap();
         }
 
-        // Invert sending on the source if needed and if the source is known
-        ReplicationInstance sourceInstance = this.instances.getRegisteredInstanceByURI(message.getSource());
-        if (sourceInstance != null) {
-            // If current instance is receive_only then the source is too (from current instance point of view)
-            if (currentConfiguration.getDirection() == DocumentReplicationDirection.RECEIVE_ONLY) {
-                // Keep a dedicated configuration for the source since it won't behave the same as wildcard in case of
-                // relay
-                optimizedConfigurations.put(sourceInstance.getURI(), new DocumentReplicationControllerInstance(
-                    sourceInstance, DocumentReplicationLevel.ALL, DocumentReplicationDirection.RECEIVE_ONLY));
-            }
-        }
+        // Invert sending on the source if needed, and if the source is a direct link
+        optimizeSourceInstanceConfiguration(message, currentConfiguration, optimizedConfigurations);
 
         for (DocumentReplicationControllerInstance configuration : configurations.values()) {
             // Skip configurations already handled above
@@ -149,6 +130,48 @@ public class EntityReplicationControllerReceiver extends AbstractEntityReplicati
         }
 
         return optimizedConfigurations;
+    }
+
+    private DocumentReplicationControllerInstance optimizeCurrentInstanceConfiguration(
+        Map<String, DocumentReplicationControllerInstance> configurations,
+        DocumentReplicationControllerInstance allConfiguration,
+        Map<String, DocumentReplicationControllerInstance> optimizedConfigurations) throws ReplicationException
+    {
+        DocumentReplicationControllerInstance currentConfiguration =
+            configurations.get(this.instances.getCurrentInstance().getURI());
+        if (currentConfiguration == null) {
+            if (allConfiguration == null) {
+                // The entity is not replicated at all with the current instance
+                return null;
+            }
+
+            ReplicationInstance currentInstance = this.instances.getCurrentInstance();
+
+            currentConfiguration = new DocumentReplicationControllerInstance(currentInstance,
+                allConfiguration.getLevel(), allConfiguration.getDirection());
+
+            optimizedConfigurations.put(currentInstance.getURI(), currentConfiguration);
+        }
+
+        return currentConfiguration;
+    }
+
+    private void optimizeSourceInstanceConfiguration(ReplicationReceiverMessage message,
+        DocumentReplicationControllerInstance currentConfiguration,
+        Map<String, DocumentReplicationControllerInstance> optimizedConfigurations) throws ReplicationException
+    {
+        // If current instance direction is not BOTH (from source point of view) then the source is RECEIVE_ONLY
+        // (from current instance point of view)
+        if (currentConfiguration.getLevel() == DocumentReplicationLevel.ALL
+            && currentConfiguration.getDirection() != DocumentReplicationDirection.BOTH) {
+            ReplicationInstance sourceInstance = this.instances.getRegisteredInstanceByURI(message.getSource());
+            if (sourceInstance != null) {
+                // Keep a dedicated configuration for the source since it won't behave the same as wildcard in case
+                // of relay
+                optimizedConfigurations.put(sourceInstance.getURI(), new DocumentReplicationControllerInstance(
+                    sourceInstance, DocumentReplicationLevel.ALL, DocumentReplicationDirection.RECEIVE_ONLY));
+            }
+        }
     }
 
     private boolean isPartOfWildcard(DocumentReplicationControllerInstance configuration,

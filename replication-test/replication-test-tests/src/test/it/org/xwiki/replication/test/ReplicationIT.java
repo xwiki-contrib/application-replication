@@ -372,6 +372,7 @@ public class ReplicationIT extends AbstractTest
             ReplicationPage.gotoPage(documentReference).openReplicationDocExtraPane();
         assertEquals(getOwnerDisplayName(owner), replicationExtraPane.getOwner());
         assertEquals(readonly, replicationExtraPane.isReadonly());
+        assertEquals(DocumentReplicationLevel.ALL, replicationExtraPane.getLevel());
     }
 
     private static void assertDocumentREFERENCEWithTimeout(LocalDocumentReference documentReference, Integer owner)
