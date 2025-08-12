@@ -151,7 +151,7 @@ public class ReplicationInstanceStore
         T execute(XWikiDocument instancesDocument, XWikiContext xcontext) throws XWikiException, ReplicationException;
     }
 
-    private <T> T executeInstanceDocument(InstanceDocumentExecutor<T> executor) throws ReplicationException
+    private <T> T executeReadInstanceDocument(InstanceDocumentExecutor<T> executor) throws ReplicationException
     {
         XWikiContext xcontext = this.xcontextProvider.get();
 
@@ -165,6 +165,35 @@ public class ReplicationInstanceStore
 
             XWikiDocument instancesDocument = xcontext.getWiki().getDocument(REPLICATION_INSTANCES, xcontext);
 
+            return executor.execute(instancesDocument, xcontext);
+        } catch (XWikiException e) {
+            throw new ReplicationException("Failed to load the replication instances from the store", e);
+        } finally {
+            xcontext.setWikiReference(currentWiki);
+        }
+    }
+
+    private <T> T executeWriteInstanceDocument(InstanceDocumentExecutor<T> executor) throws ReplicationException
+    {
+        XWikiContext xcontext = this.xcontextProvider.get();
+
+        if (xcontext == null) {
+            throw new ReplicationException("XWiki database is not ready");
+        }
+
+        WikiReference currentWiki = xcontext.getWikiReference();
+        try {
+            xcontext.setWikiId(xcontext.getMainXWiki());
+
+            XWikiDocument instancesDocument = xcontext.getWiki().getDocument(REPLICATION_INSTANCES, xcontext);
+
+            // Avoid modifying the cache document
+            instancesDocument = instancesDocument.clone();
+
+            // Make sure the document is hidden
+            instancesDocument.setHidden(true);
+
+            // Execute
             return executor.execute(instancesDocument, xcontext);
         } catch (XWikiException e) {
             throw new ReplicationException("Failed to load the replication instances from the store", e);
@@ -376,7 +405,7 @@ public class ReplicationInstanceStore
      */
     public List<ReplicationInstance> loadInstances() throws ReplicationException
     {
-        return executeInstanceDocument((instancesDocument, xcontext) -> {
+        return executeReadInstanceDocument((instancesDocument, xcontext) -> {
             List<BaseObject> instanceObjects =
                 instancesDocument.getXObjects(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE);
 
@@ -405,7 +434,7 @@ public class ReplicationInstanceStore
 
     private DefaultReplicationInstance loadCurrentInstance() throws ReplicationException
     {
-        return executeInstanceDocument((instancesDocument, xcontext) -> {
+        return executeReadInstanceDocument((instancesDocument, xcontext) -> {
             BaseObject instanceObject =
                 instancesDocument.getXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE,
                     StandardReplicationInstanceClassInitializer.FIELD_STATUS, "", false);
@@ -440,7 +469,10 @@ public class ReplicationInstanceStore
      */
     public void addInstance(ReplicationInstance instance) throws ReplicationException
     {
-        executeInstanceDocument((instancesDocument, xcontext) -> {
+        executeWriteInstanceDocument((instancesDocument, xcontext) -> {
+            // Avoid modifying the cache document
+            instancesDocument = instancesDocument.clone();
+
             BaseObject instanceObject =
                 instancesDocument.newXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE, xcontext);
 
@@ -462,7 +494,7 @@ public class ReplicationInstanceStore
      */
     public void deleteInstance(String uri) throws ReplicationException
     {
-        executeInstanceDocument((instancesDocument, xcontext) -> {
+        executeWriteInstanceDocument((instancesDocument, xcontext) -> {
             BaseObject objectToDelete =
                 instancesDocument.getXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE,
                     StandardReplicationInstanceClassInitializer.FIELD_URI, uri, false);
@@ -483,7 +515,7 @@ public class ReplicationInstanceStore
      */
     public void updateInstance(ReplicationInstance instance) throws ReplicationException
     {
-        executeInstanceDocument((instancesDocument, xcontext) -> {
+        executeWriteInstanceDocument((instancesDocument, xcontext) -> {
             BaseObject instanceObject =
                 instancesDocument.getXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE,
                     StandardReplicationInstanceClassInitializer.FIELD_URI, instance.getURI(), false);
@@ -522,7 +554,7 @@ public class ReplicationInstanceStore
      */
     public void saveCurrentInstance(String name, String uri) throws ReplicationException
     {
-        executeInstanceDocument((instancesDocument, xcontext) -> {
+        executeWriteInstanceDocument((instancesDocument, xcontext) -> {
             BaseObject instanceObject =
                 instancesDocument.getXObject(StandardReplicationInstanceClassInitializer.CLASS_REFERENCE,
                     StandardReplicationInstanceClassInitializer.FIELD_STATUS, "", false);
