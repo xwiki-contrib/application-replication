@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
+import org.xwiki.contrib.replication.internal.ReplicationUtils;
 import org.xwiki.filter.input.InputStreamInputSource;
 
 /**
@@ -223,5 +224,11 @@ public class DefaultReplicationReceiverMessage extends AbstractReplicationMessag
     public InputStream open() throws IOException
     {
         return this.data.getInputStream();
+    }
+
+    @Override
+    public String toString()
+    {
+        return ReplicationUtils.toString(this);
     }
 }

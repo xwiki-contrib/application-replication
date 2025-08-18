@@ -21,6 +21,11 @@ package org.xwiki.contrib.replication.internal;
 
 import java.util.Date;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.xwiki.contrib.replication.ReplicationMessage;
+import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.text.XWikiToStringBuilder;
+
 /**
  * Various common tool related to replication.
  * 
@@ -48,5 +53,28 @@ public final class ReplicationUtils
     public static String toString(Date date)
     {
         return String.valueOf(date.getTime());
+    }
+
+    /**
+     * @param message the message to print
+     * @return the String serialization of the replication message
+     * @since 2.2.7
+     */
+    public static String toString(ReplicationMessage message)
+    {
+        ToStringBuilder builder = new XWikiToStringBuilder(message);
+
+        builder.append("id", message.getId());
+        builder.append("type", message.getType());
+        builder.append("source", message.getSource());
+        builder.append("date", message.getDate());
+        builder.append("receivers", message.getReceivers());
+        builder.append("metadata", message.getCustomMetadata());
+
+        if (message instanceof ReplicationReceiverMessage) {
+            builder.append("instance", ((ReplicationReceiverMessage) message).getInstance());
+        }
+
+        return builder.build();
     }
 }

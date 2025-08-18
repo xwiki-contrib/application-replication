@@ -108,7 +108,7 @@ public abstract class AbstractReplicationMessageStore<M extends ReplicationMessa
     }
 
     protected abstract class AbstractFileReplicationMessage extends AbstractReplicationMessage
-        implements ReplicationMessage, Comparable<ReplicationMessage>
+        implements Comparable<ReplicationMessage>
     {
         protected String id;
 

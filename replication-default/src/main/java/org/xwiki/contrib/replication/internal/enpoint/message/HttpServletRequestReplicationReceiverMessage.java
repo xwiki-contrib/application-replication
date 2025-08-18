@@ -36,6 +36,7 @@ import org.xwiki.component.descriptor.ComponentInstantiationStrategy;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
 import org.xwiki.contrib.replication.internal.HTTPUtils;
+import org.xwiki.contrib.replication.internal.ReplicationUtils;
 
 /**
  * @version $Id$
@@ -174,5 +175,11 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
     public InputStream open() throws IOException
     {
         return this.request.getInputStream();
+    }
+
+    @Override
+    public String toString()
+    {
+        return ReplicationUtils.toString(this);
     }
 }

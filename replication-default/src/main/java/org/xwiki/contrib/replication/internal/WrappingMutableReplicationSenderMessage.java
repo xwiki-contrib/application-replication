@@ -37,4 +37,10 @@ public class WrappingMutableReplicationSenderMessage
     {
         this.message.write(stream);
     }
+
+    @Override
+    public String toString()
+    {
+        return ReplicationUtils.toString(this);
+    }
 }

@@ -27,6 +27,8 @@ import java.util.Date;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.xwiki.text.XWikiToStringBuilder;
 
 /**
  * @version $Id$
@@ -97,5 +99,20 @@ public class RelayedReplicationSenderMessage implements ReplicationSenderMessage
         try (InputStream input = this.source.open()) {
             IOUtils.copy(input, stream);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        ToStringBuilder builder = new XWikiToStringBuilder(this);
+
+        builder.append("id", getId());
+        builder.append("type", getType());
+        builder.append("source", getSource());
+        builder.append("date", getDate());
+        builder.append("receivers", getReceivers());
+        builder.append("metadata", getCustomMetadata());
+
+        return builder.build();
     }
 }

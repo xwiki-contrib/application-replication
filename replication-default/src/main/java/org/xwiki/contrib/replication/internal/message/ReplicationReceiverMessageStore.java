@@ -35,6 +35,7 @@ import org.xwiki.component.phase.InitializationException;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationInstance;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.internal.ReplicationUtils;
 
 /**
  * @version $Id$
@@ -75,6 +76,12 @@ public class ReplicationReceiverMessageStore extends AbstractReplicationMessageS
         public InputStream open() throws IOException
         {
             return new FileInputStream(this.dataFile);
+        }
+
+        @Override
+        public String toString()
+        {
+            return ReplicationUtils.toString(this);
         }
     }
 
