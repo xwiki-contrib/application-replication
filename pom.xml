@@ -140,6 +140,19 @@
                 </item>
               </differences>
             </revapi.differences>
+            <revapi.differences>
+              <justification>Extend a more accurate abstract class</justification>
+              <criticality>allowed</criticality>
+              <differences>
+                <item>
+                  <ignore>true</ignore>
+                  <code>java.class.nonFinalClassInheritsFromNewClass</code>
+                  <old>class org.xwiki.contrib.replication.DefaultReplicationSenderMessage</old>
+                  <new>class org.xwiki.contrib.replication.DefaultReplicationSenderMessage</new>
+                  <superClass>org.xwiki.contrib.replication.AbstractReplicationSenderMessage</superClass>
+                </item>
+              </differences>
+            </revapi.differences>
           </analysisConfiguration>
         </configuration>
       </plugin>

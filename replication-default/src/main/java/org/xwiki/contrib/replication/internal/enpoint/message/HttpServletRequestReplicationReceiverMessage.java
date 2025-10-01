@@ -101,6 +101,28 @@ public class HttpServletRequestReplicationReceiverMessage implements Replication
     }
 
     /**
+     * @param key the name of the metadata
+     * @return the HTTP header representing this metadata
+     * @since 2.3.0
+     */
+    public static String toHTTPHeader(String key)
+    {
+        return HttpServletRequestReplicationReceiverMessage.HEADER_METADATA_PREFIX
+            + key.toUpperCase().replace('_', '-');
+    }
+
+    /**
+     * @param header the HTTP header
+     * @return the name of the metadata
+     * @since 2.3.0
+     */
+    public static String fromHTTPHeader(String header)
+    {
+        return header.toUpperCase()
+            .substring(HttpServletRequestReplicationReceiverMessage.HEADER_METADATA_PREFIX.length()).replace('-', '_');
+    }
+
+    /**
      * @param instance the last instance which sent the message
      * @param request the request to read
      */

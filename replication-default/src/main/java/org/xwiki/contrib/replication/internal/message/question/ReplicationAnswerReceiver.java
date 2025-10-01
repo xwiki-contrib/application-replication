@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal.message;
+package org.xwiki.contrib.replication.internal.message.question;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -28,6 +28,8 @@ import org.xwiki.contrib.replication.AbstractReplicationReceiver;
 import org.xwiki.contrib.replication.ReplicationException;
 import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.contrib.replication.internal.message.ReplicationReceiverMessageEvent;
+import org.xwiki.observation.ObservationManager;
 
 /**
  * @version $Id$
@@ -41,9 +43,16 @@ public class ReplicationAnswerReceiver extends AbstractReplicationReceiver
     @Inject
     private ReplicationAnswerManager answers;
 
+    @Inject
+    private ObservationManager observation;
+
     @Override
     public void receive(ReplicationReceiverMessage message) throws ReplicationException
     {
+        // Handler the answer
         this.answers.onReceive(message);
+
+        // Inform other cluster members of the received answer
+        this.observation.notify(new ReplicationReceiverMessageEvent(message.getType()), message);
     }
 }

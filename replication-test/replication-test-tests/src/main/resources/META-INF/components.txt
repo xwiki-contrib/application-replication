@@ -1,1 +1,3 @@
 org.xwiki.contrib.replication.test.CustomReplicationInstanceClassInitializer
+org.xwiki.contrib.replication.test.TestQuestionReceiver
+org.xwiki.contrib.replication.test.TestReplicationScriptService

@@ -32,17 +32,9 @@ import org.xwiki.filter.input.InputStreamInputSource;
  * @version $Id$
  * @since 2.0.0
  */
-public class DefaultReplicationSenderMessage extends AbstractReplicationMessage implements ReplicationSenderMessage
+public class DefaultReplicationSenderMessage extends AbstractReplicationSenderMessage
 {
-    protected String id;
-
-    protected Date date = new Date();
-
     protected String type;
-
-    protected String source;
-
-    protected Collection<String> receivers;
 
     protected InputStreamInputSource data;
 
@@ -165,6 +157,14 @@ public class DefaultReplicationSenderMessage extends AbstractReplicationMessage 
          */
         public DefaultReplicationSenderMessage build()
         {
+            // It's mandatory for a message to have a type
+            if (this.message.type == null) {
+                throw new IllegalStateException("It's mandatory for a message to have a type");
+            }
+
+            // Make sure that the message has an identifier
+            this.message.initialize();
+
             return this.message;
         }
     }

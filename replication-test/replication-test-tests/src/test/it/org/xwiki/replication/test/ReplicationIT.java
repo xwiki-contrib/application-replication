@@ -103,11 +103,8 @@ import static org.xwiki.replication.test.AllITs.INSTANCE_2;
  * 
  * @version $Id: f6ae6de6d59b97c88b228130b45cd26ce7b305ff $
  */
-@UITest(properties = {
-    "xwikiPropertiesAdditionalProperties=test.prchecker.excludePattern=.*",
-    "xwikiDbHbmCommonExtraMappings=notification-filter-preferences.hbm.xml"
-    }
-)
+@UITest(properties = {"xwikiPropertiesAdditionalProperties=test.prchecker.excludePattern=.*",
+    "xwikiDbHbmCommonExtraMappings=notification-filter-preferences.hbm.xml"})
 public class ReplicationIT extends AbstractTest
 {
     private static final LocalDocumentReference SERVICE_SETCONFIGURATION_REFERENCE =
@@ -720,7 +717,7 @@ public class ReplicationIT extends AbstractTest
         all();
     }
 
-    // @Test
+    //@Test
     public void all_sub() throws Exception
     {
         // Set the sub wiki
@@ -767,6 +764,9 @@ public class ReplicationIT extends AbstractTest
 
         // Replication conflict handling
         conflict();
+
+        // Question/answer
+        question();
     }
 
     private void controller() throws Exception
@@ -1879,5 +1879,22 @@ public class ReplicationIT extends AbstractTest
         ReplicationPage page1 = ReplicationPage.gotoPage(documentReference);
         ReplicationConflictPane conflict1 = page1.getReplicationConflictPane();
         assertNotNull(conflict1);
+    }
+
+    private void question() throws Exception
+    {
+        LocalDocumentReference documentReference = new LocalDocumentReference("Question", "WebHome");
+
+        getUtil().switchExecutor(INSTANCE_0);
+        getUtil().rest().savePage(documentReference,
+            "{{velocity}}$services.replication.test.ask('" + INSTANCES[2].proxyURI + "'){{/velocity}}", "");
+
+        assertEquals(INSTANCES[2].name,
+            getUtil().executeAndGetBodyAsString(documentReference, Map.of("outputSyntax", "plain")));
+
+        getUtil().switchExecutor(INSTANCE_0_2);
+
+        assertEquals(INSTANCES[2].name,
+            getUtil().executeAndGetBodyAsString(documentReference, Map.of("outputSyntax", "plain")));
     }
 }

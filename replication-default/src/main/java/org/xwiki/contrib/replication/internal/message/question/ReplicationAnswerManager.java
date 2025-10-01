@@ -17,7 +17,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.xwiki.contrib.replication.internal.message;
+package org.xwiki.contrib.replication.internal.message.question;
 
 import java.util.Collection;
 import java.util.List;
@@ -37,6 +37,7 @@ import org.xwiki.contrib.replication.ReplicationAnswer;
 import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationMessageReader;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
+import org.xwiki.observation.ObservationManager;
 
 /**
  * @version $Id$
@@ -48,6 +49,9 @@ public class ReplicationAnswerManager
 {
     @Inject
     private ReplicationMessageReader messageReader;
+
+    @Inject
+    private ObservationManager observation;
 
     private final class ReplicationAnswerEntry
     {
@@ -111,17 +115,18 @@ public class ReplicationAnswerManager
                         "No answer is expected from instance [" + message.getSource() + "]");
                 }
 
-                // If there is no more awaited receiver, unlock the answer
+                // Remember the message as an answer
+                entry.answer.answers.add(message);
+
+                // If there is no more awaited receiver, unlock the answer and remove the entry
                 if (entry.receivers.isEmpty()) {
+                    this.answers.remove(questionId);
                     entry.future.complete(entry.answer);
                 }
             }
-
-            // Remember the message as an answer
-            entry.answer.answers.add(message);
         }
     }
-
+ 
     /**
      * @param id the identifier of the question
      * @param receivers the identifiers of the instances which should answer the question
@@ -132,6 +137,9 @@ public class ReplicationAnswerManager
         ReplicationAnswerEntry entry = new ReplicationAnswerEntry(receivers);
 
         this.answers.put(id, entry);
+
+        // Inform listener (especially in other cluster members) about the new question
+        this.observation.notify(new ReplicationQuestionAskedEvent(id), receivers);
 
         return entry.future;
     }

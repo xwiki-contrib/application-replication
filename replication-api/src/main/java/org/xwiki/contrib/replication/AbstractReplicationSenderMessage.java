@@ -69,7 +69,9 @@ public abstract class AbstractReplicationSenderMessage extends AbstractReplicati
 
     protected void initialize()
     {
-        // Make sure the id is unique but not too big
-        this.id = UUID.randomUUID().toString();
+        if (this.id == null) {
+            // Make sure the id is unique but not too big
+            this.id = UUID.randomUUID().toString();
+        }
     }
 }
