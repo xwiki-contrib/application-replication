@@ -127,6 +127,14 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
         return attachments;
     }
 
+    private void checkMandatoryLocale(DocumentReference documentReference) throws ReplicationException
+    {
+        if (documentReference.getLocale() == null) {
+            throw new ReplicationException("The DocumentReference [" + documentReference
+                + "] does not contain any locale, but it's mandatory for this type of messages");
+        }
+    }
+
     @Override
     public DocumentReplicationSenderMessageBuilder documentMessageBuilder(
         EntityReplicationSenderMessageBuilderProducer<DocumentReplicationSenderMessageBuilder> messageProducer,
@@ -263,10 +271,12 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
     }
 
     @Override
-    public DocumentReplicationSenderMessageBuilder documentDeleteMessageBuilder(DocumentReference document)
+    public DocumentReplicationSenderMessageBuilder documentDeleteMessageBuilder(DocumentReference documentReference)
         throws ReplicationException
     {
-        return documentMessageBuilder(deleteProvider(), document).minimumLevel(DocumentReplicationLevel.REFERENCE);
+        checkMandatoryLocale(documentReference);
+
+        return documentMessageBuilder(deleteProvider(), documentReference).minimumLevel(DocumentReplicationLevel.REFERENCE);
     }
 
     @Override
@@ -306,6 +316,8 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
     public DocumentReplicationSenderMessageBuilder documentConflictUpdateMessageBuilder(
         DocumentReference documentReference) throws ReplicationException
     {
+        checkMandatoryLocale(documentReference);
+
         return this.documentMessageBuilder((builder, level, readonly, extraMetadata) -> {
             DocumentReplicationConflictMessage message = this.conflictMessageProvider.get();
 
@@ -319,6 +331,8 @@ public class DefaultEntityReplicationBuilders implements EntityReplicationBuilde
     public DocumentReplicationSenderMessageBuilder documentRepairRequestMessageBuilder(
         DocumentReference documentReference, boolean sourceOnly) throws ReplicationException
     {
+        checkMandatoryLocale(documentReference);
+
         return this.documentMessageBuilder((builder, level, readonly, extraMetadata) -> {
             DocumentRepairRequestReplicationMessage message = this.repairRequestMessageProvider.get();
 
