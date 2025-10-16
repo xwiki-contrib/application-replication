@@ -120,7 +120,7 @@ public class DefaultDocumentReplicationMessageReader implements DocumentReplicat
     @Override
     public boolean isReadonly(ReplicationMessage message) throws InvalidReplicationMessageException
     {
-        return this.reader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY, false,
-            false);
+        return this.reader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_UPDATE_READONLY,
+            Boolean.FALSE);
     }
 }

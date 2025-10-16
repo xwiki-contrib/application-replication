@@ -58,10 +58,17 @@ public class DefaultReplicationMessageReader implements ReplicationMessageReader
     }
 
     @Override
+    @Deprecated(since = "2.3.1")
     public <T> T getMetadata(ReplicationMessage message, String key, boolean mandatory, T def)
         throws InvalidReplicationMessageException
     {
-        return getMetadata(message, key, mandatory, def != null ? def.getClass() : null, def);
+        return getMetadata(message, key, def);
+    }
+
+    @Override
+    public <T> T getMetadata(ReplicationMessage message, String key, T def) throws InvalidReplicationMessageException
+    {
+        return getMetadata(message, key, false, def != null ? def.getClass() : null, def);
     }
 
     @Override

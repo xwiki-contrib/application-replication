@@ -59,9 +59,25 @@ public interface ReplicationMessageReader
      * @param def the default value to return if none could be found
      * @return the metadata value
      * @throws InvalidReplicationMessageException when failing to parse the message
+     * @deprecated use {@link #getMetadata(ReplicationMessage, String, Object)} instead
      */
+    @Deprecated(since = "2.3.1")
     <T> T getMetadata(ReplicationMessage message, String key, boolean mandatory, T def)
         throws InvalidReplicationMessageException;
+
+    /**
+     * @param <T> the type of the metadata
+     * @param message the received message
+     * @param key the key metadata in the message
+     * @param def the default value to return if none could be found
+     * @return the metadata value
+     * @throws InvalidReplicationMessageException when failing to parse the message
+     * @since 2.3.1
+     */
+    default <T> T getMetadata(ReplicationMessage message, String key, T def) throws InvalidReplicationMessageException
+    {
+        return getMetadata(message, key, false, def);
+    }
 
     /**
      * @param <T> the type of the metadata

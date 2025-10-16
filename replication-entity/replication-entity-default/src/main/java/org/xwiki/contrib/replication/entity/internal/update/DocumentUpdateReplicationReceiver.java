@@ -106,7 +106,7 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
 
         // Conflict
         boolean conflict =
-            this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_CONFLICT, false, false);
+            this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_CONFLICT, Boolean.FALSE);
         if (conflict) {
             // Indicate the document is in conflict
             this.entityReplication.setConflict(documentReference, true);

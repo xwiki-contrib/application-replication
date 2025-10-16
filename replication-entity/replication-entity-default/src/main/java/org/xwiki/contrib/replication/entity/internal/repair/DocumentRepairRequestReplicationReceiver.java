@@ -59,15 +59,15 @@ public class DocumentRepairRequestReplicationReceiver extends AbstractDocumentRe
             DocumentReplicationSenderMessageBuilder builder = this.builders.documentMessageBuilder(documentReference);
 
             // Check if it should be a conflict message
-            if (this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_CONFLICT, true,
-                false)) {
+            if (this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_CONFLICT,
+                Boolean.FALSE)) {
                 // As a conflict
                 builder.conflict(true);
             }
 
             // Decide where to send the message (everywhere or to the requester only)
             if (this.messageReader.getMetadata(message, EntityReplicationMessage.METADATA_DOCUMENT_REPAIRREQUEST_SOURCE,
-                true, false)) {
+                Boolean.FALSE)) {
                 builder.receivers(message.getSource());
             }
 
