@@ -56,9 +56,6 @@ public class EntityReplicationStore
     @Inject
     private ReplicationInstanceManager instanceManager;
 
-    @Inject
-    private EntityReplicationInitializer initializer;
-
     /**
      * @param reference the reference of the entity
      * @param instances the instance to send the entity to
@@ -222,11 +219,6 @@ public class EntityReplicationStore
     private Collection<DocumentReplicationControllerInstance> getHibernateEntityReplication(String wiki, long entityId)
         throws XWikiException
     {
-        if (!this.initializer.isInitialized()) {
-            // The configuration mapping is not registered yet
-            return Collections.emptyList();
-        }
-
         String cacheKey = this.cache.toDataCacheKey(entityId);
 
         EntityReplicationCacheEntry cacheEntry = this.cache.getDataCache().get(cacheKey);

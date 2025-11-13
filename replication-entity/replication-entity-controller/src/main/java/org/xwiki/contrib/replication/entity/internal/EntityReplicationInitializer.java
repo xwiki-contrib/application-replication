@@ -47,8 +47,6 @@ public class EntityReplicationInitializer
     @Inject
     private Logger logger;
 
-    private boolean registered;
-
     /**
      * Register the hibernate mapping.
      */
@@ -59,16 +57,6 @@ public class EntityReplicationInitializer
         } catch (IOException e) {
             this.logger.warn("Failed to close the stream: {}", ExceptionUtils.getRootCauseMessage(e));
         }
-
-        this.registered = true;
-    }
-
-    /**
-     * @return the registered
-     */
-    public boolean isInitialized()
-    {
-        return this.registered;
     }
 
     private InputStream getMappingFile(String mappingFileName)
