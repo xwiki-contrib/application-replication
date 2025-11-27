@@ -82,7 +82,7 @@
               &lt;input type="hidden" name="instance" value="$escapetool.xml($instance.uRI)"/&gt;
 
               #set ($currentMessage = $services.replication.getQueueMessage($instance))
-              #set ($errorTitle = "${services.localization.render('replication.send.queue.failed', [$xwiki.formatDate($nextTry)])} &lt;button class="btn btn-secondary btn-sm"  name="replication_wakeup"&gt;$escapetool.xml(${services.localization.render('replication.admin.instance.button.wakeup')})&lt;/button&gt;")
+              #set ($errorTitle = "${services.localization.render('replication.send.queue.failed', [$xwiki.formatDate($nextTry)])} &lt;button class=""btn btn-secondary btn-sm""  name=""replication_wakeup""&gt;$escapetool.xml(${services.localization.render('replication.admin.instance.button.wakeup')})&lt;/button&gt;")
               #displayException($errorTitle, $instanceError)
             &lt;/form&gt;
           #end
