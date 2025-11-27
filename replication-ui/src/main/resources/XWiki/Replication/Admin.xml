@@ -71,7 +71,7 @@
             &lt;input type="hidden" name="instance" value="$escapetool.xml($instance.uRI)"/&gt;
 
             &lt;span class="box warningmessage"&gt;$escapetool.xml($services.localization.render("replication.send.queue.size", [$queueMessages.size()]))&lt;/span&gt;
-            &lt;button class="tn btn-danger btn-sm" name="replication_purgequeue" title="$escapetool.xml(${services.localization.render('replication.send.queue.purge.title')})"&gt;$escapetool.xml(${services.localization.render('replication.send.queue.purge')})&lt;/button&gt;
+            &lt;button class="btn btn-danger btn-sm" name="replication_purgequeue" title="$escapetool.xml(${services.localization.render('replication.send.queue.purge.title')})"&gt;$escapetool.xml(${services.localization.render('replication.send.queue.purge')})&lt;/button&gt;
           &lt;/form&gt;
         #end
         #set ($nextTry = $services.replication.getQueueNextTry($instance))
@@ -82,7 +82,7 @@
               &lt;input type="hidden" name="instance" value="$escapetool.xml($instance.uRI)"/&gt;
 
               #set ($currentMessage = $services.replication.getQueueMessage($instance))
-              #set ($errorTitle = "${services.localization.render('replication.send.queue.failed', [$xwiki.formatDate($nextTry)])} &lt;button name=""replication_wakeup""&gt;$escapetool.xml(${services.localization.render('replication.admin.instance.button.wakeup')})&lt;/button&gt;")
+              #set ($errorTitle = "${services.localization.render('replication.send.queue.failed', [$xwiki.formatDate($nextTry)])} &lt;button class="btn btn-secondary btn-sm"  name="replication_wakeup"&gt;$escapetool.xml(${services.localization.render('replication.admin.instance.button.wakeup')})&lt;/button&gt;")
               #displayException($errorTitle, $instanceError)
             &lt;/form&gt;
           #end
@@ -191,7 +191,7 @@
 #set($isMainWiki = ($services.wiki.currentWikiId == $services.wiki.mainWikiId))
 #if ($isMainWiki)
 #if ($hasProgramming)
-=== {{translation key="replication.admin.instance.CURRENT"/}}
+== {{translation key="replication.admin.instance.CURRENT"/}}
 
 {{translation key="replication.admin.instance.CURRENT.description"/}}
 
@@ -213,7 +213,7 @@
 &lt;/form&gt;
 {{/html}}
 
-=== {{translation key="replication.admin.instance.REGISTERED"/}}
+== {{translation key="replication.admin.instance.REGISTERED"/}}
 
 {{translation key="replication.admin.instance.REGISTERED.description"/}}
 
@@ -223,7 +223,7 @@
   #end
 #end
 
-=== {{translation key="replication.admin.instance.REQUESTING"/}}
+== {{translation key="replication.admin.instance.REQUESTING"/}}
 
 {{translation key="replication.admin.instance.REQUESTING.description"/}}
 
@@ -233,27 +233,32 @@
   #end
 #end
 
-=== {{translation key="replication.admin.instance.REQUESTED"/}}
+== {{translation key="replication.admin.instance.REQUESTED"/}}
 
 {{translation key="replication.admin.instance.REQUESTED.description"/}}
-
-{{html}}
-&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
-  &lt;input type="text" id="requested_uri" name="uri" size="60"/&gt;
-  &lt;button class="btn btn-primary" name="requested_add"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.add'))&lt;/button&gt;
-&lt;/form&gt;
-{{/html}}
 
 #foreach($instance in $instances)
   #if ($instance.status.name() == 'REQUESTED')
     #displayRequestedInstance($instance)
   #end
 #end
+
+{{html}}
+&lt;form action="$xwiki.relativeRequestURL" method="post"&gt;
+  &lt;dl&gt;
+    &lt;dt&gt;&lt;label for="requested_uri"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.REQUESTED.label'))&lt;/label&gt;&lt;/dt&gt;
+    &lt;dd&gt;
+      &lt;input type="text" id="requested_uri" name="uri" size="60"/&gt;
+      &lt;button class="btn btn-primary" name="requested_add"&gt;$escapetool.xml($services.localization.render('replication.admin.instance.button.add'))&lt;/button&gt;
+    &lt;/dd&gt;
+  &lt;/dl&gt;
+&lt;/form&gt;
+{{/html}}
 #else
   {{error}}{{translation key="replication.admin.instance.pr"/}}{{/error}}
 #end
 
-=== {{translation key="replication.admin.instance.RELAYED"/}}
+== {{translation key="replication.admin.instance.RELAYED"/}}
 
 {{translation key="replication.admin.instance.RELAYED.description"/}}
 
@@ -266,7 +271,7 @@
 #set ($controllers = $services.replication.document.getDocumentReplicationControllers())
 #set ($resolvedController = $services.replication.document.resolveDocumentReplicationController($wikiReference))
 #if ($controllers || $resolvedController)
-  === {{translation key="replication.admin.controller"/}}
+  == {{translation key="replication.admin.controller"/}}
 
   #set ($parentController = $services.replication.document.resolveDocumentReplicationController($NULL))
   #set ($wikiReference = $doc.documentReference.wikiReference)
@@ -310,7 +315,7 @@
 #end
 {{/velocity}}
 
-=== {{translation key="replication.admin.recover.title"/}}
+== {{translation key="replication.admin.recover.title"/}}
 
 {{translation key="replication.admin.recover.description"/}}
 

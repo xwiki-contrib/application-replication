@@ -82,7 +82,7 @@
 #end
 
 #macro(selectLevel $currentLevel, $inputId)
-  <label>$escapetool.xml($services.localization.render('replication.entity.level'))</label>
+  <label for="$inputId">$escapetool.xml($services.localization.render('replication.entity.level'))</label>
   <select id="$inputId" name="$inputId" class="replication-level-select">
     <option value="">$escapetool.xml($services.localization.render('replication.admin.page.notreplicated'))</option>
     <optgroup label="$escapetool.xml($services.localization.render('replication.admin.page.replicated'))">
