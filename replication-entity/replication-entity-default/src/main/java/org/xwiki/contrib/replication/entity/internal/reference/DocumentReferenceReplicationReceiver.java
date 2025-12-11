@@ -32,7 +32,6 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 import org.xwiki.contrib.replication.entity.EntityReplicationMessage;
 import org.xwiki.contrib.replication.entity.internal.AbstractDocumentReplicationReceiver;
 import org.xwiki.model.reference.DocumentReference;
-import org.xwiki.rendering.syntax.Syntax;
 import org.xwiki.user.UserReference;
 
 import com.xpn.xwiki.XWikiContext;
@@ -77,8 +76,6 @@ public class DocumentReferenceReplicationReceiver extends AbstractDocumentReplic
         document.getAuthors().setOriginalMetadataAuthor(creatorReference);
         // Those place holders should be hidden
         document.setHidden(true);
-        // Set a message explaining what this document is
-        document.setSyntax(Syntax.XWIKI_2_1);
 
         // Ask the controller for modification before save
         this.controller.receiveREFERENCEDocument(document, message);
