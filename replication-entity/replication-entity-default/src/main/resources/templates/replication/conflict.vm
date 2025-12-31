@@ -17,14 +17,14 @@
 ## Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 ## 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 ## ---------------------------------------------------------------------------
-#if ($request.replication_conflict_resolve && $services.security.hasAccessLevel('edit', $doc.documentReference))
+#if ($request.replication_conflict_resolve && $services.security.authorization.hasAccess('edit', $doc.documentReference))
   $services.replication.document.setConflict($tdoc.documentReferenceWithLocale, false)
 #end
 #if ($services.replication.document.getConflict($tdoc.documentReferenceWithLocale))
   <div class="box warningmessage" id="replication_conflict">
     $escapetool.xml($services.localization.render("replication.entity.conflict.message"))
 
-    #if ($services.security.hasAccessLevel('edit', $doc.documentReference))
+    #if ($services.security.authorization.hasAccess('edit', $doc.documentReference))
       <form action="$xwiki.relativeRequestURL" method="post">
         <button class="btn pull-right" id="replication_conflict_resolve" name="replication_conflict_resolve">$escapetool.xml($services.localization.render("replication.entity.conflict.button.resolve"))</button>
       </form>

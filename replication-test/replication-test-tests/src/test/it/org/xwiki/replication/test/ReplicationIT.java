@@ -1879,6 +1879,17 @@ public class ReplicationIT extends AbstractTest
         ReplicationPage page1 = ReplicationPage.gotoPage(documentReference);
         ReplicationConflictPane conflict1 = page1.getReplicationConflictPane();
         assertNotNull(conflict1);
+
+        // Resolve the conflict manually
+        page1 = conflict1.clickResolve();
+
+        // Make sure the conflict warning is gone
+        conflict1 = page1.getReplicationConflictPane();
+        assertNull(conflict1);
+        getUtil().switchExecutor(INSTANCE_0);
+        page0 = ReplicationPage.gotoPage(documentReference);
+        conflict0 = page0.getReplicationConflictPane();
+        assertNotNull(conflict0);
     }
 
     private void question() throws Exception
