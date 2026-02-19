@@ -186,7 +186,22 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             throw new ReplicationException("Failed to save document update", e);
         }
 
-        // Identify a conflict
+        if (this.entityReplication.getLevel(documentReference) == DocumentReplicationLevel.REFERENCE) {
+            // There is no point trying to identify a conflict in the case of a REFERENCE, but we do need to ask for a
+            // repair since we are obviously missing the history
+            if (!this.replicationUtils.isOwner(documentReference)) {
+                requestRepair(documentReference, false);
+            }
+        } else {
+            // Identify a conflict
+            updateConflict(message, documentReference, replicationDocument, databaseDocument, xcontext);
+        }
+    }
+
+    private void updateConflict(ReplicationReceiverMessage message, DocumentReference documentReference,
+        XWikiDocument replicationDocument, XWikiDocument databaseDocument, XWikiContext xcontext)
+        throws ReplicationException
+    {
         Collection<String> values =
             message.getCustomMetadata().get(DocumentUpdateReplicationMessage.METADATA_DOCUMENT_UPDATE_ANCESTORS);
 
@@ -209,9 +224,9 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
                     // Create and save a merged version of the document
                     this.conflictResolver.merge(ancestors, databaseDocument, replicationDocument, xcontext);
                 } else {
-                    // Otherwise just ask the owner for a repair (in case the owner did not notice any conflict on its
-                    // side)
-                    requestRepair(documentReference);
+                    // Otherwise just ask the owner for a repair (in case the owner did not notice any conflict on
+                    // its side)
+                    requestRepair(documentReference, true);
                 }
             }
         }
@@ -282,13 +297,13 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
         }
     }
 
-    private void requestRepair(DocumentReference documentReference) throws ReplicationException
+    private void requestRepair(DocumentReference documentReference, boolean conflict) throws ReplicationException
     {
         String owner = this.documentStore.getOwner(documentReference);
 
         if (owner != null) {
             this.controller.send(this.builders.documentRepairRequestMessageBuilder(documentReference, true)
-                .conflict(true).receivers(owner));
+                .conflict(conflict).receivers(owner));
         }
     }
 
