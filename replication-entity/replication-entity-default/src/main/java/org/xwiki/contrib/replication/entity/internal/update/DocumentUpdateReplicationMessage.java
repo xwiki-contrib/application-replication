@@ -205,6 +205,17 @@ public class DocumentUpdateReplicationMessage extends AbstractDocumentReplicatio
             }
         }
 
+        if (document.getDocumentArchive() != null) {
+            // We don't need to modifying the document, but we are cloning it anyway to make sure to not be impacted by
+            // bad code which might modify it while we are trying to write it, especially the archive which
+            // apparently still have some problem even in XWiki Standard (see
+            // https://jira.xwiki.org/browse/REPLICAT-231)
+            // TODO: remove the workaround when we are sure the problem is fixed in XWiki Standard
+            document = document.clone();
+            // The archive is supposed to be null after the clone, but we are being extra safe (in case this changes)
+            document.setDocumentArchive((XWikiDocumentArchive) null);
+        }
+
         try {
             toXML(document, stream, this.complete);
         } catch (Exception e) {
