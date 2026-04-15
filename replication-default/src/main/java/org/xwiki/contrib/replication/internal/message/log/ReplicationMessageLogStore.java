@@ -233,7 +233,7 @@ public class ReplicationMessageLogStore
         }
 
         // Debug log of the message
-        this.logger.debug("Message (){}: {}", event.getCustom().get(ReplicationMessageEventQuery.KEY_STATUS), message);
+        this.logger.debug("Message ({}): {}", event.getCustom().get(ReplicationMessageEventQuery.KEY_STATUS), message);
 
         // Save the event asynchronously
         return this.store.saveEvent(event);
