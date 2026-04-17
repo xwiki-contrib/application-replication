@@ -55,10 +55,12 @@ import org.xwiki.contrib.replication.internal.message.ReplicationSenderMessageSt
 import org.xwiki.contrib.replication.internal.message.log.ReplicationMessageLogStore;
 import org.xwiki.contrib.replication.internal.message.question.ReplicationAnswerManager;
 import org.xwiki.contrib.replication.internal.message.question.ReplicationAnswerMessage;
+import org.xwiki.contrib.replication.internal.message.question.ReplicationQuestionAskedEvent;
 import org.xwiki.contrib.replication.log.ReplicationMessageEventQuery;
 import org.xwiki.eventstream.Event;
 import org.xwiki.eventstream.EventSearchResult;
 import org.xwiki.eventstream.EventStore;
+import org.xwiki.observation.ObservationManager;
 
 /**
  * @version $Id$
@@ -91,6 +93,9 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
 
     @Inject
     private Provider<ReplicationAnswerMessage> answerProvider;
+
+    @Inject
+    private ObservationManager observation;
 
     @Inject
     private Logger logger;
@@ -375,8 +380,13 @@ public class DefaultReplicationSender implements ReplicationSender, Initializabl
     public CompletableFuture<ReplicationAnswer> ask(ReplicationSenderMessage message,
         Collection<ReplicationInstance> targets) throws ReplicationException
     {
+        // Remember the question
         CompletableFuture<ReplicationAnswer> future = this.answers.ask(message.getId(), message.getReceivers());
 
+        // Inform listeners (especially in other cluster members) about the new question
+        this.observation.notify(new ReplicationQuestionAskedEvent(message.getId()), message.getReceivers());
+
+        // Send the question replication message
         send(message, targets);
 
         return future;

@@ -37,7 +37,6 @@ import org.xwiki.contrib.replication.ReplicationAnswer;
 import org.xwiki.contrib.replication.ReplicationMessage;
 import org.xwiki.contrib.replication.ReplicationMessageReader;
 import org.xwiki.contrib.replication.ReplicationReceiverMessage;
-import org.xwiki.observation.ObservationManager;
 
 /**
  * @version $Id$
@@ -49,9 +48,6 @@ public class ReplicationAnswerManager
 {
     @Inject
     private ReplicationMessageReader messageReader;
-
-    @Inject
-    private ObservationManager observation;
 
     private final class ReplicationAnswerEntry
     {
@@ -137,9 +133,6 @@ public class ReplicationAnswerManager
         ReplicationAnswerEntry entry = new ReplicationAnswerEntry(receivers);
 
         this.answers.put(id, entry);
-
-        // Inform listener (especially in other cluster members) about the new question
-        this.observation.notify(new ReplicationQuestionAskedEvent(id), receivers);
 
         return entry.future;
     }
