@@ -72,7 +72,15 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
     protected void receiveDocument(ReplicationReceiverMessage message, DocumentReference documentReference,
         XWikiContext xcontext) throws ReplicationException
     {
-        boolean complete = this.documentMessageReader.isComplete(message);
+        // Set owner and level
+        handlerOwnerAndLevel(message, documentReference, DocumentReplicationLevel.ALL);
+
+        // Set readonly
+        boolean readonly = this.documentMessageReader.isReadonly(message);
+        if (!this.replicationUtils.isOwner(documentReference)) {
+            // Indicate if the document is readonly (it never is when the current instance is the owner)
+            this.entityReplication.setReadonly(documentReference, readonly);
+        }
 
         // Load the document
         XWikiDocument replicationDocument = new XWikiDocument(documentReference, documentReference.getLocale());
@@ -82,21 +90,14 @@ public class DocumentUpdateReplicationReceiver extends AbstractDocumentReplicati
             throw new ReplicationException("Failed to parse document message to update", e);
         }
 
+        boolean complete = this.documentMessageReader.isComplete(message);
         if (complete) {
             completeUpdate(replicationDocument, xcontext);
         } else {
             update(message, documentReference, replicationDocument, xcontext);
         }
 
-        // Owner and level
-        handlerOwnerAndLevel(message, documentReference, DocumentReplicationLevel.ALL);
-
-        // Readonly
-        boolean readonly = this.documentMessageReader.isReadonly(message);
-        if (!this.replicationUtils.isOwner(documentReference)) {
-            // Indicate if the document is readonly (it never is when the current instance is the owner)
-            this.entityReplication.setReadonly(documentReference, readonly);
-        } else if (readonly) {
+        if (readonly) {
             // It does not make sense for the owner to receive a readonly message, send back a correction in the hope to
             // fix any inconsistency in the network
             this.controller.sendDocument(documentReference);
