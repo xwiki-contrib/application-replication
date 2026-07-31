@@ -57,6 +57,35 @@
     </profile>
   </profiles>
 
+  <!--
+	TODO: remove when moving to a standard parent version
+    Things that should not be used through transitive dependencies (or at all, ideally):
+      * commons-lang:commons-lang
+
+    We use test scope test in case it's needed by the test framework.
+   -->
+   <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>2.6</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.xwiki.platform</groupId>
+        <artifactId>xwiki-platform-search-solr-api</artifactId>
+        <version>${platform.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <build>
     <pluginManagement>
       <plugins>
