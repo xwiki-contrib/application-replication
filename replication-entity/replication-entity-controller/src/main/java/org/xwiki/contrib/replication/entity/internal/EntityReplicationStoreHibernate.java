@@ -125,6 +125,7 @@ public class EntityReplicationStoreHibernate
             "INSERT INTO replication_entity_instances (XWR_ENTITY, XWR_INSTANCE, XWR_LEVEL, XWR_DIRECTION)"
                 + " VALUES (:entity, :instance, :level, :direction)");
         query.setParameter(PROP_ENTITY, instance.getEntity());
+        // Oracle does not support null or empty string for the "instance" property, so we use a wild card instead
         query.setParameter(PROP_INSTANCE, instance.getInstance());
         query.setParameter(PROP_LEVEL, instance.getLevel() != null ? instance.getLevel().name() : null);
         query.setParameter(PROP_DIRECTION, instance.getDirection().name());
@@ -213,7 +214,7 @@ public class EntityReplicationStoreHibernate
 
         List<DocumentReplicationControllerInstance> instances = new ArrayList<>(hibernateInstances.size());
         for (HibernateEntityReplicationInstance hibernateInstance : hibernateInstances) {
-            if (hibernateInstance.getInstance().isEmpty()) {
+            if (hibernateInstance.isAllInstances()) {
                 // Replication use the same level for all instances
                 instances.add(new DocumentReplicationControllerInstance(null, hibernateInstance.getLevel(),
                     hibernateInstance.getDirection()));

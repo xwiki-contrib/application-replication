@@ -21,6 +21,7 @@ package org.xwiki.contrib.replication.entity.internal;
 
 import java.io.Serializable;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.xwiki.contrib.replication.entity.DocumentReplicationControllerInstance;
@@ -33,6 +34,8 @@ import org.xwiki.contrib.replication.entity.DocumentReplicationLevel;
 public class HibernateEntityReplicationInstance implements Serializable
 {
     private static final long serialVersionUID = 1L;
+
+    private static final String ALL_INSTANCES = "*";
 
     private long entity;
 
@@ -60,9 +63,10 @@ public class HibernateEntityReplicationInstance implements Serializable
         DocumentReplicationDirection direction)
     {
         this.entity = entity;
-        this.instance = instance;
         this.level = level;
         this.direction = direction;
+
+        setInstance(instance);
     }
 
     /**
@@ -73,10 +77,10 @@ public class HibernateEntityReplicationInstance implements Serializable
     {
         this.entity = entity;
 
-        this.instance = instance.getInstance() != null ? instance.getInstance().getURI() : "";
-
         this.level = instance.getLevel();
         this.direction = instance.getDirection();
+
+        setInstance(instance.getInstance() != null ? instance.getInstance().getURI() : ALL_INSTANCES);
     }
 
     @Override
@@ -138,11 +142,20 @@ public class HibernateEntityReplicationInstance implements Serializable
     }
 
     /**
+     * @return true if the instance is configured to replicate with all instances
+     * @since 2.4.1
+     */
+    public boolean isAllInstances()
+    {
+        return ALL_INSTANCES.equals(this.instance);
+    }
+
+    /**
      * @param instance the instance to replicate the document with
      */
     public void setInstance(String instance)
     {
-        this.instance = instance == null ? "" : instance;
+        this.instance = StringUtils.defaultIfEmpty(instance, ALL_INSTANCES);
     }
 
     /**
